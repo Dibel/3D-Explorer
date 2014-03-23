@@ -1,2 +1,2 @@
-3D-Explorers
+3D-Explorer
 ========
