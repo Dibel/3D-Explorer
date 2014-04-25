@@ -150,10 +150,10 @@ bool MeshObject::event(QEvent *e)
         emit doubleClicked();
     } else if (e->type() == QEvent::Enter) {
         m_hovering = true;
-        emit hoverChanged();
+		emit hoverChanged(true);
     } else if (e->type() == QEvent::Leave) {
         m_hovering = false;
-        emit hoverChanged();
+		emit hoverChanged(false);
     }
     return QObject::event(e);
 }

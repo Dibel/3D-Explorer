@@ -25,7 +25,7 @@ private:
 
     int shelfSlotNum;
 private slots:
-	void showFileName();
+	void showFileName(bool hovering);
 };
 
 #endif
