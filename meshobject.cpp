@@ -42,7 +42,7 @@
 #include "meshobject.h"
 #include "qglview.h"
 
-MeshObject::MeshObject(QGLSceneNode *meshObject, QObject *parent)
+MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     : QObject(parent)
 {
     m_mesh = 0;
@@ -54,9 +54,10 @@ MeshObject::MeshObject(QGLSceneNode *meshObject, QObject *parent)
     m_hovering = false;
     m_material = 0;
     m_hoverMaterial = 0;
+    m_type = type;
 }
 
-MeshObject::MeshObject(QGLAbstractScene *scene, QObject *parent)
+MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
     : QObject(parent)
 {
     scene->setParent(this);
@@ -69,6 +70,7 @@ MeshObject::MeshObject(QGLAbstractScene *scene, QObject *parent)
     m_hovering = false;
     m_material = 0;
     m_hoverMaterial = 0;
+    m_type = type;
 }
 
 MeshObject::~MeshObject()
@@ -85,6 +87,8 @@ void MeshObject::initialize(QGLView *view, QGLPainter *painter)
 
 void MeshObject::draw(QGLPainter *painter)
 {
+    if (m_type == Anchor && !painter->isPicking()) return;
+
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
     painter->modelViewMatrix().translate(m_position);

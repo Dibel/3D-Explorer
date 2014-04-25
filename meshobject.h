@@ -57,8 +57,10 @@ class MeshObject : public QObject
 {
     Q_OBJECT
 public:
-    explicit MeshObject(QGLSceneNode *meshObject, QObject *parent=0);
-    explicit MeshObject(QGLAbstractScene *scene, QObject *parent=0);
+    enum PickType { Static, Pickable, Anchor };
+
+    explicit MeshObject(QGLSceneNode *meshObject, PickType type = Static, QObject *parent=0);
+    explicit MeshObject(QGLAbstractScene *scene, PickType type = Static, QObject *parent=0);
     virtual ~MeshObject();
 
     QVector3D position() const { return m_position; }
@@ -86,6 +88,9 @@ public:
     int objectId() const { return m_objectId; }
     void setObjectId(int id) { m_objectId = id; }
 
+    PickType pickType() const { return m_type; }
+    void setPickType(PickType type) { m_type = type; }
+
     void initialize(QGLView *view, QGLPainter *painter);
     void draw(QGLPainter *painter);
 
@@ -112,6 +117,7 @@ private:
     QGLAbstractEffect *m_effect;
     int m_objectId;
     bool m_hovering;
+    PickType m_type;
 };
 
 #endif
