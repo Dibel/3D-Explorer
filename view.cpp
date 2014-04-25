@@ -82,15 +82,14 @@ void View::paintGL(QGLPainter *painter) {
 }
 
 void View::showFileName(bool hovering) {
-	if(hovering) {
-		qDebug()<<sender()->objectName();
-		//float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
-		//float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
-		//painter.drawText(400,300,sender()->objectName());
-	} else {
+    if(hovering) {
+        qDebug()<<sender()->objectName();
+        //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
+        //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
+        //painter.drawText(400,300,sender()->objectName());
+    } else {
 
-	}
-
+    }
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
@@ -115,5 +114,4 @@ void View::mousePressEvent(QMouseEvent *event) {
 }
 
 void View::wheelEvent(QWheelEvent *event) {
-
 }
