@@ -1,15 +1,14 @@
-#include "mainwindow.h"
-#include "my3dview.h"
+#include "view.h"
+#include <QtGui/QGuiApplication>
 #include <QApplication>
 
-int main(int argc, char *argv[])
-{
-	QApplication a(argc, argv);
-	My3DView view;
-	view.resize(800,600);
-	view.show();
-	//MainWindow w;
-	//w.show();
+int main(int argc, char *argv[]) {
+	QApplication app(argc, argv);
+    View view;
+    view.resize(800, 600);
+	view.setMaximumSize(QSize(800,600));
+	view.setMinimumSize(QSize(800,600));
+    view.show();
 
-	return a.exec();
+    return app.exec();
 }
