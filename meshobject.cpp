@@ -88,6 +88,7 @@ void MeshObject::initialize(QGLView *view, QGLPainter *painter)
 void MeshObject::draw(QGLPainter *painter)
 {
     if (m_type == Anchor && !painter->isPicking()) return;
+    if (m_type == Picked && painter->isPicking()) return;
 
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
@@ -134,6 +135,8 @@ void MeshObject::draw(QGLPainter *painter)
 
 bool MeshObject::event(QEvent *e)
 {
+    if (m_type != Pickable) return QObject::event(e);
+
     // Convert the raw event into a signal representing the user's action.
     if (e->type() == QEvent::MouseButtonPress) {
         QMouseEvent *me = (QMouseEvent *)e;

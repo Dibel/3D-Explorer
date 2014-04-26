@@ -57,7 +57,7 @@ class MeshObject : public QObject
 {
     Q_OBJECT
 public:
-    enum PickType { Static, Pickable, Anchor };
+    enum PickType { Static, Pickable, Anchor, Picked };
 
     explicit MeshObject(QGLSceneNode *meshObject, PickType type = Static, QObject *parent=0);
     explicit MeshObject(QGLAbstractScene *scene, PickType type = Static, QObject *parent=0);
