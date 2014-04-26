@@ -88,6 +88,7 @@ void MeshObject::initialize(QGLView *view, QGLPainter *painter)
 void MeshObject::draw(QGLPainter *painter)
 {
     if (m_type == Anchor && !painter->isPicking()) return;
+    if (m_type == Picked && painter->isPicking()) return;
 
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
