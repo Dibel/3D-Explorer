@@ -80,6 +80,9 @@ View::View() : pickedObj(NULL) {
     setOption(QGLView::ObjectPicking, true);
 }
 
+void View::resizeEvent(QResizeEvent *e) {
+}
+
 void View::initializeGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
         obj->initialize(this, painter);

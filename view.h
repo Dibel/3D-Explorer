@@ -12,6 +12,7 @@ public:
     View();
 
 private:
+    void resizeEvent(QResizeEvent *e);
     void keyPressEvent(QKeyEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
@@ -36,6 +37,8 @@ private:
     QMatrix4x4 mvp;
 
     int shelfSlotNum;
+
+    QWidget *plotWidget;
 private slots:
 	void showFileName(bool hovering);
 };
