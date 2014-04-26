@@ -6,7 +6,7 @@
 #include <QtOpenGL/QGLFramebufferObject>
 #include <Qt3D/QGLCamera>
 #include <Qt3D/QGLFramebufferObjectSurface>
-
+#include<QDesktopServices>
 #include <QtCore/QDebug>
 
 enum { Shelf, Box };
@@ -55,6 +55,7 @@ View::View() {
         if (i + 2 < entryList.size()) {
             box = new MeshObject(builder.finalizedSceneNode(), MeshObject::Pickable);
             box->setObjectName(entryList[i + 2]);
+            box->setPath("file:///" + dir.absoluteFilePath(entryList[i + 2]));
         } else
             box = new MeshObject(builder.finalizedSceneNode(), MeshObject::Anchor);
 
@@ -106,6 +107,11 @@ void View::mousePressEvent(QMouseEvent *event) {
         MeshObject *obj = qobject_cast<MeshObject*>(objectForPoint(p));
         if (obj) {
             qDebug() << obj->objectName();
+            if(QDesktopServices::openUrl(obj->path())) {
+
+            } else {
+                qDebug() << "Open File Failed";
+            }
             return;
         }
     }
