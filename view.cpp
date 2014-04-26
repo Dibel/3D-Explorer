@@ -6,7 +6,7 @@
 #include <QtOpenGL/QGLFramebufferObject>
 #include <Qt3D/QGLCamera>
 #include <Qt3D/QGLFramebufferObjectSurface>
-#include<QDesktopServices>
+#include <QDesktopServices>
 #include <QtCore/QDebug>
 
 enum { Shelf, Box };
@@ -38,7 +38,8 @@ View::View() {
     boxMaterial->setSpecularColor(QColor(255, 255, 255));
     boxMaterial->setShininess(128);
 
-    QStringList entryList = dir.entryList();
+    QStringList folderEntryList = dir.entryList(QDir::NoDotAndDotDot|QDir::AllDirs);
+    QStringList fileEntryList = dir.entryList(QDir::Files);
 
     stream >> shelfSlotNum;
     qDebug() << shelfSlotNum;
@@ -52,12 +53,18 @@ View::View() {
         MeshObject *box;
 
         /* +2 to skip "." and ".." */
-        if (i + 2 < entryList.size()) {
+        //if (i + 2 < entryList.size()) {
+        if (i < folderEntryList.size()) {
             box = new MeshObject(builder.finalizedSceneNode(), MeshObject::Pickable);
-            box->setObjectName(entryList[i + 2]);
-            box->setPath("file:///" + dir.absoluteFilePath(entryList[i + 2]));
-        } else
+            box->setObjectName(folderEntryList[i]);
+            //box->setPath("file:///" + dir.absoluteFilePath(entryList[i + 2]));
+        } else if (i< folderEntryList.size() + fileEntryList.size()) {
+            box = new MeshObject(builder.finalizedSceneNode(), MeshObject::Pickable);
+            box->setObjectName(fileEntryList[i - folderEntryList.size()]);
+            box->setPath("file:///" + dir.absoluteFilePath(fileEntryList[i - folderEntryList.size()]));
+        } else {
             box = new MeshObject(builder.finalizedSceneNode(), MeshObject::Anchor);
+        }
 
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
@@ -83,7 +90,7 @@ void View::paintGL(QGLPainter *painter) {
 }
 
 void View::showFileName(bool hovering) {
-    if(hovering) {
+    if(hovering && !sender()->objectName().isEmpty()) {
         qDebug()<<sender()->objectName();
         //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
         //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
@@ -107,10 +114,12 @@ void View::mousePressEvent(QMouseEvent *event) {
         MeshObject *obj = qobject_cast<MeshObject*>(objectForPoint(p));
         if (obj) {
             qDebug() << obj->objectName();
-            if(QDesktopServices::openUrl(obj->path())) {
+            if(!obj->path().isEmpty()) {
+                if(QDesktopServices::openUrl(obj->path())) {
 
-            } else {
-                qDebug() << "Open File Failed";
+                } else {
+                    qDebug() << "Open File Failed";
+                }
             }
             return;
         }
