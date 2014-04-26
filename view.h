@@ -9,7 +9,7 @@ class MeshObject;
 class View : public QGLView {
     Q_OBJECT
 public:
-    View();
+    View(QDir inputDir);
 
 private:
     void resizeEvent(QResizeEvent *e);
@@ -41,6 +41,8 @@ private:
     QWidget *plotWidget;
 private slots:
 	void showFileName(bool hovering);
+signals:
+    void newDir(QDir dir);
 };
 
 #endif

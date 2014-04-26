@@ -12,8 +12,9 @@
 
 enum { Shelf, Box };
 
-View::View() : pickedObj(NULL) {
+View::View(QDir inputDir) : pickedObj(NULL) {
     /* shelf */
+    dir=inputDir;
     MeshObject *shelf = new MeshObject(QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
     shelf->setPosition(QVector3D(0, 0, 0));
     shelf->setObjectId(-1);
@@ -40,7 +41,7 @@ View::View() : pickedObj(NULL) {
     boxMaterial->setSpecularColor(QColor(255, 255, 255));
     boxMaterial->setShininess(128);
 
-    QStringList folderEntryList = dir.entryList(QDir::NoDotAndDotDot|QDir::AllDirs);
+    QStringList folderEntryList = dir.entryList(QDir::NoDot|QDir::AllDirs);
     QStringList fileEntryList = dir.entryList(QDir::Files);
 
     stream >> shelfSlotNum;
@@ -95,7 +96,8 @@ void View::paintGL(QGLPainter *painter) {
 
 void View::showFileName(bool hovering) {
     if(hovering && !sender()->objectName().isEmpty()) {
-        qDebug()<<sender()->objectName();
+        MeshObject *obj=qobject_cast<MeshObject*>(sender());
+        qDebug()<<obj->objectName();
         //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
         //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
         //painter.drawText(400,300,sender()->objectName());
@@ -122,6 +124,9 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
                 } else {
                     qDebug() << "Open File Failed";
                 }
+            } else {
+                dir.cd(pickedObj->objectName());
+                newDir(dir);
             }
         } else {
             QPoint p=event->pos();
