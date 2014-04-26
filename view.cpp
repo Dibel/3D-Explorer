@@ -58,7 +58,7 @@ View::View() : pickedObj(NULL) {
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
         box->setObjectId(i);
-
+        connect(box,SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
         objects.push_back(box);
     }
 
@@ -75,7 +75,18 @@ void View::initializeGL(QGLPainter *painter) {
 
 void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
-        obj->draw(painter);
+		obj->draw(painter);
+}
+
+void View::showFileName(bool hovering) {
+    if(hovering) {
+        qDebug()<<sender()->objectName();
+        //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
+        //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
+        //painter.drawText(400,300,sender()->objectName());
+    } else {
+
+    }
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
@@ -89,10 +100,7 @@ void View::keyPressEvent(QKeyEvent *event) {
 void View::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         pickedObj = qobject_cast<MeshObject*>(objectForPoint(event->pos()));
-        if (pickedObj) {
-            qDebug() << pickedObj->objectName();
-
-            //pickedObj = obj;
+        if (pickedObj && pickedObj->pickType() == MeshObject::Pickable) {
             pickedObj->setPickType(MeshObject::Picked);
 
             qreal aspectRatio = static_cast<qreal>(width()) / height();
@@ -110,10 +118,14 @@ void View::mousePressEvent(QMouseEvent *event) {
 
             update();
             return;
-        }
+        } else
+            pickedObj = NULL;
     }
 
     QGLView::mousePressEvent(event);
+}
+
+void View::wheelEvent(QWheelEvent *event) {
 }
 
 void View::mouseReleaseEvent(QMouseEvent *event) {

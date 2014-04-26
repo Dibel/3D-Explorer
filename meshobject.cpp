@@ -135,6 +135,8 @@ void MeshObject::draw(QGLPainter *painter)
 
 bool MeshObject::event(QEvent *e)
 {
+    if (m_type != Pickable) return QObject::event(e);
+
     // Convert the raw event into a signal representing the user's action.
     if (e->type() == QEvent::MouseButtonPress) {
         QMouseEvent *me = (QMouseEvent *)e;
@@ -151,10 +153,10 @@ bool MeshObject::event(QEvent *e)
         emit doubleClicked();
     } else if (e->type() == QEvent::Enter) {
         m_hovering = true;
-        emit hoverChanged();
+        emit hoverChanged(true);
     } else if (e->type() == QEvent::Leave) {
         m_hovering = false;
-        emit hoverChanged();
+        emit hoverChanged(false);
     }
     return QObject::event(e);
 }

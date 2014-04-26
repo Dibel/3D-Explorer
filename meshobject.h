@@ -99,7 +99,7 @@ signals:
     void released();
     void clicked();
     void doubleClicked();
-    void hoverChanged();
+    void hoverChanged(bool hovering);
 
 protected:
     bool event(QEvent *e);

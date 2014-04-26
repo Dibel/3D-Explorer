@@ -16,6 +16,7 @@ private:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
     void initializeGL(QGLPainter *painter);
     void paintGL(QGLPainter *painter);
@@ -34,6 +35,8 @@ private:
     QMatrix4x4 mvp;
 
     int shelfSlotNum;
+private slots:
+	void showFileName(bool hovering);
 };
 
 #endif
