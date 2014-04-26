@@ -109,6 +109,35 @@ void View::keyPressEvent(QKeyEvent *event) {
     QGLView::keyPressEvent(event);
 }
 
+void View::mouseDoubleClickEvent(QMouseEvent *event) {
+    if(event->button() == Qt::LeftButton) {
+        if(pickedObj) {
+            qDebug() << pickedObj->objectName();
+            if(!pickedObj->path().isEmpty()) {
+                if(QDesktopServices::openUrl(pickedObj->path())) {
+
+                } else {
+                    qDebug() << "Open File Failed";
+                }
+            }
+        } else {
+            QPoint p=event->pos();
+            pickedObj = qobject_cast<MeshObject*>(objectForPoint(event->pos()));
+            if (pickedObj && pickedObj->pickType() == MeshObject::Pickable) {
+                qDebug() << pickedObj->objectName();
+                if(!pickedObj->path().isEmpty()) {
+                    if(QDesktopServices::openUrl(pickedObj->path())) {
+
+                    } else {
+                        qDebug() << "Open File Failed";
+                    }
+                }
+            }
+            pickedObj = NULL;
+        }
+    }
+}
+
 void View::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         pickedObj = qobject_cast<MeshObject*>(objectForPoint(event->pos()));
