@@ -7,7 +7,7 @@
 #include <Qt3D/QGLCamera>
 #include <Qt3D/QGLFramebufferObjectSurface>
 #include <QDesktopServices>
-
+#include <QCoreApplication>
 #include <QtCore/QDebug>
 
 enum { Shelf, Box };
@@ -127,6 +127,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
                     qDebug() << "Open File Failed";
                 }
             } else {
+                enteredObject = NULL;
                 dir.cd(pickedObj->objectName());
                 for(int i=objects.size()-1;i>0;--i) {
                     disconnect(objects.at(i),SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
@@ -222,6 +223,35 @@ void View::mouseMoveEvent(QMouseEvent *event) {
         update();
         return;
     }
+    QObject *object = objectForPoint(event->pos());
+    if (object) {
+        if (object != enteredObject) {
+            if (enteredObject)
+                sendLeaveEvent(enteredObject);
+            enteredObject = object;
+            sendEnterEvent(enteredObject);
+        }
+        QMouseEvent e
+            (QEvent::MouseMove, QPoint(0, 0),
+             event->globalPos(), event->button(), event->buttons(), event->modifiers());
+        QCoreApplication::sendEvent(object, &e);
+    } else if (enteredObject) {
+        sendLeaveEvent(enteredObject);
+        enteredObject = NULL;
+    } else {
+        QGLView::mouseMoveEvent(event);
+    }
+}
 
-    QGLView::mouseMoveEvent(event);
+
+void View::sendEnterEvent(QObject *object)
+{
+    QEvent event(QEvent::Enter);
+    QCoreApplication::sendEvent(object, &event);
+}
+
+void View::sendLeaveEvent(QObject *object)
+{
+    QEvent event(QEvent::Leave);
+    QCoreApplication::sendEvent(object, &event);
 }

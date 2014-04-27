@@ -24,6 +24,8 @@ private:
     void paintGL(QGLPainter *painter);
 
     void initializeBox();
+    void sendEnterEvent(QObject *object);
+    void sendLeaveEvent(QObject *object);
 
     QVector<MeshObject*> objects;
     QDir dir;
@@ -40,7 +42,7 @@ private:
 
     int shelfSlotNum;
 
-    QWidget *plotWidget;
+    QObject *enteredObject;
 private slots:
 	void showFileName(bool hovering);
 };
