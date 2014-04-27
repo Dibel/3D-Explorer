@@ -8,11 +8,9 @@ RESOURCES += \
 
 HEADERS += \
     meshobject.h \
-    view.h \
-    mainwindow.h
+    view.h
 
 SOURCES += \
     main.cpp \
     meshobject.cpp \
-    view.cpp \
-    mainwindow.cpp
+    view.cpp
