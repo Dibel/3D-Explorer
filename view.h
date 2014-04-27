@@ -23,6 +23,8 @@ private:
     void initializeGL(QGLPainter *painter);
     void paintGL(QGLPainter *painter);
 
+    void initializeBox();
+
     QVector<MeshObject*> objects;
     QDir dir;
 

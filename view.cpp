@@ -28,6 +28,28 @@ View::View() : pickedObj(NULL) {
     objects.push_back(shelf);
 
     /* boxes */
+    initializeBox();
+
+    camera()->setCenter(QVector3D(0, 50, 0));
+    camera()->setEye(QVector3D(0, 50, 300));
+
+    setOption(QGLView::ObjectPicking, true);
+}
+
+void View::resizeEvent(QResizeEvent *e) {
+}
+
+void View::initializeGL(QGLPainter *painter) {
+    foreach(MeshObject *obj, objects)
+        obj->initialize(this, painter);
+}
+
+void View::paintGL(QGLPainter *painter) {
+    foreach(MeshObject *obj, objects)
+        obj->draw(painter);
+}
+
+void View::initializeBox() {
     QFile file(":/model/shelf.slots");
     file.open(QFile::ReadOnly);
     QTextStream stream(&file);
@@ -40,7 +62,7 @@ View::View() : pickedObj(NULL) {
     boxMaterial->setSpecularColor(QColor(255, 255, 255));
     boxMaterial->setShininess(128);
 
-    QStringList folderEntryList = dir.entryList(QDir::NoDotAndDotDot|QDir::AllDirs);
+    QStringList folderEntryList = dir.entryList(QDir::NoDot|QDir::AllDirs);
     QStringList fileEntryList = dir.entryList(QDir::Files);
 
     stream >> shelfSlotNum;
@@ -73,24 +95,6 @@ View::View() : pickedObj(NULL) {
         connect(box,SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
         objects.push_back(box);
     }
-
-    camera()->setCenter(QVector3D(0, 50, 0));
-    camera()->setEye(QVector3D(0, 50, 300));
-
-    setOption(QGLView::ObjectPicking, true);
-}
-
-void View::resizeEvent(QResizeEvent *e) {
-}
-
-void View::initializeGL(QGLPainter *painter) {
-    foreach(MeshObject *obj, objects)
-        obj->initialize(this, painter);
-}
-
-void View::paintGL(QGLPainter *painter) {
-    foreach(MeshObject *obj, objects)
-		obj->draw(painter);
 }
 
 void View::showFileName(bool hovering) {
@@ -122,7 +126,21 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
                 } else {
                     qDebug() << "Open File Failed";
                 }
+            } else {
+                dir.cd(pickedObj->objectName());
+                for(int i=objects.size()-1;i>0;--i) {
+                    disconnect(objects.at(i),SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
+                    deregisterObject(i-1);
+                    delete objects.at(i);
+                }
+                objects.erase(objects.begin()+1,objects.end());
+                initializeBox();
+                for(int i=objects.size()-1;i>0;--i) {
+                    registerObject(i-1,objects.at(i));
+                }
+                update();
             }
+            pickedObj=NULL;
         } else {
             QPoint p=event->pos();
             pickedObj = qobject_cast<MeshObject*>(objectForPoint(event->pos()));
