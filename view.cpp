@@ -40,6 +40,20 @@ View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(thi
     initializeBox();
 
     /* HUD */
+
+}
+
+QImage View::paintHud(float x, float y, QString text) {
+    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
+    ret.fill(Qt::transparent);
+    QPainter painter(&ret);
+    painter.setPen(QColor(Qt::red));
+    painter.drawText(x, y, text);
+    return ret;
+}
+
+void View::drawText(float x, float y, QString text)
+{
     QGLBuilder builder;
     QGLSceneNode *root = builder.sceneNode();
 
@@ -47,7 +61,7 @@ View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(thi
 
     QGLTexture2D *tex = new QGLTexture2D;
     //QImage image("tex.png");
-    QImage image = paintHud();
+    QImage image = paintHud(x,y,text);
     tex->setImage(image);
     tex->bind();
     mat->setTexture(tex);
@@ -57,22 +71,13 @@ View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(thi
     builder.pushNode()->setObjectName("HUD");
     builder.addPane(QSizeF(2, 2));
     builder.currentNode()->setMaterialIndex(hudMat);
-    
+
     hudEffect = new QGLShaderProgramEffect();
     hudEffect->setVertexShaderFromFile(":/hud.vsh");
     hudEffect->setFragmentShaderFromFile(":/hud.fsh");
     builder.currentNode()->setUserEffect(hudEffect);
 
     hudObj = builder.finalizedSceneNode();
-}
-
-QImage View::paintHud() {
-    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
-    ret.fill(Qt::transparent);
-    QPainter painter(&ret);
-    painter.setPen(QColor(Qt::red));
-    painter.drawText(400, 300, "Hello World!!!");
-    return ret;
 }
 
 void View::resizeEvent(QResizeEvent *e) {
@@ -90,8 +95,10 @@ void View::paintGL(QGLPainter *painter) {
     if (!painter->isPicking()) {
         glEnable(GL_BLEND);
 
-        hudEffect->setActive(painter, true);
-        hudObj->draw(painter);
+        if(hudEffect != NULL) {
+            hudEffect->setActive(painter, true);
+            hudObj->draw(painter);
+        }
 
         glDisable(GL_BLEND);
     }
@@ -147,10 +154,12 @@ void View::initializeBox() {
 
 void View::showFileName(bool hovering) {
     if(hovering && !sender()->objectName().isEmpty()) {
-        qDebug()<<sender()->objectName();
-        //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
-        //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
-        //painter.drawText(400,300,sender()->objectName());
+        MeshObject *obj = qobject_cast<MeshObject*>(sender());
+        qDebug()<<obj->objectName();
+        float textX=((camera()->projectionMatrix(4.0/3.0)*camera()->modelViewMatrix()*obj->position()).x()+1)*width()/2;
+        float textY=(1-(camera()->projectionMatrix(4.0/3.0)*camera()->modelViewMatrix()*obj->position()).y())*height()/2;
+        drawText(textX,textY,sender()->objectName());
+        update();
     } else {
 
     }

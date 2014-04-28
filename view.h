@@ -32,7 +32,8 @@ private:
     void sendEnterEvent(QObject *object);
     void sendLeaveEvent(QObject *object);
 
-    QImage paintHud();
+    QImage paintHud(float x, float y, QString text);
+    void drawText(float x, float y,QString text);
 
     QVector<MeshObject*> objects;
     QGLSceneNode *hudObj;
