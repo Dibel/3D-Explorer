@@ -50,6 +50,9 @@ MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     m_mesh = 0;
     m_meshObject = meshObject;
     m_scale = 1.0f;
+    m_scaleX = 1.0f;
+    m_scaleY = 1.0f;
+    m_scaleZ = 1.0f;
     m_rotationAngle = 0.0f;
     m_effect = 0;
     m_objectId = -1;
@@ -66,6 +69,9 @@ MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
     m_mesh = 0;
     m_meshObject = scene->mainNode();
     m_scale = 1.0f;
+    m_scaleX = 1.0f;
+    m_scaleY = 1.0f;
+    m_scaleZ = 1.0f;
     m_rotationAngle = 0.0f;
     m_effect = 0;
     m_objectId = -1;
@@ -95,8 +101,11 @@ void MeshObject::draw(QGLPainter *painter)
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
     painter->modelViewMatrix().translate(m_position);
-    if (m_scale != 1.0f)
+    if (m_scale != 1.0f) {
         painter->modelViewMatrix().scale(m_scale);
+    } else if(m_scaleX != 1.0f || m_scaleY != 1.0f || m_scaleZ != 1.0f) {
+        painter->modelViewMatrix().scale(m_scaleX,m_scaleY,m_scaleZ);
+    }
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
 

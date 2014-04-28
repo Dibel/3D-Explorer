@@ -12,6 +12,7 @@
 #include <Qt3D/QGLShaderProgramEffect>
 
 #include <QtCore/QDebug>
+#include <QQuickQGraphicsTransform3D>
 
 enum { Shelf, Box };
 
@@ -22,6 +23,7 @@ View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(thi
     qreal aspectRatio = 1.0 * width() / height();
     mvp = camera()->projectionMatrix(aspectRatio) * camera()->modelViewMatrix();
 
+    picture = NULL;
     /* shelf */
     MeshObject *shelf = new MeshObject(QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
     shelf->setPosition(QVector3D(0, 0, 0));
@@ -101,6 +103,10 @@ void View::paintGL(QGLPainter *painter) {
         }
 
         glDisable(GL_BLEND);
+    if(picture != NULL) {
+        painter->modelViewMatrix().scale(1.0,0.75,1.0);
+        painter->modelViewMatrix().translate(40.0,50.0,0.0);
+        picture->draw(painter);
     }
 }
 
@@ -119,6 +125,25 @@ void View::initializeBox() {
 
     QStringList folderEntryList = dir.entryList(QDir::NoDot|QDir::AllDirs);
     QStringList fileEntryList = dir.entryList(QDir::Files);
+    QStringList filter;
+    filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
+    dir.setNameFilters(filter);
+    QStringList pictureEntryList = dir.entryList(QDir::Files);
+    if(!pictureEntryList.isEmpty()) {
+        QGLBuilder b;
+        b.addPane(50.0f);
+        picture = b.finalizedSceneNode();
+
+        QImage image(pictureEntryList.at(0));
+
+        // put the image into a material and stick in onto the triangles
+        QGLTexture2D *tex = new QGLTexture2D;
+        tex->setImage(image);
+        QGLMaterial *mat = new QGLMaterial;
+        mat->setTexture(tex);
+        picture->setMaterial(mat);
+        picture->setEffect(QGL::FlatDecalTexture2D);
+    }
 
     stream >> shelfSlotNum;
     for (int i = 0; i < shelfSlotNum; ++i) {
@@ -147,6 +172,7 @@ void View::initializeBox() {
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
         box->setObjectId(i);
+        box->setScale(0.5,1.0,1.0);
         connect(box,SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
         objects.push_back(box);
     }

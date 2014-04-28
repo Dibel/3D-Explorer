@@ -55,6 +55,7 @@ private:
 
     QGLShaderProgramEffect *hudEffect;
 
+    QGLSceneNode *picture;
 private slots:
     void showFileName(bool hovering);
 };

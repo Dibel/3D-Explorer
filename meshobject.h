@@ -68,6 +68,7 @@ public:
 
     float scale() const { return m_scale; }
     void setScale(float value) { m_scale = value; }
+    void setScale(float x,float y,float z) {m_scaleX=x; m_scaleY=y; m_scaleZ=z;}
 
     float rotationAngle() const { return m_rotationAngle; }
     void setRotationAngle(float value) { m_rotationAngle = value; }
@@ -111,6 +112,9 @@ private:
     QGLAbstractScene *m_scene;
     QVector3D m_position;
     float m_scale;
+    float m_scaleX;
+    float m_scaleY;
+    float m_scaleZ;
     float m_rotationAngle;
     QVector3D m_rotationVector;
     QGLMaterial *m_material;
