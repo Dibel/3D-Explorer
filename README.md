@@ -1,4 +1,9 @@
-3D-Explorer
+#3D-Explorer
 
-Just a demo
+##WIP
+
+###To-do:
+Models
+Light
+Shader
 ========
