@@ -42,15 +42,20 @@ View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(thi
     initializeBox();
 
     /* HUD */
-
+    drawText(0,0,"");
 }
 
 QImage View::paintHud(float x, float y, QString text) {
     QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
     ret.fill(Qt::transparent);
     QPainter painter(&ret);
+    QFont font=painter.font();
+    font.setPointSize(16);
+    font.setBold(1);
+    painter.setFont(font);
     painter.setPen(QColor(Qt::red));
     painter.drawText(x, y, text);
+    painter.drawText(0,20,dir.absolutePath());
     return ret;
 }
 
@@ -94,6 +99,12 @@ void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
         obj->draw(painter);
 
+    if(picture != NULL) {
+        painter->modelViewMatrix().scale(1.0,0.75,1.0);
+        painter->modelViewMatrix().translate(40.0,50.0,0.0);
+        picture->draw(painter);
+    }
+
     if (!painter->isPicking()) {
         glEnable(GL_BLEND);
 
@@ -104,11 +115,7 @@ void View::paintGL(QGLPainter *painter) {
 
         glDisable(GL_BLEND);
     }
-    if(picture != NULL) {
-        painter->modelViewMatrix().scale(1.0,0.75,1.0);
-        painter->modelViewMatrix().translate(40.0,50.0,0.0);
-        picture->draw(painter);
-    }
+
 }
 
 void View::initializeBox() {
@@ -223,6 +230,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
                 for(int i=objects.size()-1;i>0;--i) {
                     registerObject(i-1,objects.at(i));
                 }
+                drawText(0,0,"");
                 update();
             }
             pickedObj=NULL;
