@@ -38,15 +38,20 @@ View::View()
     initializeBox();
 
     /* HUD */
-
+    drawText(0,0,"");
 }
 
 QImage View::paintHud(float x, float y, QString text) {
     QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
     ret.fill(Qt::transparent);
     QPainter painter(&ret);
+    QFont font=painter.font();
+    font.setPointSize(16);
+    font.setBold(1);
+    painter.setFont(font);
     painter.setPen(QColor(Qt::red));
     painter.drawText(x, y, text);
+    painter.drawText(0,20,dir.absolutePath());
     return ret;
 }
 
@@ -91,6 +96,12 @@ void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, boxes)
         obj->draw(painter);
 
+    if(picture != NULL) {
+        painter->modelViewMatrix().scale(1.0,0.75,1.0);
+        painter->modelViewMatrix().translate(40.0,50.0,0.0);
+        picture->draw(painter);
+    }
+
     if (!painter->isPicking()) {
         glEnable(GL_BLEND);
 
@@ -101,11 +112,7 @@ void View::paintGL(QGLPainter *painter) {
 
         glDisable(GL_BLEND);
     }
-    if(picture != NULL) {
-        painter->modelViewMatrix().scale(1.0,0.75,1.0);
-        painter->modelViewMatrix().translate(40.0,50.0,0.0);
-        picture->draw(painter);
-    }
+
 }
 
 void View::updateBoxes() {
@@ -220,6 +227,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
         } else {
             hoverLeave();
             dir.cd(pickedObject->objectName());
+            drawText(0,0,"");
             updateBoxes();
         }
         pickedObject=NULL;
