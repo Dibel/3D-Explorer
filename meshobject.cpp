@@ -42,6 +42,8 @@
 #include "meshobject.h"
 #include "qglview.h"
 
+#include <QtCore/QDebug>
+
 MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     : QObject(parent)
 {

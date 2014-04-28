@@ -4,11 +4,13 @@ set(PROJECTNAME 3dexplorer)
 
 set(SOURCE
     main.cpp
+    window.cpp
     view.cpp
     meshobject.cpp
 )
 
 set(HEADER
+    window.h
     view.h
     meshobject.h
 )
@@ -20,6 +22,8 @@ set(RESOURCE
 project(${PROJECTNAME})
 
 find_package(Qt53D REQUIRED)
+find_package(Qt5OpenGL REQUIRED)
+find_package(Qt5Widgets REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -33,5 +37,6 @@ add_executable(${PROJECTNAME}
     ${RESOURCE_RCC}
 )
 
-qt5_use_modules(${PROJECTNAME} 3D)
+qt5_use_modules(${PROJECTNAME} 3D OpenGL Widgets)
 
+target_link_libraries(${PROJECTNAME} GL)

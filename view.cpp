@@ -8,11 +8,20 @@
 #include <Qt3D/QGLFramebufferObjectSurface>
 #include <QDesktopServices>
 #include <QCoreApplication>
+#include <QtWidgets/QWidget>
+#include <Qt3D/QGLShaderProgramEffect>
+
 #include <QtCore/QDebug>
 
 enum { Shelf, Box };
 
-View::View() : pickedObj(NULL) {
+View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(this)), hudEffect(NULL) {
+    camera()->setCenter(QVector3D(0, 50, 0));
+    camera()->setEye(QVector3D(0, 50, 300));
+
+    qreal aspectRatio = 1.0 * width() / height();
+    mvp = camera()->projectionMatrix(aspectRatio) * camera()->modelViewMatrix();
+
     /* shelf */
     MeshObject *shelf = new MeshObject(QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
     shelf->setPosition(QVector3D(0, 0, 0));
@@ -30,10 +39,40 @@ View::View() : pickedObj(NULL) {
     /* boxes */
     initializeBox();
 
-    camera()->setCenter(QVector3D(0, 50, 0));
-    camera()->setEye(QVector3D(0, 50, 300));
+    /* HUD */
+    QGLBuilder builder;
+    QGLSceneNode *root = builder.sceneNode();
 
-    setOption(QGLView::ObjectPicking, true);
+    QGLMaterial *mat = new QGLMaterial;
+
+    QGLTexture2D *tex = new QGLTexture2D;
+    //QImage image("tex.png");
+    QImage image = paintHud();
+    tex->setImage(image);
+    tex->bind();
+    mat->setTexture(tex);
+
+    int hudMat = root->palette()->addMaterial(mat);
+
+    builder.pushNode()->setObjectName("HUD");
+    builder.addPane(QSizeF(2, 2));
+    builder.currentNode()->setMaterialIndex(hudMat);
+    
+    hudEffect = new QGLShaderProgramEffect();
+    hudEffect->setVertexShaderFromFile(":/hud.vsh");
+    hudEffect->setFragmentShaderFromFile(":/hud.fsh");
+    builder.currentNode()->setUserEffect(hudEffect);
+
+    hudObj = builder.finalizedSceneNode();
+}
+
+QImage View::paintHud() {
+    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
+    ret.fill(Qt::transparent);
+    QPainter painter(&ret);
+    painter.setPen(QColor(Qt::red));
+    painter.drawText(400, 300, "Hello World!!!");
+    return ret;
 }
 
 void View::resizeEvent(QResizeEvent *e) {
@@ -47,6 +86,15 @@ void View::initializeGL(QGLPainter *painter) {
 void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
         obj->draw(painter);
+
+    if (!painter->isPicking()) {
+        glEnable(GL_BLEND);
+
+        hudEffect->setActive(painter, true);
+        hudObj->draw(painter);
+
+        glDisable(GL_BLEND);
+    }
 }
 
 void View::initializeBox() {

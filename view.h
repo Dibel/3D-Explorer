@@ -2,9 +2,14 @@
 #define SCENE_H
 
 #include <Qt3D/QGLView>
+#include <QtGui/QImage>
 #include <QtCore/QDir>
 
 class MeshObject;
+class QWidget;
+class QPaintDevice;
+class QGLSceneNode;
+class QGLShaderProgramEffect;
 
 class View : public QGLView {
     Q_OBJECT
@@ -27,7 +32,10 @@ private:
     void sendEnterEvent(QObject *object);
     void sendLeaveEvent(QObject *object);
 
+    QImage paintHud();
+
     QVector<MeshObject*> objects;
+    QGLSceneNode *hudObj;
     QDir dir;
 
     MeshObject *pickedObj;
@@ -43,8 +51,11 @@ private:
     int shelfSlotNum;
 
     QObject *enteredObject;
+
+    QGLShaderProgramEffect *hudEffect;
+
 private slots:
-	void showFileName(bool hovering);
+    void showFileName(bool hovering);
 };
 
 #endif

@@ -2,5 +2,7 @@
 <qresource>
     <file>model/shelf.obj</file>
     <file>model/shelf.slots</file>
+    <file>hud.vsh</file>
+    <file>hud.fsh</file>
 </qresource>
 </RCC>
