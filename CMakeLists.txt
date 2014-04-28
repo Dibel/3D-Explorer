@@ -4,13 +4,11 @@ set(PROJECTNAME 3dexplorer)
 
 set(SOURCE
     main.cpp
-    window.cpp
     view.cpp
     meshobject.cpp
 )
 
 set(HEADER
-    window.h
     view.h
     meshobject.h
 )
