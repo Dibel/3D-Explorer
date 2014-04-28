@@ -9,6 +9,7 @@
 #include <QDesktopServices>
 #include <QCoreApplication>
 #include <QtCore/QDebug>
+#include <QQuickQGraphicsTransform3D>
 
 enum { Shelf, Box };
 
@@ -92,6 +93,7 @@ void View::initializeBox() {
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
         box->setObjectId(i);
+        box->setScale(0.5,1.0,1.0);
         connect(box,SIGNAL(hoverChanged(bool)),this,SLOT(showFileName(bool)));
         objects.push_back(box);
     }
@@ -99,7 +101,8 @@ void View::initializeBox() {
 
 void View::showFileName(bool hovering) {
     if(hovering && !sender()->objectName().isEmpty()) {
-        qDebug()<<sender()->objectName();
+        MeshObject* obj = qobject_cast<MeshObject*>(sender());
+        qDebug()<<obj->objectName();
         //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
         //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
         //painter.drawText(400,300,sender()->objectName());
