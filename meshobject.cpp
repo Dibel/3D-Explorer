@@ -60,6 +60,7 @@ MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     m_material = 0;
     m_hoverMaterial = 0;
     m_type = type;
+    m_view = NULL;
 }
 
 MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
@@ -79,16 +80,19 @@ MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
     m_material = 0;
     m_hoverMaterial = 0;
     m_type = type;
+    m_view = NULL;
 }
 
 MeshObject::~MeshObject()
 {
+    m_view->deregisterObject(m_objectId);
     delete m_mesh;
 }
 
 void MeshObject::initialize(QGLView *view, QGLPainter *painter)
 {
     Q_UNUSED(painter);
+    m_view = view;
     if (m_objectId != -1)
         view->registerObject(m_objectId, this);
 }
@@ -146,28 +150,28 @@ void MeshObject::draw(QGLPainter *painter)
 
 bool MeshObject::event(QEvent *e)
 {
-    if (m_type != Pickable) return QObject::event(e);
-
-    // Convert the raw event into a signal representing the user's action.
-    if (e->type() == QEvent::MouseButtonPress) {
-        QMouseEvent *me = (QMouseEvent *)e;
-        if (me->button() == Qt::LeftButton)
-            emit pressed();
-    } else if (e->type() == QEvent::MouseButtonRelease) {
-        QMouseEvent *me = (QMouseEvent *)e;
-        if (me->button() == Qt::LeftButton) {
-            emit released();
-            if (me->x() >= 0)   // Positive: inside object, Negative: outside.
-                emit clicked();
-        }
-    } else if (e->type() == QEvent::MouseButtonDblClick) {
-        emit doubleClicked();
-    } else if (e->type() == QEvent::Enter) {
-        m_hovering = true;
-        emit hoverChanged(true);
-    } else if (e->type() == QEvent::Leave) {
-        m_hovering = false;
-        emit hoverChanged(false);
-    }
-    return QObject::event(e);
+//    if (m_type != Pickable) return QObject::event(e);
+//
+//    // Convert the raw event into a signal representing the user's action.
+//    if (e->type() == QEvent::MouseButtonPress) {
+//        QMouseEvent *me = (QMouseEvent *)e;
+//        if (me->button() == Qt::LeftButton)
+//            emit pressed();
+//    } else if (e->type() == QEvent::MouseButtonRelease) {
+//        QMouseEvent *me = (QMouseEvent *)e;
+//        if (me->button() == Qt::LeftButton) {
+//            emit released();
+//            if (me->x() >= 0)   // Positive: inside object, Negative: outside.
+//                emit clicked();
+//        }
+//    } else if (e->type() == QEvent::MouseButtonDblClick) {
+//        emit doubleClicked();
+//    } else if (e->type() == QEvent::Enter) {
+//        m_hovering = true;
+//        emit hoverChanged(true);
+//    } else if (e->type() == QEvent::Leave) {
+//        m_hovering = false;
+//        emit hoverChanged(false);
+//    }
+//    return QObject::event(e);
 }

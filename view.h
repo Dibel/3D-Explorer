@@ -6,7 +6,6 @@
 #include <QtCore/QDir>
 
 class MeshObject;
-class QWidget;
 class QPaintDevice;
 class QGLSceneNode;
 class QGLShaderProgramEffect;
@@ -16,30 +15,39 @@ class View : public QGLView {
 public:
     View();
 
-private:
-    void resizeEvent(QResizeEvent *e);
-    void keyPressEvent(QKeyEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void mouseMoveEvent(QMouseEvent *event);
-    void wheelEvent(QWheelEvent *event);
-
+protected:
     void initializeGL(QGLPainter *painter);
     void paintGL(QGLPainter *painter);
 
-    void initializeBox();
-    void sendEnterEvent(QObject *object);
-    void sendLeaveEvent(QObject *object);
+    void mousePressEvent(QMouseEvent *event);
+    void mouseReleaseEvent(QMouseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event);
+    void keyPressEvent(QKeyEvent *event);
+    void wheelEvent(QWheelEvent *);
+    void resizeEvent(QResizeEvent *);
 
+private:
     QImage paintHud(float x, float y, QString text);
     void drawText(float x, float y,QString text);
+    void updateBoxes();
+    void initializeBox();
+    void hoverEnter(MeshObject *object);
+    void hoverLeave();
 
-    QVector<MeshObject*> objects;
+    MeshObject *meshObjectAt(const QPoint &pos);
+
+    QVector<MeshObject*> boxes;
+    MeshObject *background;
     QGLSceneNode *hudObj;
+    QGLShaderProgramEffect *hudEffect;
+
+    int shelfSlotNum;
     QDir dir;
 
-    MeshObject *pickedObj;
+    QMatrix4x4 mvp;
+
+    MeshObject *pickedObject;
     /* original position of picked object */
     QVector3D pickedPos;
     /* clicked position in picked object's local coordinate */
@@ -47,17 +55,9 @@ private:
     /* picked object's depth in projected coordinate */
     qreal pickedDepth;
 
-    QMatrix4x4 mvp;
-
-    int shelfSlotNum;
-
-    QObject *enteredObject;
-
-    QGLShaderProgramEffect *hudEffect;
+    MeshObject *enteredObject;
 
     QGLSceneNode *picture;
-private slots:
-    void showFileName(bool hovering);
 };
 
 #endif

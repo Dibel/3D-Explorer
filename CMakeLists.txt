@@ -20,8 +20,6 @@ set(RESOURCE
 project(${PROJECTNAME})
 
 find_package(Qt53D REQUIRED)
-find_package(Qt5OpenGL REQUIRED)
-find_package(Qt5Widgets REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -35,6 +33,6 @@ add_executable(${PROJECTNAME}
     ${RESOURCE_RCC}
 )
 
-qt5_use_modules(${PROJECTNAME} 3D OpenGL Widgets)
+qt5_use_modules(${PROJECTNAME} 3D)
 
 target_link_libraries(${PROJECTNAME} GL)
