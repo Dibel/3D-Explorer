@@ -43,6 +43,8 @@ private:
     int shelfSlotNum;
 
     QObject *enteredObject;
+
+    QGLSceneNode *picture;
 private slots:
 	void showFileName(bool hovering);
 };

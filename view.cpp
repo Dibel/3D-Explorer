@@ -14,6 +14,7 @@
 enum { Shelf, Box };
 
 View::View() : pickedObj(NULL) {
+    picture = NULL;
     /* shelf */
     MeshObject *shelf = new MeshObject(QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
     shelf->setPosition(QVector3D(0, 0, 0));
@@ -48,6 +49,11 @@ void View::initializeGL(QGLPainter *painter) {
 void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
         obj->draw(painter);
+    if(picture != NULL) {
+        painter->modelViewMatrix().scale(1.0,0.75,1.0);
+        painter->modelViewMatrix().translate(40.0,50.0,0.0);
+        picture->draw(painter);
+    }
 }
 
 void View::initializeBox() {
@@ -65,6 +71,25 @@ void View::initializeBox() {
 
     QStringList folderEntryList = dir.entryList(QDir::NoDot|QDir::AllDirs);
     QStringList fileEntryList = dir.entryList(QDir::Files);
+    QStringList filter;
+    filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
+    dir.setNameFilters(filter);
+    QStringList pictureEntryList = dir.entryList(QDir::Files);
+    if(!pictureEntryList.isEmpty()) {
+        QGLBuilder b;
+        b.addPane(50.0f);
+        picture = b.finalizedSceneNode();
+
+        QImage image(pictureEntryList.at(0));
+
+        // put the image into a material and stick in onto the triangles
+        QGLTexture2D *tex = new QGLTexture2D;
+        tex->setImage(image);
+        QGLMaterial *mat = new QGLMaterial;
+        mat->setTexture(tex);
+        picture->setMaterial(mat);
+        picture->setEffect(QGL::FlatDecalTexture2D);
+    }
 
     stream >> shelfSlotNum;
     for (int i = 0; i < shelfSlotNum; ++i) {
