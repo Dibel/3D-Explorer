@@ -103,6 +103,7 @@ void View::paintGL(QGLPainter *painter) {
         }
 
         glDisable(GL_BLEND);
+    }
     if(picture != NULL) {
         painter->modelViewMatrix().scale(1.0,0.75,1.0);
         painter->modelViewMatrix().translate(40.0,50.0,0.0);
