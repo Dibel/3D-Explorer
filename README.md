@@ -1,9 +1,10 @@
 #3D-Explorer
 
-##WIP
+###WIP
 
 ###To-do:
-Models
+Model
+
 Light
+
 Shader
-========
