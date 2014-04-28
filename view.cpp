@@ -8,12 +8,21 @@
 #include <Qt3D/QGLFramebufferObjectSurface>
 #include <QDesktopServices>
 #include <QCoreApplication>
+#include <QtWidgets/QWidget>
+#include <Qt3D/QGLShaderProgramEffect>
+
 #include <QtCore/QDebug>
 #include <QQuickQGraphicsTransform3D>
 
 enum { Shelf, Box };
 
-View::View() : pickedObj(NULL) {
+View::View() : pickedObj(NULL), enteredObject(NULL), hudObj(new QGLSceneNode(this)), hudEffect(NULL) {
+    camera()->setCenter(QVector3D(0, 50, 0));
+    camera()->setEye(QVector3D(0, 50, 300));
+
+    qreal aspectRatio = 1.0 * width() / height();
+    mvp = camera()->projectionMatrix(aspectRatio) * camera()->modelViewMatrix();
+
     picture = NULL;
     /* shelf */
     MeshObject *shelf = new MeshObject(QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
@@ -32,10 +41,45 @@ View::View() : pickedObj(NULL) {
     /* boxes */
     initializeBox();
 
-    camera()->setCenter(QVector3D(0, 50, 0));
-    camera()->setEye(QVector3D(0, 50, 300));
+    /* HUD */
 
-    setOption(QGLView::ObjectPicking, true);
+}
+
+QImage View::paintHud(float x, float y, QString text) {
+    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
+    ret.fill(Qt::transparent);
+    QPainter painter(&ret);
+    painter.setPen(QColor(Qt::red));
+    painter.drawText(x, y, text);
+    return ret;
+}
+
+void View::drawText(float x, float y, QString text)
+{
+    QGLBuilder builder;
+    QGLSceneNode *root = builder.sceneNode();
+
+    QGLMaterial *mat = new QGLMaterial;
+
+    QGLTexture2D *tex = new QGLTexture2D;
+    //QImage image("tex.png");
+    QImage image = paintHud(x,y,text);
+    tex->setImage(image);
+    tex->bind();
+    mat->setTexture(tex);
+
+    int hudMat = root->palette()->addMaterial(mat);
+
+    builder.pushNode()->setObjectName("HUD");
+    builder.addPane(QSizeF(2, 2));
+    builder.currentNode()->setMaterialIndex(hudMat);
+
+    hudEffect = new QGLShaderProgramEffect();
+    hudEffect->setVertexShaderFromFile(":/hud.vsh");
+    hudEffect->setFragmentShaderFromFile(":/hud.fsh");
+    builder.currentNode()->setUserEffect(hudEffect);
+
+    hudObj = builder.finalizedSceneNode();
 }
 
 void View::resizeEvent(QResizeEvent *e) {
@@ -49,6 +93,17 @@ void View::initializeGL(QGLPainter *painter) {
 void View::paintGL(QGLPainter *painter) {
     foreach(MeshObject *obj, objects)
         obj->draw(painter);
+
+    if (!painter->isPicking()) {
+        glEnable(GL_BLEND);
+
+        if(hudEffect != NULL) {
+            hudEffect->setActive(painter, true);
+            hudObj->draw(painter);
+        }
+
+        glDisable(GL_BLEND);
+    }
     if(picture != NULL) {
         painter->modelViewMatrix().scale(1.0,0.75,1.0);
         painter->modelViewMatrix().translate(40.0,50.0,0.0);
@@ -126,11 +181,12 @@ void View::initializeBox() {
 
 void View::showFileName(bool hovering) {
     if(hovering && !sender()->objectName().isEmpty()) {
-        MeshObject* obj = qobject_cast<MeshObject*>(sender());
+        MeshObject *obj = qobject_cast<MeshObject*>(sender());
         qDebug()<<obj->objectName();
-        //float textX=((this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).x()+1)*this->width()/2;
-        //float textY=(1-(this->camera()->projectionMatrix(4.0/3.0)*this->camera()->modelViewMatrix()*sender()->position()).y())*this->height()/2;
-        //painter.drawText(400,300,sender()->objectName());
+        float textX=((camera()->projectionMatrix(4.0/3.0)*camera()->modelViewMatrix()*obj->position()).x()+1)*width()/2;
+        float textY=(1-(camera()->projectionMatrix(4.0/3.0)*camera()->modelViewMatrix()*obj->position()).y())*height()/2;
+        drawText(textX,textY,sender()->objectName());
+        update();
     } else {
 
     }
