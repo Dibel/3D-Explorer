@@ -12,14 +12,13 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View()
-    : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL)
+    : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL), picture(NULL)
 {
     camera()->setCenter(QVector3D(0, 50, 0));
     camera()->setEye(QVector3D(0, 50, 300));
 
     mvp = calcMvp(camera(), size());
 
-    picture = NULL;
     /* shelf */
     background = new MeshObject(
             QGLAbstractScene::loadScene(":/model/shelf.obj"),
@@ -42,7 +41,7 @@ View::View()
 }
 
 QImage View::paintHud(float x, float y, QString text) {
-    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
+    QImage ret(width(), height(), QImage::Format_ARGB32_Premultiplied);
     ret.fill(Qt::transparent);
     QPainter painter(&ret);
     QFont font=painter.font();
@@ -74,15 +73,22 @@ void View::drawText(float x, float y, QString text)
     builder.addPane(QSizeF(2, 2));
     builder.currentNode()->setMaterialIndex(hudMat);
 
+    if(hudEffect != NULL ) delete hudEffect;
     hudEffect = new QGLShaderProgramEffect();
     hudEffect->setVertexShaderFromFile(":/hud.vsh");
     hudEffect->setFragmentShaderFromFile(":/hud.fsh");
     builder.currentNode()->setUserEffect(hudEffect);
 
+    if(hudObj != NULL) delete hudObj;
     hudObj = builder.finalizedSceneNode();
 }
 
-void View::resizeEvent(QResizeEvent *e) { }
+void View::resizeEvent(QResizeEvent *e) {
+    if(e->size() != size()) {
+        drawText(0,0,"");
+        update();
+    }
+}
 
 void View::initializeGL(QGLPainter *painter) {
     foreach(MeshObject *obj, boxes)
@@ -107,7 +113,9 @@ void View::paintGL(QGLPainter *painter) {
 
         if(hudEffect != NULL) {
             hudEffect->setActive(painter, true);
-            hudObj->draw(painter);
+            if(hudObj != NULL) {
+                hudObj->draw(painter);
+            }
         }
 
         glDisable(GL_BLEND);
@@ -121,6 +129,7 @@ void View::updateBoxes() {
     QStringList fileEntryList = dir.entryList(QDir::Files);
 
     /* TODO: What's this? */
+    //Show picture
     QStringList filter;
     filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
     QStringList pictureEntryList = dir.entryList(filter, QDir::Files);
@@ -208,11 +217,18 @@ void View::hoverEnter(MeshObject *obj) {
 void View::hoverLeave() {
     /* TODO: clear text */
     enteredObject = NULL;
+    drawText(0,0,"");
+    update();
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
+        update();
+    } else if (event->key() == Qt::Key_R) {
+        //reset camera
+        camera()->setCenter(QVector3D(0, 50, 0));
+        camera()->setEye(QVector3D(0, 50, 300));
         update();
     }
     QGLView::keyPressEvent(event);
