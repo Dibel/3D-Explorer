@@ -11,9 +11,11 @@
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
-View::View()
+View::View(int width = 800, int height = 600)
     : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL), picture(NULL)
 {
+    setWidth(width);
+    setHeight(height);
     camera()->setCenter(QVector3D(0, 50, 0));
     camera()->setEye(QVector3D(0, 50, 300));
 
@@ -72,7 +74,6 @@ void View::drawText(float x, float y, QString text)
     builder.pushNode()->setObjectName("HUD");
     builder.addPane(QSizeF(2, 2));
     builder.currentNode()->setMaterialIndex(hudMat);
-
     if(hudEffect != NULL ) delete hudEffect;
     hudEffect = new QGLShaderProgramEffect();
     hudEffect->setVertexShaderFromFile(":/hud.vsh");
@@ -84,10 +85,8 @@ void View::drawText(float x, float y, QString text)
 }
 
 void View::resizeEvent(QResizeEvent *e) {
-    if(e->size() != size()) {
         drawText(0,0,"");
         update();
-    }
 }
 
 void View::initializeGL(QGLPainter *painter) {
@@ -208,14 +207,17 @@ void View::initializeBox() {
 void View::hoverEnter(MeshObject *obj) {
     if (!obj) return;
     enteredObject = obj;
-    qDebug() << obj->objectName();
-    QVector3D pos = mvp * obj->position();
-    drawText(pos.x(), pos.y(), obj->objectName());
-    update();
+    if(!obj->objectName().isEmpty()) {
+        qDebug() << obj->objectName();
+        QVector3D pos = mvp * obj->position();
+        drawText(pos.x(), pos.y(), obj->objectName());
+        update();
+    }
 }
 
 void View::hoverLeave() {
     /* TODO: clear text */
+    //It's OK?
     enteredObject = NULL;
     drawText(0,0,"");
     update();
