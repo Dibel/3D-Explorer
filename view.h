@@ -13,7 +13,7 @@ class QGLShaderProgramEffect;
 class View : public QGLView {
     Q_OBJECT
 public:
-    View();
+    View(int width, int height);
 
 protected:
     void initializeGL(QGLPainter *painter);

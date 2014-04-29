@@ -11,15 +11,16 @@
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
-View::View()
-    : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL)
+View::View(int width = 800, int height = 600)
+    : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL), picture(NULL)
 {
+    setWidth(width);
+    setHeight(height);
     camera()->setCenter(QVector3D(0, 50, 0));
     camera()->setEye(QVector3D(0, 50, 300));
 
     mvp = calcMvp(camera(), size());
 
-    picture = NULL;
     /* shelf */
     background = new MeshObject(
             QGLAbstractScene::loadScene(":/model/shelf.obj"),
@@ -43,7 +44,7 @@ View::View()
 }
 
 QImage View::paintHud(float x, float y, QString text) {
-    QImage ret(800, 600, QImage::Format_ARGB32_Premultiplied);
+    QImage ret(width(), height(), QImage::Format_ARGB32_Premultiplied);
     ret.fill(Qt::transparent);
     QPainter painter(&ret);
     QFont font=painter.font();
@@ -60,7 +61,9 @@ void View::drawText(float x, float y, QString text) {
     QGLTexture2D *tex = hudObj->material()->texture();
     /* FIXME: cleanupResources() will crash the program */
     //tex->cleanupResources();
-    delete tex;
+    /* FIXME: delete tex will crash the program on Windows*/
+    //if(tex != NULL)
+    //    delete tex;
 
     tex = new QGLTexture2D();
     QImage image = paintHud(x,y,text);
@@ -85,10 +88,12 @@ void View::initializeHud() {
     hudObj = builder.finalizedSceneNode();
     hudObj->setMaterial(new QGLMaterial);
 
-    drawText(0, 0, QString());
 }
 
-void View::resizeEvent(QResizeEvent *) { }
+void View::resizeEvent(QResizeEvent *e) {
+    drawText(0,0,"");
+    update();
+}
 
 void View::initializeGL(QGLPainter *painter) {
     foreach(MeshObject *obj, boxes)
@@ -111,7 +116,9 @@ void View::paintGL(QGLPainter *painter) {
     if (!painter->isPicking() && hudEffect) {
         glEnable(GL_BLEND);
         hudEffect->setActive(painter, true);
-        hudObj->draw(painter);
+        if(hudObj != NULL) {
+            hudObj->draw(painter);
+        }
         glDisable(GL_BLEND);
     }
 
@@ -119,6 +126,7 @@ void View::paintGL(QGLPainter *painter) {
 
 void View::updateBoxes() {
     /* TODO: What's this? */
+    //Show picture
     QStringList filter;
     filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
     QStringList pictureEntryList = dir.entryList(filter, QDir::Files);
@@ -192,20 +200,30 @@ void View::initializeBox() {
 void View::hoverEnter(MeshObject *obj) {
     if (!obj) return;
     enteredObject = obj;
-    qDebug() << obj->objectName();
-    QVector3D pos = mvp * obj->position();
-    drawText(pos.x(), pos.y(), obj->objectName());
-    update();
+    if(!obj->objectName().isEmpty()) {
+        qDebug() << obj->objectName();
+        QVector3D pos = mvp * obj->position();
+        drawText(pos.x(), pos.y(), obj->objectName());
+        update();
+    }
 }
 
 void View::hoverLeave() {
     /* TODO: clear text */
+    //It's OK?
     enteredObject = NULL;
+    drawText(0,0,"");
+    update();
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
+        update();
+    } else if (event->key() == Qt::Key_R) {
+        //TODO: reset camera
+        camera()->setCenter(QVector3D(0, 50, 0));
+        camera()->setEye(QVector3D(0, 50, 300));
         update();
     }
     QGLView::keyPressEvent(event);
