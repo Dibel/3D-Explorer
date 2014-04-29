@@ -97,6 +97,7 @@ public:
 
     void setPath(QString path){m_path = path;}
     QString path() const {return m_path;}
+
 signals:
     void pressed();
     void released();
@@ -106,6 +107,7 @@ signals:
 
 protected:
     bool event(QEvent *e);
+
 private:
     QGLSceneNode *m_mesh;
     QGLSceneNode *m_meshObject;
@@ -124,6 +126,7 @@ private:
     bool m_hovering;
     PickType m_type;
     QString m_path;
+    QGLView *m_view;
 };
 
 #endif
