@@ -38,7 +38,8 @@ View::View()
     initializeBox();
 
     /* HUD */
-    drawText(0,0,"");
+    initializeHud();
+    /* FIXME: show dir on start */
 }
 
 QImage View::paintHud(float x, float y, QString text) {
@@ -55,24 +56,26 @@ QImage View::paintHud(float x, float y, QString text) {
     return ret;
 }
 
-void View::drawText(float x, float y, QString text)
-{
-    QGLBuilder builder;
-    QGLSceneNode *root = builder.sceneNode();
+void View::drawText(float x, float y, QString text) {
+    QGLTexture2D *tex = hudObj->material()->texture();
+    /* FIXME: cleanupResources() will crash the program */
+    //tex->cleanupResources();
+    delete tex;
 
-    QGLMaterial *mat = new QGLMaterial;
-
-    QGLTexture2D *tex = new QGLTexture2D;
+    tex = new QGLTexture2D();
     QImage image = paintHud(x,y,text);
     tex->setImage(image);
     tex->bind();
-    mat->setTexture(tex);
+    tex->clearImage();
 
-    int hudMat = root->palette()->addMaterial(mat);
+    hudObj->material()->setTexture(tex);
+}
 
-    builder.pushNode()->setObjectName("HUD");
+void View::initializeHud() {
+    QGLBuilder builder;
+    builder.sceneNode();
+    builder.pushNode();
     builder.addPane(QSizeF(2, 2));
-    builder.currentNode()->setMaterialIndex(hudMat);
 
     hudEffect = new QGLShaderProgramEffect();
     hudEffect->setVertexShaderFromFile(":/hud.vsh");
@@ -80,9 +83,12 @@ void View::drawText(float x, float y, QString text)
     builder.currentNode()->setUserEffect(hudEffect);
 
     hudObj = builder.finalizedSceneNode();
+    hudObj->setMaterial(new QGLMaterial);
+
+    drawText(0, 0, QString());
 }
 
-void View::resizeEvent(QResizeEvent *e) { }
+void View::resizeEvent(QResizeEvent *) { }
 
 void View::initializeGL(QGLPainter *painter) {
     foreach(MeshObject *obj, boxes)
@@ -102,24 +108,16 @@ void View::paintGL(QGLPainter *painter) {
         picture->draw(painter);
     }
 
-    if (!painter->isPicking()) {
+    if (!painter->isPicking() && hudEffect) {
         glEnable(GL_BLEND);
-
-        if(hudEffect != NULL) {
-            hudEffect->setActive(painter, true);
-            hudObj->draw(painter);
-        }
-
+        hudEffect->setActive(painter, true);
+        hudObj->draw(painter);
         glDisable(GL_BLEND);
     }
 
 }
 
 void View::updateBoxes() {
-    QStringList folderEntryList = dir.entryList(
-            QDir::NoDot | QDir::AllDirs);
-    QStringList fileEntryList = dir.entryList(QDir::Files);
-
     /* TODO: What's this? */
     QStringList filter;
     filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
@@ -141,23 +139,18 @@ void View::updateBoxes() {
     }
 
     /* update entry info */
-    for (int i = 0; i < shelfSlotNum; ++i) {
-        if (i < folderEntryList.size()) {
-            boxes[i]->setPickType(MeshObject::Pickable);
-            boxes[i]->setObjectName(folderEntryList[i]);
-            boxes[i]->setPath(QString());
-        } else if ( i < folderEntryList.size()
-                + fileEntryList.size()) {
-            boxes[i]->setPickType(MeshObject::Pickable);
-            boxes[i]->setObjectName(fileEntryList[i -
-                    folderEntryList.size()]);
-            boxes[i]->setPath("file:///" + dir.absoluteFilePath(
-                        fileEntryList[i - folderEntryList.size()]));
-        } else {
-            boxes[i]->setPickType(MeshObject::Anchor);
-            boxes[i]->setObjectName(QString());
-            boxes[i]->setPath(QString());
-        }
+    QStringList entryList = dir.entryList(
+            QDir::AllEntries | QDir::NoDot, QDir::DirsFirst);
+    entryCnt = entryList.size();
+    dirEntryCnt = dir.entryList(QDir::NoDot | QDir::Dirs).size();
+
+    for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
+        boxes[i]->setPickType(MeshObject::Pickable);
+        boxes[i]->setObjectName(entryList[i]);
+    }
+    for (int i = entryCnt; i < slotCnt; ++i) {
+        boxes[i]->setPickType(MeshObject::Anchor);
+        boxes[i]->setObjectName(QString());
     }
 
     update();
@@ -176,8 +169,8 @@ void View::initializeBox() {
     boxMaterial->setSpecularColor(QColor(255, 255, 255));
     boxMaterial->setShininess(128);
 
-    stream >> shelfSlotNum;
-    for (int i = 0; i < shelfSlotNum; ++i) {
+    stream >> slotCnt;
+    for (int i = 0; i < slotCnt; ++i) {
         stream >> x >> y >> z;
         QGLBuilder builder;
         builder.newSection(QGL::Faceted);
@@ -221,15 +214,16 @@ void View::keyPressEvent(QKeyEvent *event) {
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         qDebug() << pickedObject->objectName();
-        if(!pickedObject->path().isEmpty()) {
-            if (!QDesktopServices::openUrl(pickedObject->path()))
-                qDebug() << "Open File Failed";
-        } else {
+        /* enter dir or open file */
+        if (pickedObject->objectId() < dirEntryCnt) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
-            drawText(0,0,"");
+            drawText(0, 0, "");
             updateBoxes();
-        }
+        } else if (!QDesktopServices::openUrl("file:///"
+                    + dir.absoluteFilePath(pickedObject->objectName())))
+            qDebug() << "Open File Failed";
+
         pickedObject=NULL;
     }
 }

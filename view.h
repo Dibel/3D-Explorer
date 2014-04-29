@@ -28,10 +28,11 @@ protected:
     void resizeEvent(QResizeEvent *);
 
 private:
+    void initializeHud();
     QImage paintHud(float x, float y, QString text);
     void drawText(float x, float y,QString text);
-    void updateBoxes();
     void initializeBox();
+    void updateBoxes();
     void hoverEnter(MeshObject *object);
     void hoverLeave();
 
@@ -42,8 +43,10 @@ private:
     QGLSceneNode *hudObj;
     QGLShaderProgramEffect *hudEffect;
 
-    int shelfSlotNum;
     QDir dir;
+    int entryCnt;
+    int dirEntryCnt;
+    int slotCnt;
 
     QMatrix4x4 mvp;
 
