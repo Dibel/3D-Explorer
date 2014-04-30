@@ -8,9 +8,13 @@ RESOURCES += \
 
 HEADERS += \
     meshobject.h \
-    view.h
+    view.h \
+    imageobject.h
 
 SOURCES += \
     main.cpp \
     meshobject.cpp \
-    view.cpp
+    view.cpp \
+    imageobject.cpp
+
+QMAKE_CXXFLAGS += -std=gnu++0x
