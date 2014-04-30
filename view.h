@@ -9,11 +9,13 @@ class MeshObject;
 class QPaintDevice;
 class QGLSceneNode;
 class QGLShaderProgramEffect;
+class QGLTexture2D;
 
 class View : public QGLView {
     Q_OBJECT
 public:
-    View(int width, int height);
+    View(int width = 800, int height = 600);
+    ~View();
 
 protected:
     void initializeGL(QGLPainter *painter);
@@ -32,15 +34,16 @@ private:
     QImage paintHud(float x, float y, QString text);
     void drawText(float x, float y,QString text);
     void initializeBox();
-    void updateBoxes();
+    void updateDir();
     void hoverEnter(MeshObject *object);
     void hoverLeave();
 
     MeshObject *meshObjectAt(const QPoint &pos);
 
+    QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;
-    MeshObject *background;
-    QGLSceneNode *hudObj;
+    QGLSceneNode *picture;
+    QGLSceneNode *hudObject;
     QGLShaderProgramEffect *hudEffect;
 
     QDir dir;
@@ -60,7 +63,6 @@ private:
 
     MeshObject *enteredObject;
 
-    QGLSceneNode *picture;
 };
 
 #endif

@@ -2,6 +2,8 @@
 <qresource>
     <file>model/shelf.obj</file>
     <file>model/shelf.slots</file>
+    <file>model/frame.obj</file>
+    <file>model/photo.png</file>
     <file>hud.vsh</file>
     <file>hud.fsh</file>
 </qresource>

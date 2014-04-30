@@ -11,36 +11,61 @@
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
-View::View(int width = 800, int height = 600)
-    : pickedObject(NULL), enteredObject(NULL), hudObj(NULL), hudEffect(NULL), picture(NULL)
+View::View(int width, int height) :
+    pickedObject(NULL), enteredObject(NULL), hudObject(NULL),
+    hudEffect(NULL), picture(NULL)
 {
-    setWidth(width);
-    setHeight(height);
+    resize(width, height);
+
     camera()->setCenter(QVector3D(0, 50, 0));
     camera()->setEye(QVector3D(0, 50, 300));
 
     mvp = calcMvp(camera(), size());
 
-    /* shelf */
-    background = new MeshObject(
-            QGLAbstractScene::loadScene(":/model/shelf.obj"),
-            MeshObject::Static);
-    background->setPosition(QVector3D(0, 0, 0));
-    background->setObjectId(-1);
-
+    /* background */
     QGLMaterial *shelfMaterial = new QGLMaterial();
     shelfMaterial->setAmbientColor(QColor(192, 150, 128));
     shelfMaterial->setSpecularColor(QColor(60, 60, 60));
     shelfMaterial->setShininess(128);
 
-    background->setMaterial(shelfMaterial);
+    MeshObject *shelf = new MeshObject(
+            QGLAbstractScene::loadScene(":/model/shelf.obj"),
+            MeshObject::Static);
+    shelf->setPosition(QVector3D(0, 0, 0));
+    shelf->setMaterial(shelfMaterial);
+
+    MeshObject *frame = new MeshObject(
+            QGLAbstractScene::loadScene(":/model/frame.obj"),
+            MeshObject::Static);
+    frame->setPosition(QVector3D(-50, 50, 0));
+    frame->setMaterial(shelfMaterial);
+
+    background << shelf << frame;
 
     /* boxes */
     initializeBox();
 
     /* HUD */
     initializeHud();
-    /* FIXME: show dir on start */
+
+    /* picture */
+    QGLBuilder builder;
+    builder.addPane(QSizeF(30, 20));
+    picture = builder.finalizedSceneNode();
+    picture->setMaterial(new QGLMaterial());
+    picture->setPosition(frame->position());
+    picture->setEffect(QGL::FlatDecalTexture2D);
+
+    updateDir();
+}
+
+View::~View() {
+    foreach (MeshObject *obj, background)
+        delete obj;
+    foreach (MeshObject *obj, boxes)
+        delete obj;
+    delete hudObject;
+    delete hudEffect;
 }
 
 QImage View::paintHud(float x, float y, QString text) {
@@ -58,12 +83,10 @@ QImage View::paintHud(float x, float y, QString text) {
 }
 
 void View::drawText(float x, float y, QString text) {
-    QGLTexture2D *tex = hudObj->material()->texture();
-    /* FIXME: cleanupResources() will crash the program */
+    QGLTexture2D *tex = hudObject->material()->texture();
+    /* FIXME: releaes resources */
     //tex->cleanupResources();
-    /* FIXME: delete tex will crash the program on Windows*/
-    //if(tex != NULL)
-    //    delete tex;
+    //if(tex != NULL) delete tex;
 
     tex = new QGLTexture2D();
     QImage image = paintHud(x,y,text);
@@ -71,7 +94,7 @@ void View::drawText(float x, float y, QString text) {
     tex->bind();
     tex->clearImage();
 
-    hudObj->material()->setTexture(tex);
+    hudObject->material()->setTexture(tex);
 }
 
 void View::initializeHud() {
@@ -85,9 +108,8 @@ void View::initializeHud() {
     hudEffect->setFragmentShaderFromFile(":/hud.fsh");
     builder.currentNode()->setUserEffect(hudEffect);
 
-    hudObj = builder.finalizedSceneNode();
-    hudObj->setMaterial(new QGLMaterial);
-
+    hudObject = builder.finalizedSceneNode();
+    hudObject->setMaterial(new QGLMaterial);
 }
 
 void View::resizeEvent(QResizeEvent *e) {
@@ -102,55 +124,53 @@ void View::initializeGL(QGLPainter *painter) {
 
 void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
-    background->draw(painter);
+
+    foreach(MeshObject *obj, background)
+        obj->draw(painter);
 
     foreach(MeshObject *obj, boxes)
         obj->draw(painter);
 
     if(picture != NULL) {
-        painter->modelViewMatrix().scale(1.0,0.75,1.0);
-        painter->modelViewMatrix().translate(40.0,50.0,0.0);
+        //painter->modelViewMatrix().scale(1.0,0.75,1.0);
+        //painter->modelViewMatrix().translate(40.0,50.0,0.0);
         picture->draw(painter);
     }
 
     if (!painter->isPicking() && hudEffect) {
         glEnable(GL_BLEND);
         hudEffect->setActive(painter, true);
-        if(hudObj != NULL) {
-            hudObj->draw(painter);
+        if(hudObject != NULL) {
+            hudObject->draw(painter);
         }
         glDisable(GL_BLEND);
     }
 
 }
 
-void View::updateBoxes() {
-    /* TODO: What's this? */
+void View::updateDir() {
     //Show picture
     QStringList filter;
     filter << "*.bmp" << "*.jpg" << "*.jpeg" << "*.gif" << "*.png";
     QStringList pictureEntryList = dir.entryList(filter, QDir::Files);
-    if(!pictureEntryList.isEmpty()) {
-        QGLBuilder b;
-        b.addPane(50.0f);
-        picture = b.finalizedSceneNode();
 
-        QImage image(pictureEntryList.at(0));
+    /* FIXME: release resources and make default texture static */
+    QImage image;
+    if (pictureEntryList.isEmpty())
+        image.load(":/model/photo.png");
+    else
+        image.load(dir.absoluteFilePath(pictureEntryList[0]));
 
-        // put the image into a material and stick in onto the triangles
-        QGLTexture2D *tex = new QGLTexture2D;
-        tex->setImage(image);
-        QGLMaterial *mat = new QGLMaterial;
-        mat->setTexture(tex);
-        picture->setMaterial(mat);
-        picture->setEffect(QGL::FlatDecalTexture2D);
-    }
+    // put the image into a material and stick in onto the triangles
+    QGLTexture2D *tex = new QGLTexture2D;
+    tex->setImage(image);
+    picture->material()->setTexture(tex);
 
     /* update entry info */
     QStringList entryList = dir.entryList(
-            QDir::AllEntries | QDir::NoDot, QDir::DirsFirst);
+            QDir::AllEntries | QDir::NoDot, QDir::DirsFirst | QDir::IgnoreCase);
     entryCnt = entryList.size();
-    dirEntryCnt = dir.entryList(QDir::NoDot | QDir::Dirs).size();
+    dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
 
     for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
         boxes[i]->setPickType(MeshObject::Pickable);
@@ -194,7 +214,6 @@ void View::initializeBox() {
         boxes.push_back(box);
     }
 
-    updateBoxes();
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -209,7 +228,6 @@ void View::hoverEnter(MeshObject *obj) {
 }
 
 void View::hoverLeave() {
-    /* TODO: clear text */
     //It's OK?
     enteredObject = NULL;
     drawText(0,0,"");
@@ -221,9 +239,9 @@ void View::keyPressEvent(QKeyEvent *event) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
         update();
     } else if (event->key() == Qt::Key_R) {
-        //TODO: reset camera
         camera()->setCenter(QVector3D(0, 50, 0));
         camera()->setEye(QVector3D(0, 50, 300));
+        camera()->setUpVector(QVector3D(0, 1, 0));
         update();
     }
     QGLView::keyPressEvent(event);
@@ -237,7 +255,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
             drawText(0, 0, "");
-            updateBoxes();
+            updateDir();
         } else if (!QDesktopServices::openUrl("file:///"
                     + dir.absoluteFilePath(pickedObject->objectName())))
             qDebug() << "Open File Failed";
