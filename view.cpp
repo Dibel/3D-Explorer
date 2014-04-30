@@ -13,11 +13,8 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height)
-    : pickedObject(NULL),
-      enteredObject(NULL),
-      hudObject(NULL),
-      hudEffect(NULL),
-      picture(NULL)
+    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL),
+    hudEffect(NULL), picture(NULL)
 {
     resize(width, height);
 
