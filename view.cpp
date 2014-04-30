@@ -61,9 +61,9 @@ View::View(int width, int height) :
 
 View::~View() {
     foreach (MeshObject *obj, background)
-        delete obj;
+        obj->deleteLater();
     foreach (MeshObject *obj, boxes)
-        delete obj;
+        obj->deleteLater();
     delete hudObject;
     delete hudEffect;
 }
@@ -86,7 +86,7 @@ void View::drawText(float x, float y, QString text) {
     QGLTexture2D *tex = hudObject->material()->texture();
     /* FIXME: releaes resources */
     //tex->cleanupResources();
-    //if(tex != NULL) delete tex;
+    tex->deleteLater();
 
     tex = new QGLTexture2D();
     QImage image = paintHud(x,y,text);
