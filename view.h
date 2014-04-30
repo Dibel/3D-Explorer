@@ -5,6 +5,7 @@
 #include <QtGui/QImage>
 #include <QtCore/QDir>
 
+class ImageObject;
 class MeshObject;
 class QPaintDevice;
 class QGLSceneNode;
@@ -30,19 +31,19 @@ protected:
     void resizeEvent(QResizeEvent *);
 
 private:
+    void initializeBox();
     void initializeHud();
     QImage paintHud(float x, float y, QString text);
     void drawText(float x, float y,QString text);
-    void initializeBox();
+    void nextPicture();
     void updateDir();
     void hoverEnter(MeshObject *object);
     void hoverLeave();
 
-    MeshObject *meshObjectAt(const QPoint &pos);
-
     QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;
-    QGLSceneNode *picture;
+    ImageObject *picture;
+    //QGLSceneNode *picture;
     QGLSceneNode *hudObject;
     QGLShaderProgramEffect *hudEffect;
 
@@ -50,6 +51,8 @@ private:
     int entryCnt;
     int dirEntryCnt;
     int slotCnt;
+    QStringList pictureList;
+    int currentPicture;
 
     QMatrix4x4 mvp;
 
@@ -62,7 +65,6 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
-
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "view.h"
+#include "imageobject.h"
 #include "meshobject.h"
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
@@ -16,335 +17,331 @@ View::View(int width, int height)
       enteredObject(NULL),
       hudObject(NULL),
       hudEffect(NULL),
-      picture(NULL) {
-  resize(width, height);
+      picture(NULL)
+{
+    resize(width, height);
 
-  camera()->setCenter(QVector3D(0, 50, 0));
-  camera()->setEye(QVector3D(0, 50, 300));
+    camera()->setCenter(QVector3D(0, 50, 0));
+    camera()->setEye(QVector3D(0, 50, 300));
 
-  mvp = calcMvp(camera(), size());
+    mvp = calcMvp(camera(), size());
 
-  /* background */
-  QGLMaterial *shelfMaterial = new QGLMaterial();
-  shelfMaterial->setAmbientColor(QColor(192, 150, 128));
-  shelfMaterial->setSpecularColor(QColor(60, 60, 60));
-  shelfMaterial->setShininess(128);
+    /* background */
+    QGLMaterial *shelfMaterial = new QGLMaterial();
+    shelfMaterial->setAmbientColor(QColor(192, 150, 128));
+    shelfMaterial->setSpecularColor(QColor(60, 60, 60));
+    shelfMaterial->setShininess(128);
 
-  MeshObject *shelf = new MeshObject(
-      QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
-  shelf->setPosition(QVector3D(0, 0, 0));
-  shelf->setMaterial(shelfMaterial);
+    MeshObject *shelf = new MeshObject(
+            QGLAbstractScene::loadScene(":/model/shelf.obj"), MeshObject::Static);
+    shelf->setPosition(QVector3D(0, 0, 0));
+    shelf->setMaterial(shelfMaterial);
 
-  MeshObject *frame = new MeshObject(
-      QGLAbstractScene::loadScene(":/model/frame.obj"), MeshObject::Static);
-  frame->setPosition(QVector3D(-50, 50, 0));
-  frame->setMaterial(shelfMaterial);
+    MeshObject *frame = new MeshObject(
+            QGLAbstractScene::loadScene(":/model/frame.obj"), MeshObject::Static);
+    frame->setPosition(QVector3D(-50, 50, 0));
+    frame->setMaterial(shelfMaterial);
 
-  background << shelf << frame;
+    background << shelf << frame;
 
-  /* boxes */
-  initializeBox();
+    /* boxes */
+    initializeBox();
 
-  /* HUD */
-  initializeHud();
+    /* HUD */
+    initializeHud();
 
-  /* picture */
-  QGLBuilder builder;
-  builder.addPane(QSizeF(30, 20));
-  picture = builder.finalizedSceneNode();
-  picture->setMaterial(new QGLMaterial());
-  picture->setPosition(frame->position());
-  picture->setEffect(QGL::FlatDecalTexture2D);
+    /* picture */
+    picture = new ImageObject(30, 20);
+    picture->setPosition(frame->position());
+    picture->regist(this, boxes.size());
 
-  updateDir();
+    updateDir();
 }
 
 View::~View() {
-  foreach(MeshObject * obj, background) { obj->deleteLater(); }
-  foreach(MeshObject * obj, boxes) { obj->deleteLater(); }
-  delete hudObject;
-  delete hudEffect;
+    foreach(MeshObject * obj, background) { obj->deleteLater(); }
+    foreach(MeshObject * obj, boxes) { obj->deleteLater(); }
+    delete hudObject;
+    delete hudEffect;
 }
 
 QImage View::paintHud(float x, float y, QString text) {
-  QImage ret(width(), height(), QImage::Format_ARGB32_Premultiplied);
-  ret.fill(Qt::transparent);
-  QPainter painter(&ret);
-  QFont font = painter.font();
-  font.setPointSize(16);
-  font.setBold(1);
-  painter.setFont(font);
-  painter.setPen(QColor(Qt::red));
-  painter.drawText(x, y, text);
-  painter.drawText(0, 20, dir.absolutePath());
-  return ret;
+    QImage ret(width(), height(), QImage::Format_ARGB32_Premultiplied);
+    ret.fill(Qt::transparent);
+    QPainter painter(&ret);
+    QFont font = painter.font();
+    font.setPointSize(16);
+    font.setBold(1);
+    painter.setFont(font);
+    painter.setPen(QColor(Qt::red));
+    painter.drawText(x, y, text);
+    painter.drawText(0, 20, dir.absolutePath());
+    return ret;
 }
 
 void View::drawText(float x, float y, QString text) {
-  QGLTexture2D *tex = hudObject->material()->texture();
-  /* FIXME: releaes resources */
-  // tex->cleanupResources();
-  tex->deleteLater();
+    QGLTexture2D *tex = hudObject->material()->texture();
+    /* FIXME: releaes resources */
+    // tex->cleanupResources();
+    tex->deleteLater();
 
-  tex = new QGLTexture2D();
-  QImage image = paintHud(x, y, text);
-  tex->setImage(image);
-  tex->bind();
-  tex->clearImage();
+    tex = new QGLTexture2D();
+    QImage image = paintHud(x, y, text);
+    tex->setImage(image);
+    tex->bind();
+    tex->clearImage();
 
-  hudObject->material()->setTexture(tex);
+    hudObject->material()->setTexture(tex);
 }
 
 void View::initializeHud() {
-  QGLBuilder builder;
-  builder.sceneNode();
-  builder.pushNode();
-  builder.addPane(QSizeF(2, 2));
+    QGLBuilder builder;
+    builder.sceneNode();
+    builder.pushNode();
+    builder.addPane(QSizeF(2, 2));
 
-  hudEffect = new QGLShaderProgramEffect();
-  hudEffect->setVertexShaderFromFile(":/hud.vsh");
-  hudEffect->setFragmentShaderFromFile(":/hud.fsh");
-  builder.currentNode()->setUserEffect(hudEffect);
+    hudEffect = new QGLShaderProgramEffect();
+    hudEffect->setVertexShaderFromFile(":/hud.vsh");
+    hudEffect->setFragmentShaderFromFile(":/hud.fsh");
+    builder.currentNode()->setUserEffect(hudEffect);
 
-  hudObject = builder.finalizedSceneNode();
-  hudObject->setMaterial(new QGLMaterial);
+    hudObject = builder.finalizedSceneNode();
+    hudObject->setMaterial(new QGLMaterial);
 }
 
 void View::resizeEvent(QResizeEvent *e) {
-  drawText(0, 0, "");
-  update();
+    drawText(0, 0, "");
+    update();
 }
 
 void View::initializeGL(QGLPainter *painter) {
-  foreach(MeshObject * obj, boxes) { obj->initialize(this, painter); }
+    foreach(MeshObject * obj, boxes) { obj->initialize(this, painter); }
 }
 
 void View::paintGL(QGLPainter *painter) {
-  mvp = calcMvp(camera(), size());
+    mvp = calcMvp(camera(), size());
 
-  foreach(MeshObject * obj, background) { obj->draw(painter); }
+    foreach(MeshObject * obj, background) { obj->draw(painter); }
 
-  foreach(MeshObject * obj, boxes) { obj->draw(painter); }
+    foreach(MeshObject * obj, boxes) { obj->draw(painter); }
 
-  if (picture != NULL) {
-    // painter->modelViewMatrix().scale(1.0,0.75,1.0);
-    // painter->modelViewMatrix().translate(40.0,50.0,0.0);
+    Q_ASSERT(picture != NULL);
     picture->draw(painter);
-  }
 
-  if (!painter->isPicking() && hudEffect) {
-    glEnable(GL_BLEND);
-    hudEffect->setActive(painter, true);
-    if (hudObject != NULL) {
-      hudObject->draw(painter);
+    if (!painter->isPicking() && hudEffect) {
+        glEnable(GL_BLEND);
+        hudEffect->setActive(painter, true);
+        if (hudObject != NULL) {
+            hudObject->draw(painter);
+        }
+        glDisable(GL_BLEND);
     }
-    glDisable(GL_BLEND);
-  }
 }
 
 void View::updateDir() {
-  // Show picture
-  QStringList filter;
-  filter << "*.bmp"
-         << "*.jpg"
-         << "*.jpeg"
-         << "*.gif"
-         << "*.png";
-  QStringList pictureEntryList = dir.entryList(filter, QDir::Files);
+    // Show picture
+    static const QStringList filter = {
+        "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
+    pictureList = dir.entryList(filter, QDir::Files);
+    currentPicture = 0;
 
-  /* FIXME: release resources and make default texture static */
-  QImage image;
-  if (pictureEntryList.isEmpty())
-    image.load(":/model/photo.png");
-  else
-    image.load(dir.absoluteFilePath(pictureEntryList[0]));
+    if (pictureList.isEmpty())
+        picture->setImage(":/model/photo.png");
+    else
+        picture->setImage(dir.absoluteFilePath(pictureList[currentPicture]));
 
-  // put the image into a material and stick in onto the triangles
-  QGLTexture2D *tex = picture->material()->texture();
-  /* FIXME: releaes resources */
-  // tex->cleanupResources();
-  if (tex != NULL) tex->deleteLater();
-  tex = new QGLTexture2D;
-  tex->setImage(image);
-  picture->material()->setTexture(tex);
+    /* update entry info */
+    QStringList entryList = dir.entryList(QDir::AllEntries | QDir::NoDot,
+            QDir::DirsFirst | QDir::IgnoreCase);
+    entryCnt = entryList.size();
+    dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
 
-  /* update entry info */
-  QStringList entryList = dir.entryList(QDir::AllEntries | QDir::NoDot,
-                                        QDir::DirsFirst | QDir::IgnoreCase);
-  entryCnt = entryList.size();
-  dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
+    for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
+        boxes[i]->setPickType(MeshObject::Pickable);
+        boxes[i]->setObjectName(entryList[i]);
+    }
+    for (int i = entryCnt; i < slotCnt; ++i) {
+        boxes[i]->setPickType(MeshObject::Anchor);
+        boxes[i]->setObjectName(QString());
+    }
 
-  for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
-    boxes[i]->setPickType(MeshObject::Pickable);
-    boxes[i]->setObjectName(entryList[i]);
-  }
-  for (int i = entryCnt; i < slotCnt; ++i) {
-    boxes[i]->setPickType(MeshObject::Anchor);
-    boxes[i]->setObjectName(QString());
-  }
-
-  update();
+    update();
 }
 
 void View::initializeBox() {
-  QFile file(":/model/shelf.slots");
-  file.open(QFile::ReadOnly);
-  QTextStream stream(&file);
+    QFile file(":/model/shelf.slots");
+    file.open(QFile::ReadOnly);
+    QTextStream stream(&file);
 
-  qreal x, y, z;
+    qreal x, y, z;
 
-  QGLMaterial *boxMaterial = new QGLMaterial();
-  boxMaterial->setAmbientColor(QColor(255, 255, 255));
-  boxMaterial->setDiffuseColor(QColor(150, 150, 150));
-  boxMaterial->setSpecularColor(QColor(255, 255, 255));
-  boxMaterial->setShininess(128);
+    QGLMaterial *boxMaterial = new QGLMaterial();
+    boxMaterial->setAmbientColor(QColor(255, 255, 255));
+    boxMaterial->setDiffuseColor(QColor(150, 150, 150));
+    boxMaterial->setSpecularColor(QColor(255, 255, 255));
+    boxMaterial->setShininess(128);
 
-  stream >> slotCnt;
-  for (int i = 0; i < slotCnt; ++i) {
-    stream >> x >> y >> z;
-    QGLBuilder builder;
-    builder.newSection(QGL::Faceted);
-    builder << QGLCube(6);
-    builder.currentNode()->setY(3);
+    stream >> slotCnt;
+    for (int i = 0; i < slotCnt; ++i) {
+        stream >> x >> y >> z;
+        QGLBuilder builder;
+        builder.newSection(QGL::Faceted);
+        builder << QGLCube(6);
+        builder.currentNode()->setY(3);
 
-    MeshObject *box = new MeshObject(builder.finalizedSceneNode());
-    box->setMaterial(boxMaterial);
-    box->setPosition(QVector3D(x, y, z));
-    box->setObjectId(i);
-    box->setScale(0.5, 1.0, 1.0);
-    boxes.push_back(box);
-  }
+        MeshObject *box = new MeshObject(builder.finalizedSceneNode());
+        box->setMaterial(boxMaterial);
+        box->setPosition(QVector3D(x, y, z));
+        box->setObjectId(i);
+        box->setScale(0.5, 1.0, 1.0);
+        boxes.push_back(box);
+    }
 }
 
 void View::hoverEnter(MeshObject *obj) {
-  if (!obj) return;
-  enteredObject = obj;
-  if (!obj->objectName().isEmpty()) {
-    qDebug() << obj->objectName();
-    QVector3D pos = mvp * obj->position();
-    drawText(pos.x(), pos.y(), obj->objectName());
-    update();
-  }
+    if (!obj) return;
+    enteredObject = obj;
+    if (!obj->objectName().isEmpty()) {
+        qDebug() << obj->objectName();
+        QVector3D pos = mvp * obj->position();
+        drawText(pos.x(), pos.y(), obj->objectName());
+        update();
+    }
 }
 
 void View::hoverLeave() {
-  enteredObject = NULL;
-  drawText(0, 0, "");
-  update();
+    enteredObject = NULL;
+    drawText(0, 0, "");
+    update();
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
-  if (event->key() == Qt::Key_Tab) {
-    setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
-    update();
-  } else if (event->key() == Qt::Key_R) {
-    camera()->setCenter(QVector3D(0, 50, 0));
-    camera()->setEye(QVector3D(0, 50, 300));
-    camera()->setUpVector(QVector3D(0, 1, 0));
-    update();
-  }
-  QGLView::keyPressEvent(event);
+    if (event->key() == Qt::Key_Tab) {
+        setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
+        update();
+    } else if (event->key() == Qt::Key_R) {
+        camera()->setCenter(QVector3D(0, 50, 0));
+        camera()->setEye(QVector3D(0, 50, 300));
+        camera()->setUpVector(QVector3D(0, 1, 0));
+        update();
+    }
+    QGLView::keyPressEvent(event);
 }
 
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
-  if (pickedObject && event->button() == Qt::LeftButton) {
-    qDebug() << pickedObject->objectName();
-    /* enter dir or open file */
-    if (pickedObject->objectId() < dirEntryCnt) {
-      hoverLeave();
-      dir.cd(pickedObject->objectName());
-      drawText(0, 0, "");
-      updateDir();
-    } else if (!QDesktopServices::openUrl(
+    if (pickedObject && event->button() == Qt::LeftButton) {
+        qDebug() << pickedObject->objectName();
+        /* enter dir or open file */
+        if (pickedObject->objectId() < dirEntryCnt) {
+            hoverLeave();
+            dir.cd(pickedObject->objectName());
+            drawText(0, 0, "");
+            updateDir();
+        } else if (!QDesktopServices::openUrl(
                     "file:///" +
                     dir.absoluteFilePath(pickedObject->objectName())))
-      qDebug() << "Open File Failed";
+            qDebug() << "Open File Failed";
 
-    pickedObject = NULL;
-  }
+        pickedObject = NULL;
+    }
 }
 
 void View::mousePressEvent(QMouseEvent *event) {
-  if (event->button() == Qt::LeftButton) {
-    pickedObject = meshObjectAt(event->pos());
-    if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
-      /* pick up object */
-      pickedObject->setPickType(MeshObject::Picked);
-      pickedPos = pickedObject->position();
-      pickedDepth = (mvp * pickedPos).z();
-      pickedModelPos =
-          mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
+    if (event->button() == Qt::LeftButton) {
+        QObject *obj = objectForPoint(event->pos());
 
-      update();
-      return;
-    } else
-      pickedObject = NULL;
-  }
+        if (obj == picture) {
+            nextPicture();
+            return;
+        }
 
-  QGLView::mousePressEvent(event);
+        pickedObject = qobject_cast<MeshObject*>(obj);
+        if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
+            /* pick up object */
+            pickedObject->setPickType(MeshObject::Picked);
+            pickedPos = pickedObject->position();
+            pickedDepth = (mvp * pickedPos).z();
+            pickedModelPos =
+                mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
+
+            update();
+            return;
+        } else
+            pickedObject = NULL;
+    }
+
+    QGLView::mousePressEvent(event);
 }
 
 void View::wheelEvent(QWheelEvent *) {}
 
 void View::mouseReleaseEvent(QMouseEvent *event) {
-  if (pickedObject && event->button() == Qt::LeftButton) {
-    /* release picked object */
-    MeshObject *anchor = meshObjectAt(event->pos());
-    if (anchor) {
-      QVector3D destPos = anchor->position();
-      anchor->setPosition(pickedPos);
-      pickedObject->setPosition(destPos);
-    } else {
-      pickedObject->setPosition(pickedPos);
+    if (pickedObject && event->button() == Qt::LeftButton) {
+        /* release picked object */
+        QObject *obj = objectForPoint(event->pos());
+        if (obj == picture) return;
+
+        MeshObject *anchor = qobject_cast<MeshObject*>(obj);
+        if (anchor) {
+            QVector3D destPos = anchor->position();
+            anchor->setPosition(pickedPos);
+            pickedObject->setPosition(destPos);
+        } else {
+            pickedObject->setPosition(pickedPos);
+        }
+
+        pickedObject->setPickType(MeshObject::Pickable);
+        pickedObject = NULL;
+
+        update();
+        return;
     }
 
-    pickedObject->setPickType(MeshObject::Pickable);
-    pickedObject = NULL;
-
-    update();
-    return;
-  }
-
-  QGLView::mouseReleaseEvent(event);
+    QGLView::mouseReleaseEvent(event);
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
-  if (pickedObject) {
-    /* move picked object */
-    pickedObject->setPosition(mvp.inverted() *
-                                  extendTo3D(event->pos(), pickedDepth) -
-                              pickedModelPos);
-    update();
-    return;
-  }
+    if (pickedObject) {
+        /* move picked object */
+        pickedObject->setPosition(mvp.inverted() *
+                extendTo3D(event->pos(), pickedDepth) -
+                pickedModelPos);
+        update();
+        return;
+    }
 
-  MeshObject *object = meshObjectAt(event->pos());
-  if (object != enteredObject) {
-    hoverLeave();
-    hoverEnter(object);
-  }
+    QObject *object = objectForPoint(event->pos());
+    if (object != enteredObject) {
+        hoverLeave();
+        if (object != picture)
+            hoverEnter(qobject_cast<MeshObject*>(object));
+    }
 
-  QGLView::mouseMoveEvent(event);
+    QGLView::mouseMoveEvent(event);
 }
 
-MeshObject *View::meshObjectAt(const QPoint &pos) {
-  return qobject_cast<MeshObject *>(objectForPoint(pos));
+void View::nextPicture() {
+    /* TODO: improve performance */
+    if (pictureList.empty()) return;
+    if (++currentPicture >= pictureList.size())
+        currentPicture -= pictureList.size();
+    picture->setImage(dir.absoluteFilePath(pictureList[currentPicture]));
 }
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {
-  qreal w = size.width();
-  qreal h = size.height();
-  QMatrix4x4 cameraMvp =
-      camera->projectionMatrix(w / h) * camera->modelViewMatrix();
-  /* transform from (-1~1,-1~1) to (0~800,0~600) */
-  QMatrix4x4 screenMvp = QMatrix4x4(w / 2, 0, 0, w / 2,
-                                    0, -h / 2, 0, h / 2,
-                                    0, 0, 1, 0,
-                                    0, 0, 0, 1) *
-                         cameraMvp;
-  return screenMvp;
+    qreal w = size.width();
+    qreal h = size.height();
+    QMatrix4x4 cameraMvp =
+        camera->projectionMatrix(w / h) * camera->modelViewMatrix();
+    /* transform from (-1~1,-1~1) to (0~800,0~600) */
+    QMatrix4x4 screenMvp = QMatrix4x4(w / 2, 0, 0, w / 2,
+            0, -h / 2, 0, h / 2,
+            0, 0, 1, 0,
+            0, 0, 0, 1) *
+        cameraMvp;
+    return screenMvp;
 }
 
 static QVector3D extendTo3D(const QPoint &pos, qreal depth) {
-  return QVector3D(pos.x(), pos.y(), depth);
+    return QVector3D(pos.x(), pos.y(), depth);
 }

@@ -6,11 +6,13 @@ set(SOURCE
     main.cpp
     view.cpp
     meshobject.cpp
+    imageobject.cpp
 )
 
 set(HEADER
     view.h
     meshobject.h
+    imageobject.h
 )
 
 set(RESOURCE
@@ -20,6 +22,8 @@ set(RESOURCE
 project(${PROJECTNAME})
 
 find_package(Qt53D REQUIRED)
+
+set(CMAKE_CXX_FLAGS "-std=c++0x")
 
 set(CMAKE_BUILD_TYPE Debug)
 
