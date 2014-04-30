@@ -13,8 +13,7 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height)
-    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL),
-    hudEffect(NULL), picture(NULL)
+    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL)
 {
     resize(width, height);
 
@@ -45,7 +44,7 @@ View::View(int width, int height)
     initializeBox();
 
     /* HUD */
-    initializeHud();
+    hudObject = new ImageObject(2, 2, ImageObject::Hud);
 
     /* picture */
     picture = new ImageObject(30, 20);
@@ -56,10 +55,10 @@ View::View(int width, int height)
 }
 
 View::~View() {
-    foreach(MeshObject * obj, background) { obj->deleteLater(); }
-    foreach(MeshObject * obj, boxes) { obj->deleteLater(); }
+    for (auto obj : background) obj->deleteLater();
+    for (auto obj : boxes) obj->deleteLater();
+    delete picture;
     delete hudObject;
-    delete hudEffect;
 }
 
 QImage View::paintHud(float x, float y, QString text) {
@@ -77,33 +76,7 @@ QImage View::paintHud(float x, float y, QString text) {
 }
 
 void View::drawText(float x, float y, QString text) {
-    QGLTexture2D *tex = hudObject->material()->texture();
-    /* FIXME: releaes resources */
-    // tex->cleanupResources();
-    tex->deleteLater();
-
-    tex = new QGLTexture2D();
-    QImage image = paintHud(x, y, text);
-    tex->setImage(image);
-    tex->bind();
-    tex->clearImage();
-
-    hudObject->material()->setTexture(tex);
-}
-
-void View::initializeHud() {
-    QGLBuilder builder;
-    builder.sceneNode();
-    builder.pushNode();
-    builder.addPane(QSizeF(2, 2));
-
-    hudEffect = new QGLShaderProgramEffect();
-    hudEffect->setVertexShaderFromFile(":/hud.vsh");
-    hudEffect->setFragmentShaderFromFile(":/hud.fsh");
-    builder.currentNode()->setUserEffect(hudEffect);
-
-    hudObject = builder.finalizedSceneNode();
-    hudObject->setMaterial(new QGLMaterial);
+    hudObject->setImage(paintHud(x, y, text));
 }
 
 void View::resizeEvent(QResizeEvent *e) {
@@ -112,27 +85,20 @@ void View::resizeEvent(QResizeEvent *e) {
 }
 
 void View::initializeGL(QGLPainter *painter) {
-    foreach(MeshObject * obj, boxes) { obj->initialize(this, painter); }
+    for (auto obj : boxes) obj->initialize(this, painter);
 }
 
 void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
 
-    foreach(MeshObject * obj, background) { obj->draw(painter); }
-
-    foreach(MeshObject * obj, boxes) { obj->draw(painter); }
+    for (auto obj : background) obj->draw(painter);
+    for (auto obj : boxes) obj->draw(painter);
 
     Q_ASSERT(picture != NULL);
-    picture->draw(painter);
+    Q_ASSERT(hudObject != NULL);
 
-    if (!painter->isPicking() && hudEffect) {
-        glEnable(GL_BLEND);
-        hudEffect->setActive(painter, true);
-        if (hudObject != NULL) {
-            hudObject->draw(painter);
-        }
-        glDisable(GL_BLEND);
-    }
+    picture->draw(painter);
+    hudObject->draw(painter);
 }
 
 void View::updateDir() {

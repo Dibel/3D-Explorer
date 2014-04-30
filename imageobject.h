@@ -11,7 +11,8 @@ class QGLView;
 class ImageObject : public QObject {
     Q_OBJECT
 public:
-    ImageObject(int width, int height);
+    enum Type { Common, Hud };
+    ImageObject(int width, int height, Type type = Common);
     ~ImageObject();
 
     void setImage(const QImage &image);
@@ -25,6 +26,7 @@ private:
     QGLSceneNode *node;
     QGLView *view;
     int pickId;
+    Type type;
 };
 
 #endif

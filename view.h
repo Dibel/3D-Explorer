@@ -32,7 +32,6 @@ protected:
 
 private:
     void initializeBox();
-    void initializeHud();
     QImage paintHud(float x, float y, QString text);
     void drawText(float x, float y,QString text);
     void nextPicture();
@@ -43,9 +42,7 @@ private:
     QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;
     ImageObject *picture;
-    //QGLSceneNode *picture;
-    QGLSceneNode *hudObject;
-    QGLShaderProgramEffect *hudEffect;
+    ImageObject *hudObject;
 
     QDir dir;
     int entryCnt;

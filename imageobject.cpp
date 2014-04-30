@@ -4,13 +4,19 @@
 #include <Qt3D/QGLTexture2D>
 #include <Qt3D/QGLView>
 
-ImageObject::ImageObject(int width, int height) {
+ImageObject::ImageObject(int width, int height, Type type)
+    : type(type), pickId(-1)
+{
     QGLBuilder builder;
+    builder.newSection(QGL::Faceted);
     builder.addPane(QSizeF(width, height));
     node = builder.finalizedSceneNode();
 
     node->setMaterial(new QGLMaterial());
-    node->setEffect(QGL::FlatDecalTexture2D);
+    if (type == Common)
+        node->setEffect(QGL::FlatDecalTexture2D);
+    else
+        node->setEffect(QGL::FlatReplaceTexture2D);
 }
 
 ImageObject::~ImageObject() {
@@ -24,7 +30,7 @@ ImageObject::~ImageObject() {
 void ImageObject::setImage(const QImage &image) {
     QGLTexture2D *tex = node->material()->texture();
     if (tex) tex->deleteLater();
-    tex = new QGLTexture2D;
+    tex = new QGLTexture2D();
     tex->setImage(image);
     node->material()->setTexture(tex);
 }
@@ -44,8 +50,25 @@ void ImageObject::regist(QGLView *target, int id) {
 }
 
 void ImageObject::draw(QGLPainter *painter) {
-    if (painter->isPicking()) {
-        if (pickId == -1) return;
+    if (painter->isPicking() && pickId == -1) return;
+
+    if (type == Hud) {
+        Q_ASSERT(pickId == -1);
+        Q_ASSERT(node->position() == QVector3D(0, 0, 0));
+
+        painter->modelViewMatrix().push();
+        painter->projectionMatrix().push();
+        painter->modelViewMatrix().setToIdentity();
+        painter->projectionMatrix().setToIdentity();
+
+        glEnable(GL_BLEND);
+        node->draw(painter);
+        glDisable(GL_BLEND);
+
+        painter->modelViewMatrix().pop();
+        painter->projectionMatrix().pop();
+
+    } else if (painter->isPicking()) {
         int prevPickId = painter->objectPickId();
         painter->setObjectPickId(pickId);
         node->draw(painter);
