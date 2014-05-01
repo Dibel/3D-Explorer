@@ -6,7 +6,7 @@
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QDesktopServices>
-
+#include <QMessageBox>
 #include <QtCore/QDebug>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
@@ -50,6 +50,22 @@ View::View(int width, int height)
     picture = new ImageObject(30, 20);
     picture->setPosition(frame->position());
     picture->regist(this, boxes.size());
+
+    /* Garbage */
+    QGLBuilder builder;
+    builder.newSection(QGL::Faceted);
+    builder << QGLCube(12);
+
+    QGLMaterial *boxMaterial = new QGLMaterial();
+    boxMaterial->setAmbientColor(QColor(255, 255, 255));
+    boxMaterial->setDiffuseColor(QColor(150, 150, 150));
+    boxMaterial->setSpecularColor(QColor(255, 255, 255));
+    boxMaterial->setShininess(128);
+    garbage = new MeshObject(builder.finalizedSceneNode());
+    garbage->setMaterial(boxMaterial);
+    garbage->setPosition(QVector3D(30, 50, 0));
+    garbage->setObjectId(-2);
+    registerObject(-2, garbage);
 
     updateDir();
 }
@@ -98,6 +114,7 @@ void View::paintGL(QGLPainter *painter) {
     Q_ASSERT(hudObject != NULL);
 
     picture->draw(painter);
+    garbage->draw(painter);
     hudObject->draw(painter);
 }
 
@@ -217,6 +234,9 @@ void View::mousePressEvent(QMouseEvent *event) {
             nextPicture();
             return;
         }
+        if(obj == garbage) {
+            return;
+        }
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
@@ -243,6 +263,19 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         /* release picked object */
         QObject *obj = objectForPoint(event->pos());
         if (obj == picture) return;
+        //Delete the file
+        if (obj == garbage) {
+            if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No)) {
+                if(QFile::remove(dir.absoluteFilePath(pickedObject->objectName()))) {
+                    qDebug()<<"success";
+                    hoverLeave();
+                    delete pickedObject;
+                    pickedObject = NULL;
+                    update();
+                }
+            }
+            return;
+        }
 
         MeshObject *anchor = qobject_cast<MeshObject*>(obj);
         if (anchor) {

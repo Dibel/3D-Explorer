@@ -62,6 +62,8 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+
+    MeshObject *garbage;
 };
 
 #endif
