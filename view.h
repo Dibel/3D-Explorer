@@ -48,6 +48,7 @@ private:
     int entryCnt;
     int dirEntryCnt;
     int slotCnt;
+    int pageCnt;
     QStringList pictureList;
     int currentPicture;
 

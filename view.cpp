@@ -136,19 +136,23 @@ void View::updateDir() {
     entryCnt = entryList.size();
     dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
 
-    for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
+    for (int i = 0; (pageCnt - 1) * slotCnt + i < entryCnt && i < slotCnt; ++i) {
         boxes[i]->setPickType(MeshObject::Pickable);
-        boxes[i]->setObjectName(entryList[i]);
+        boxes[i]->setObjectName(entryList[(pageCnt - 1) * slotCnt + i]);
     }
     for (int i = entryCnt; i < slotCnt; ++i) {
         boxes[i]->setPickType(MeshObject::Anchor);
         boxes[i]->setObjectName(QString());
+    }
+    if(entryCnt > pageCnt * slotCnt) {
+        boxes[slotCnt - 1]->setObjectName("更多……");
     }
 
     update();
 }
 
 void View::initializeBox() {
+    pageCnt = 1;
     QFile file(":/model/shelf.slots");
     file.open(QFile::ReadOnly);
     QTextStream stream(&file);
@@ -216,6 +220,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
             drawText(0, 0, "");
+            pageCnt = 1;
             updateDir();
         } else if (!QDesktopServices::openUrl(
                     "file:///" +
@@ -234,12 +239,18 @@ void View::mousePressEvent(QMouseEvent *event) {
             nextPicture();
             return;
         }
-        if(obj == garbage) {
+        if (obj == garbage) {
             return;
         }
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
+            if (pickedObject->objectName() == "更多……") {
+                pageCnt ++;
+                pickedObject == NULL;
+                updateDir();
+                return;
+            }
             /* pick up object */
             pickedObject->setPickType(MeshObject::Picked);
             pickedPos = pickedObject->position();
