@@ -43,6 +43,14 @@ View::View(int width, int height)
 
     background << shelf << frame;
 
+    trash = new MeshObject(
+            QGLAbstractScene::loadScene(":/model/trash.obj"), MeshObject::Pickable);
+    trash->setPosition(QVector3D(40, 0, 10));
+    trash->setMaterial(shelfMaterial);
+    trash->setScale(0.2);
+    trash->setObjectId(-2);
+    registerObject(-2, trash);
+
     /* boxes */
     initializeBox();
 
@@ -73,11 +81,6 @@ View::View(int width, int height)
     boxMaterial->setDiffuseColor(QColor(150, 150, 150));
     boxMaterial->setSpecularColor(QColor(255, 255, 255));
     boxMaterial->setShininess(128);
-    garbage = new MeshObject(builder.finalizedSceneNode());
-    garbage->setMaterial(boxMaterial);
-    garbage->setPosition(QVector3D(40, 50, 0));
-    garbage->setObjectId(-2);
-    registerObject(-2, garbage);
 
     updateDir();
 }
@@ -128,23 +131,29 @@ void View::paintGL(QGLPainter *painter) {
         qreal t = 1 - animProg;
         t = t * t * t - 1;
         painter->modelViewMatrix().translate(enteringDir->position() * t);
-    }
 
-    for (auto obj : background) obj->draw(painter);
-    for (auto obj : boxes) 
-        if (obj != enteringDir)
-            obj->draw(painter);
-    picture->draw(painter);
-    garbage->draw(painter);
+        painter->modelViewMatrix().push();
 
-    if (enteringDir) {
         painter->modelViewMatrix().translate(enteringDir->position());
         painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
         for (auto obj : background) obj->draw(painter);
         for (auto obj : boxes) obj->draw(painter);
         picture->draw(painter);
-        garbage->draw(painter);
+        trash->draw(painter);
+
+        painter->modelViewMatrix().pop();
     }
+
+    for (auto obj : background) obj->draw(painter);
+    for (auto obj : boxes) 
+        if (obj != enteringDir && obj != pickedObject)
+            obj->draw(painter);
+    picture->draw(painter);
+    trash->draw(painter);
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+    if (pickedObject)
+        pickedObject->draw(painter);
 
     if (!enteringDir) hudObject->draw(painter);
 }
@@ -232,7 +241,6 @@ void View::hoverEnter(MeshObject *obj) {
     if (!obj) return;
     enteredObject = obj;
     if (!obj->objectName().isEmpty()) {
-        qDebug() << obj->objectName();
         QVector3D pos = mvp * obj->position();
         hudObject->setImage(paintHud(pos.x(), pos.y(), obj->objectName()));
         update();
@@ -260,7 +268,6 @@ void View::keyPressEvent(QKeyEvent *event) {
 
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
-        qDebug() << pickedObject->objectName();
         /* enter dir or open file */
         int startPos;
         if (pageCnt == 1) {
@@ -271,7 +278,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
         if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
-            paintHud(0, 0, "");
+            hudObject->setImage(paintHud(0, 0, ""));
             pageCnt = 1;
             updateDir();
             enteringDir = pickedObject;
@@ -294,9 +301,8 @@ void View::mousePressEvent(QMouseEvent *event) {
             nextPicture();
             return;
         }
-        if (obj == garbage) {
-            return;
-        }
+
+        if (obj == trash) return;
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
@@ -335,19 +341,25 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         QObject *obj = objectForPoint(event->pos());
         if (obj == picture) return;
         //Delete the file
-        if (obj == garbage) {
-            if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No)) {
-                if(QFile::remove(dir.absoluteFilePath(pickedObject->objectName()))) {
+        if (obj == trash) {
+            if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
+                if (pickedObject->objectName() != ".." && (pickedObject->objectId() < dirEntryCnt
+                        ? QDir(dir.absoluteFilePath(pickedObject->objectName())).removeRecursively()
+                        : dir.remove(pickedObject->objectName())))
+                {
                     qDebug()<<"success";
                     hoverLeave();
                     pickedObject->setPickType(MeshObject::Anchor);
                     pickedObject->setObjectName(QString());
-                    pickedObject->setPosition(pickedPos);
                     pickedObject->setScale(1, 1, 1);
-                    pickedObject = NULL;
-                    update();
                 }
-            }
+            } else
+                pickedObject->setPickType(MeshObject::Pickable);
+
+            pickedObject->setPosition(pickedPos);
+            pickedObject = NULL;
+
+            update();
             return;
         }
 

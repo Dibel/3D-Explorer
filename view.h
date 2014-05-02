@@ -45,6 +45,7 @@ private:
 
     QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;
+    MeshObject *trash;
     ImageObject *picture;
     ImageObject *hudObject;
 
@@ -67,8 +68,6 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
-
-    MeshObject *garbage;
 };
 
 #endif

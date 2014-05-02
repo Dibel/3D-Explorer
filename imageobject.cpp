@@ -65,7 +65,7 @@ void ImageObject::draw(QGLPainter *painter) {
         node->draw(painter);
         glDisable(GL_BLEND);
 
-        //painter->modelViewMatrix().pop();
+        painter->modelViewMatrix().pop();
         painter->projectionMatrix().pop();
 
     } else if (painter->isPicking()) {
