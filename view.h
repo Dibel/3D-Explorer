@@ -52,6 +52,7 @@ private:
     int entryCnt;
     int dirEntryCnt;
     int slotCnt;
+    int pageCnt;
     QStringList pictureList;
     int currentPicture;
 
@@ -66,6 +67,8 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+
+    MeshObject *garbage;
 };
 
 #endif

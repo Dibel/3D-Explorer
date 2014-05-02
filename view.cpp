@@ -8,6 +8,8 @@
 #include <QtGui/QDesktopServices>
 #include <QtCore/QVariantAnimation>
 
+#include <QtWidgets/QMessageBox>
+
 #include <QtCore/QDebug>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
@@ -60,6 +62,22 @@ View::View(int width, int height)
     connect(animation, &QVariantAnimation::valueChanged, [=](const QVariant &var) {
             animProg = var.toReal(); update(); });
     connect(animation, &QVariantAnimation::finished, [=](){ enteringDir = NULL; });
+
+    /* Garbage */
+    QGLBuilder builder;
+    builder.newSection(QGL::Faceted);
+    builder << QGLCube(12);
+
+    QGLMaterial *boxMaterial = new QGLMaterial();
+    boxMaterial->setAmbientColor(QColor(255, 255, 255));
+    boxMaterial->setDiffuseColor(QColor(150, 150, 150));
+    boxMaterial->setSpecularColor(QColor(255, 255, 255));
+    boxMaterial->setShininess(128);
+    garbage = new MeshObject(builder.finalizedSceneNode());
+    garbage->setMaterial(boxMaterial);
+    garbage->setPosition(QVector3D(40, 50, 0));
+    garbage->setObjectId(-2);
+    registerObject(-2, garbage);
 
     updateDir();
 }
@@ -117,6 +135,7 @@ void View::paintGL(QGLPainter *painter) {
         if (obj != enteringDir)
             obj->draw(painter);
     picture->draw(painter);
+    garbage->draw(painter);
 
     if (enteringDir) {
         painter->modelViewMatrix().translate(enteringDir->position());
@@ -124,6 +143,7 @@ void View::paintGL(QGLPainter *painter) {
         for (auto obj : background) obj->draw(painter);
         for (auto obj : boxes) obj->draw(painter);
         picture->draw(painter);
+        garbage->draw(painter);
     }
 
     if (!enteringDir) hudObject->draw(painter);
@@ -147,15 +167,31 @@ void View::updateDir() {
     entryCnt = entryList.size();
     dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
 
-    for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
-        boxes[i]->setPickType(MeshObject::Pickable);
-        boxes[i]->setObjectName(entryList[i]);
-        boxes[i]->setScale(i < dirEntryCnt ? 1 : 0.5, 1, 1);
+    int offset = 0;
+    if (pageCnt > 1) {
+        boxes[0]->setObjectName("上一页……");
+        boxes[0]->setScale(1.2, 1.2, 1.2);
+        offset = 1;
     }
-    for (int i = entryCnt; i < slotCnt; ++i) {
-        boxes[i]->setPickType(MeshObject::Anchor);
-        boxes[i]->setObjectName(QString());
-        boxes[i]->setScale(1, 1, 1);
+    int startPos;
+    if (pageCnt == 1) {
+        startPos = 0;
+    } else {
+        startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
+    }
+    for (int i = 0; startPos + i < entryCnt && i + offset < slotCnt; ++i) {
+        boxes[i + offset]->setPickType(MeshObject::Pickable);
+        boxes[i + offset]->setObjectName(entryList[startPos + i]);
+        boxes[i + offset]->setScale(startPos + i < dirEntryCnt ? 1.0 : 0.5, 1, 1);
+    }
+    for (int i = entryCnt - startPos; i + offset < slotCnt; ++i) {
+        boxes[i + offset]->setPickType(MeshObject::Anchor);
+        boxes[i + offset]->setObjectName(QString());
+        boxes[i + offset]->setScale(1, 1, 1);
+    }
+    if(entryCnt > pageCnt * slotCnt) {
+        boxes[slotCnt - 1]->setObjectName("下一页……");
+        boxes[slotCnt - 1]->setScale(1.2, 1.2, 1.2);
     }
 
     hudObject->setImage(paintHud(0, 0, QString()));
@@ -163,6 +199,7 @@ void View::updateDir() {
 }
 
 void View::initializeBox() {
+    pageCnt = 1;
     QFile file(":/model/shelf.slots");
     file.open(QFile::ReadOnly);
     QTextStream stream(&file);
@@ -187,7 +224,6 @@ void View::initializeBox() {
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
         box->setObjectId(i);
-        //box->setScale(0.5, 1.0, 1.0);
         boxes.push_back(box);
     }
 }
@@ -226,9 +262,17 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         qDebug() << pickedObject->objectName();
         /* enter dir or open file */
-        if (pickedObject->objectId() < dirEntryCnt) {
+        int startPos;
+        if (pageCnt == 1) {
+            startPos = 0;
+        } else {
+            startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
+        }
+        if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
+            paintHud(0, 0, "");
+            pageCnt = 1;
             updateDir();
             enteringDir = pickedObject;
             animation->start();
@@ -250,9 +294,23 @@ void View::mousePressEvent(QMouseEvent *event) {
             nextPicture();
             return;
         }
+        if (obj == garbage) {
+            return;
+        }
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
+            if (pickedObject->objectName() == "下一页……") {
+                pageCnt++;
+                pickedObject = NULL;
+                updateDir();
+                return;
+            } else if (pickedObject->objectName() == "上一页……") {
+                pageCnt--;
+                pickedObject = NULL;
+                updateDir();
+                return;
+            }
             /* pick up object */
             pickedObject->setPickType(MeshObject::Picked);
             pickedPos = pickedObject->position();
@@ -275,7 +333,23 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         /* release picked object */
         QObject *obj = objectForPoint(event->pos());
-        if (obj == picture) obj = NULL;
+        if (obj == picture) return;
+        //Delete the file
+        if (obj == garbage) {
+            if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No)) {
+                if(QFile::remove(dir.absoluteFilePath(pickedObject->objectName()))) {
+                    qDebug()<<"success";
+                    hoverLeave();
+                    pickedObject->setPickType(MeshObject::Anchor);
+                    pickedObject->setObjectName(QString());
+                    pickedObject->setPosition(pickedPos);
+                    pickedObject->setScale(1, 1, 1);
+                    pickedObject = NULL;
+                    update();
+                }
+            }
+            return;
+        }
 
         MeshObject *anchor = qobject_cast<MeshObject*>(obj);
         if (anchor) {
