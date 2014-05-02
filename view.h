@@ -11,6 +11,7 @@ class QPaintDevice;
 class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLTexture2D;
+class QVariantAnimation;
 
 class View : public QGLView {
     Q_OBJECT
@@ -33,11 +34,14 @@ protected:
 private:
     void initializeBox();
     QImage paintHud(float x, float y, QString text);
-    void drawText(float x, float y,QString text);
     void nextPicture();
     void updateDir();
     void hoverEnter(MeshObject *object);
     void hoverLeave();
+
+    MeshObject *enteringDir;
+    qreal animProg;
+    QVariantAnimation *animation;
 
     QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;

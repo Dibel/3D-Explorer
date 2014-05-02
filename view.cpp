@@ -6,6 +6,7 @@
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QDesktopServices>
+#include <QtCore/QVariantAnimation>
 
 #include <QtCore/QDebug>
 
@@ -13,7 +14,7 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height)
-    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL)
+    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL), enteringDir(NULL)
 {
     resize(width, height);
 
@@ -48,8 +49,17 @@ View::View(int width, int height)
 
     /* picture */
     picture = new ImageObject(30, 20);
-    picture->setPosition(frame->position());
+    picture->setPosition(frame->position() + QVector3D(0, 0, 1));
     picture->regist(this, boxes.size());
+
+    animation = new QVariantAnimation();
+    animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
+    animation->setEndValue(QVariant(static_cast<qreal>(1.0)));
+    animation->setDuration(1000);
+
+    connect(animation, &QVariantAnimation::valueChanged, [=](const QVariant &var) {
+            animProg = var.toReal(); update(); });
+    connect(animation, &QVariantAnimation::finished, [=](){ enteringDir = NULL; });
 
     updateDir();
 }
@@ -59,6 +69,7 @@ View::~View() {
     for (auto obj : boxes) obj->deleteLater();
     delete picture;
     delete hudObject;
+    delete animation;
 }
 
 QImage View::paintHud(float x, float y, QString text) {
@@ -75,12 +86,8 @@ QImage View::paintHud(float x, float y, QString text) {
     return ret;
 }
 
-void View::drawText(float x, float y, QString text) {
-    hudObject->setImage(paintHud(x, y, text));
-}
-
 void View::resizeEvent(QResizeEvent *e) {
-    drawText(0, 0, "");
+    hudObject->setImage(paintHud(0, 0, QString()));
     update();
 }
 
@@ -89,16 +96,37 @@ void View::initializeGL(QGLPainter *painter) {
 }
 
 void View::paintGL(QGLPainter *painter) {
-    mvp = calcMvp(camera(), size());
-
-    for (auto obj : background) obj->draw(painter);
-    for (auto obj : boxes) obj->draw(painter);
-
     Q_ASSERT(picture != NULL);
     Q_ASSERT(hudObject != NULL);
 
+    mvp = calcMvp(camera(), size());
+    
+    if (enteringDir) {
+        if (painter->isPicking()) return;
+
+        /* TODO: better animation... */
+        painter->modelViewMatrix().scale(QVector3D(1, 1, 1)
+                * (1 + 19 * animProg * animProg));
+        qreal t = 1 - animProg;
+        t = t * t * t - 1;
+        painter->modelViewMatrix().translate(enteringDir->position() * t);
+    }
+
+    for (auto obj : background) obj->draw(painter);
+    for (auto obj : boxes) 
+        if (obj != enteringDir)
+            obj->draw(painter);
     picture->draw(painter);
-    hudObject->draw(painter);
+
+    if (enteringDir) {
+        painter->modelViewMatrix().translate(enteringDir->position());
+        painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
+        for (auto obj : background) obj->draw(painter);
+        for (auto obj : boxes) obj->draw(painter);
+        picture->draw(painter);
+    }
+
+    if (!enteringDir) hudObject->draw(painter);
 }
 
 void View::updateDir() {
@@ -122,12 +150,15 @@ void View::updateDir() {
     for (int i = 0; i < entryCnt && i < slotCnt; ++i) {
         boxes[i]->setPickType(MeshObject::Pickable);
         boxes[i]->setObjectName(entryList[i]);
+        boxes[i]->setScale(i < dirEntryCnt ? 1 : 0.5, 1, 1);
     }
     for (int i = entryCnt; i < slotCnt; ++i) {
         boxes[i]->setPickType(MeshObject::Anchor);
         boxes[i]->setObjectName(QString());
+        boxes[i]->setScale(1, 1, 1);
     }
 
+    hudObject->setImage(paintHud(0, 0, QString()));
     update();
 }
 
@@ -156,7 +187,7 @@ void View::initializeBox() {
         box->setMaterial(boxMaterial);
         box->setPosition(QVector3D(x, y, z));
         box->setObjectId(i);
-        box->setScale(0.5, 1.0, 1.0);
+        //box->setScale(0.5, 1.0, 1.0);
         boxes.push_back(box);
     }
 }
@@ -167,14 +198,14 @@ void View::hoverEnter(MeshObject *obj) {
     if (!obj->objectName().isEmpty()) {
         qDebug() << obj->objectName();
         QVector3D pos = mvp * obj->position();
-        drawText(pos.x(), pos.y(), obj->objectName());
+        hudObject->setImage(paintHud(pos.x(), pos.y(), obj->objectName()));
         update();
     }
 }
 
 void View::hoverLeave() {
     enteredObject = NULL;
-    drawText(0, 0, "");
+    hudObject->setImage(paintHud(0, 0, QString()));
     update();
 }
 
@@ -198,8 +229,10 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
         if (pickedObject->objectId() < dirEntryCnt) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
-            drawText(0, 0, "");
             updateDir();
+            enteringDir = pickedObject;
+            animation->start();
+
         } else if (!QDesktopServices::openUrl(
                     "file:///" +
                     dir.absoluteFilePath(pickedObject->objectName())))
@@ -242,7 +275,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         /* release picked object */
         QObject *obj = objectForPoint(event->pos());
-        if (obj == picture) return;
+        if (obj == picture) obj = NULL;
 
         MeshObject *anchor = qobject_cast<MeshObject*>(obj);
         if (anchor) {
@@ -264,6 +297,8 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
+    if (enteringDir) return;
+
     if (pickedObject) {
         /* move picked object */
         pickedObject->setPosition(mvp.inverted() *

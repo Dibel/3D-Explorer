@@ -57,15 +57,15 @@ void ImageObject::draw(QGLPainter *painter) {
         Q_ASSERT(node->position() == QVector3D(0, 0, 0));
 
         painter->modelViewMatrix().push();
-        painter->projectionMatrix().push();
         painter->modelViewMatrix().setToIdentity();
+        painter->projectionMatrix().push();
         painter->projectionMatrix().setToIdentity();
 
         glEnable(GL_BLEND);
         node->draw(painter);
         glDisable(GL_BLEND);
 
-        painter->modelViewMatrix().pop();
+        //painter->modelViewMatrix().pop();
         painter->projectionMatrix().pop();
 
     } else if (painter->isPicking()) {
