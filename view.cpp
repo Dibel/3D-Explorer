@@ -136,16 +136,27 @@ void View::updateDir() {
     entryCnt = entryList.size();
     dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
 
-    for (int i = 0; (pageCnt - 1) * slotCnt + i < entryCnt && i < slotCnt; ++i) {
-        boxes[i]->setPickType(MeshObject::Pickable);
-        boxes[i]->setObjectName(entryList[(pageCnt - 1) * slotCnt + i]);
+    int offset = 0;
+    if (pageCnt > 1) {
+        boxes[0]->setObjectName("上一页……");\
+        offset = 1;
     }
-    for (int i = entryCnt; i < slotCnt; ++i) {
-        boxes[i]->setPickType(MeshObject::Anchor);
-        boxes[i]->setObjectName(QString());
+    int startPos;
+    if (pageCnt == 1) {
+        startPos = 0;
+    } else {
+        startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
+    }
+    for (int i = 0; startPos + i < entryCnt && i + offset < slotCnt; ++i) {
+        boxes[i + offset]->setPickType(MeshObject::Pickable);
+        boxes[i + offset]->setObjectName(entryList[startPos + i]);
+    }
+    for (int i = entryCnt - startPos; i + offset < slotCnt; ++i) {
+        boxes[i + offset]->setPickType(MeshObject::Anchor);
+        boxes[i + offset]->setObjectName(QString());
     }
     if(entryCnt > pageCnt * slotCnt) {
-        boxes[slotCnt - 1]->setObjectName("更多……");
+        boxes[slotCnt - 1]->setObjectName("下一页……");
     }
 
     update();
@@ -216,7 +227,13 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         qDebug() << pickedObject->objectName();
         /* enter dir or open file */
-        if (pickedObject->objectId() < dirEntryCnt) {
+        int startPos;
+        if (pageCnt == 1) {
+            startPos = 0;
+        } else {
+            startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
+        }
+        if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
             hoverLeave();
             dir.cd(pickedObject->objectName());
             drawText(0, 0, "");
@@ -245,9 +262,14 @@ void View::mousePressEvent(QMouseEvent *event) {
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
-            if (pickedObject->objectName() == "更多……") {
-                pageCnt ++;
-                pickedObject == NULL;
+            if (pickedObject->objectName() == "下一页……") {
+                pageCnt++;
+                pickedObject = NULL;
+                updateDir();
+                return;
+            } else if (pickedObject->objectName() == "上一页……") {
+                pageCnt--;
+                pickedObject = NULL;
                 updateDir();
                 return;
             }
