@@ -12,12 +12,15 @@
 
 #include <QtCore/QDebug>
 
+#include <QtGlobal>
+
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height)
     : pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL), enteringDir(NULL)
 {
+    winDrive = false;
     resize(width, height);
 
     camera()->setCenter(QVector3D(0, 50, 0));
@@ -53,6 +56,7 @@ View::View(int width, int height)
 
     trashBin = new MeshObject(trashBinModel, MeshObject::Pickable);
     trashBin->setObjectId(-2);
+    trashBin->setObjectName("垃圾桶");
     registerObject(-2, trashBin);
 
     /* boxes */
@@ -132,7 +136,15 @@ QImage View::paintHud(float x, float y, QString text) {
     painter.setFont(font);
     painter.setPen(QColor(Qt::red));
     painter.drawText(x, y, text);
+#ifdef Q_OS_WIN
+    if(winDrive) {
+        painter.drawText(0, 20, "我的电脑");
+    } else {
+        painter.drawText(0, 20, dir.absolutePath());
+    }
+#else
     painter.drawText(0, 20, dir.absolutePath());
+#endif
     return ret;
 }
 
@@ -213,12 +225,42 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
         //boxes[0]->setScale(1.2, 1.2, 1.2);
         offset = 1;
     }
+
     int startPos;
     if (pageCnt == 1) {
         startPos = 0;
     } else {
         startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
     }
+
+#ifdef Q_OS_WIN
+    if (dir.dirName() == QString() && !winDrive && pageCnt == 1) {
+        boxes[0]->setObjectName("..");
+        boxes[0]->setPickType(MeshObject::Pickable);
+        offset = 1;
+        if (pageCnt == 1) {
+            startPos = 0;
+        } else {
+            startPos = (pageCnt - 1) * (slotCnt - 2);
+        }
+    }
+    if(winDrive) {
+        const QFileInfoList drives = QDir::drives();
+        for (int i = 0; i < drives.size() && i < slotCnt; ++i) {
+            boxes[i]->setPickType(MeshObject::Pickable);
+            boxes[i]->setObjectName(drives.at(i).absolutePath());
+        }
+        for (int i = drives.size(); i + offset < slotCnt; ++i) {
+            boxes[i + offset]->setPickType(MeshObject::Anchor);
+            boxes[i + offset]->setObjectName(QString());
+            boxes[i + offset]->setScale(1, 1, 1);
+        }
+        hudObject->setImage(paintHud(0, 0, QString()));
+        update();
+        return;
+    }
+#endif
+
     for (int i = 0; startPos + i < entryCnt && i + offset < slotCnt; ++i) {
         boxes[i + offset]->setPickType(MeshObject::Pickable);
         boxes[i + offset]->setObjectName(entryList[startPos + i]);
@@ -234,7 +276,6 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
         boxes[slotCnt - 1]->setModel(dirModel);
         //boxes[slotCnt - 1]->setScale(1.2, 1.2, 1.2);
     }
-
     hudObject->setImage(paintHud(0, 0, QString()));
     update();
 }
@@ -332,8 +373,20 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
         } else {
             startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
         }
+#ifdef Q_OS_WIN
+        if (dir.dirName() == QString() && pickedObject->objectName() == "..") {
+            winDrive = true;
+        } else if (winDrive) {
+            dirEntryCnt = slotCnt;
+        } else if (dir.dirName() == QString() && !winDrive) {
+            dirEntryCnt++; //Aviod to open the folder in the Explorer
+        }
+#endif
         if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
             hoverLeave();
+            if(winDrive && pickedObject->objectName() != "..") {
+                winDrive = false;
+            }
             dir.cd(pickedObject->objectName());
             hudObject->setImage(paintHud(0, 0, ""));
             pageCnt = 1;

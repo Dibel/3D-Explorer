@@ -77,6 +77,8 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+
+    bool winDrive;
 };
 
 #endif
