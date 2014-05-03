@@ -27,7 +27,12 @@ ImageObject::~ImageObject() {
     node->deleteLater();
 }
 
-void ImageObject::setImage(const QImage &image) {
+QImage ImageObject::getImage() {
+    return image;
+}
+
+void ImageObject::setImage(const QImage &newImage) {
+    image = newImage;
     QGLTexture2D *tex = node->material()->texture();
     if (tex) tex->deleteLater();
     tex = new QGLTexture2D();

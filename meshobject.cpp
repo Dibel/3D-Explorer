@@ -47,7 +47,6 @@
 MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     : QObject(parent)
 {
-    m_mesh = 0;
     m_meshObject = meshObject;
     m_scale = 1.0f;
     m_scaleX = 1.0f;
@@ -67,7 +66,6 @@ MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
     : QObject(parent)
 {
     scene->setParent(this);
-    m_mesh = 0;
     m_meshObject = scene->mainNode();
     m_scale = 1.0f;
     m_scaleX = 1.0f;
@@ -86,7 +84,6 @@ MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
 MeshObject::~MeshObject()
 {
     m_view->deregisterObject(m_objectId);
-    delete m_mesh;
 }
 
 void MeshObject::initialize(QGLView *view, QGLPainter *painter)
@@ -114,13 +111,16 @@ void MeshObject::draw(QGLPainter *painter)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
 
     // Apply the material and effect to the painter.
-    QGLMaterial *material;
-    if (m_hovering)
-        material = m_hoverMaterial;
-    else
-        material = m_material;
-    painter->setColor(material->diffuseColor());
-    painter->setFaceMaterial(QGL::AllFaces, material);
+    if (m_material) {
+        QGLMaterial *material;
+        if (m_hovering)
+            material = m_hoverMaterial;
+        else
+            material = m_material;
+        painter->setColor(material->diffuseColor());
+        painter->setFaceMaterial(QGL::AllFaces, material);
+    }
+
     if (m_effect)
         painter->setUserEffect(m_effect);
     else
@@ -134,8 +134,6 @@ void MeshObject::draw(QGLPainter *painter)
     // Draw the geometry mesh.
     if (m_meshObject)
         m_meshObject->draw(painter);
-    else
-        m_mesh->draw(painter);
 
     // Turn off the user effect, if present.
     if (m_effect)

@@ -15,6 +15,7 @@ public:
     ImageObject(int width, int height, Type type = Common);
     ~ImageObject();
 
+    QImage getImage();
     void setImage(const QImage &image);
     void setImage(const QString &fileName);
     void setPosition(const QVector3D &pos);
@@ -27,6 +28,7 @@ private:
     QGLView *view;
     int pickId;
     Type type;
+    QImage image;
 };
 
 #endif

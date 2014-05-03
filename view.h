@@ -8,6 +8,7 @@
 class ImageObject;
 class MeshObject;
 class QPaintDevice;
+class QGLAbstractScene;
 class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLTexture2D;
@@ -35,9 +36,10 @@ private:
     void initializeBox();
     QImage paintHud(float x, float y, QString text);
     void nextPicture();
-    void updateDir();
+    void updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
     void hoverEnter(MeshObject *object);
     void hoverLeave();
+    void finishAnimation();
 
     MeshObject *enteringDir;
     qreal animProg;
@@ -45,9 +47,16 @@ private:
 
     QVector<MeshObject*> background;
     QVector<MeshObject*> boxes;
-    MeshObject *trash;
+    QVector<MeshObject*> backBoxes;
+    MeshObject *trashBin;
     ImageObject *picture;
+    ImageObject *backPicture;
     ImageObject *hudObject;
+
+    QVector<QGLAbstractScene*> backgroundModels;
+    QGLAbstractScene *trashBinModel;
+    QGLSceneNode *dirModel;
+    QGLSceneNode *fileModel;
 
     QDir dir;
     int entryCnt;

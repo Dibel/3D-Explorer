@@ -63,6 +63,10 @@ public:
     explicit MeshObject(QGLAbstractScene *scene, PickType type = Static, QObject *parent=0);
     virtual ~MeshObject();
 
+    QGLSceneNode *model() const { return m_meshObject; }
+    void setModel(QGLSceneNode *mesh) { m_meshObject = mesh; }
+    void setModel(QGLAbstractScene *scene) { m_meshObject = scene->mainNode(); }
+
     QVector3D position() const { return m_position; }
     void setPosition(const QVector3D& value) { m_position = value; }
 
@@ -106,7 +110,6 @@ protected:
     bool event(QEvent *e);
 
 private:
-    QGLSceneNode *m_mesh;
     QGLSceneNode *m_meshObject;
     QGLAbstractScene *m_scene;
     QVector3D m_position;
