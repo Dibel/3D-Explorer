@@ -42,7 +42,7 @@
 #ifndef MESHOBJECT_H
 #define MESHOBJECT_H
 
-#include <QtCore/qobject.h>
+#include "pickobject.h"
 #include <QtGui/qevent.h>
 
 #include "qglpainter.h"
@@ -53,14 +53,14 @@ class QGLView;
 class QGLSceneNode;
 QT_END_NAMESPACE
 
-class MeshObject : public QObject
+class MeshObject : public PickObject
 {
     Q_OBJECT
 public:
-    enum PickType { Static, Pickable, Anchor, Picked, Hud };
+    enum PickType { Normal, Anchor, Picked };
 
-    explicit MeshObject(QGLSceneNode *meshObject, PickType type = Static, QObject *parent=0);
-    explicit MeshObject(QGLAbstractScene *scene, PickType type = Static, QObject *parent=0);
+    explicit MeshObject(QGLSceneNode *meshObject, QGLView *view = NULL, int id = -1);
+    explicit MeshObject(QGLAbstractScene *scene, QGLView *view = NULL, int id = -1);
     virtual ~MeshObject();
 
     QGLSceneNode *model() const { return m_meshObject; }
@@ -80,8 +80,6 @@ public:
     QVector3D rotationVector() const { return m_rotationVector; }
     void setRotationVector(const QVector3D& value) { m_rotationVector = value; }
 
-    //void setTransform(const QMatrix4x4& value) { m_trans = value; }
-
     QGLMaterial *material() const { return m_material; }
     void setMaterial(QGLMaterial *value)
         { m_material = value; m_hoverMaterial = value; }
@@ -91,9 +89,6 @@ public:
 
     QGLAbstractEffect *effect() const { return m_effect; }
     void setEffect(QGLAbstractEffect *value) { m_effect = value; }
-
-    int objectId() const { return m_objectId; }
-    void setObjectId(int id) { m_objectId = id; }
 
     PickType pickType() const { return m_type; }
     void setPickType(PickType type) { m_type = type; }
@@ -120,15 +115,12 @@ private:
     float m_scaleY;
     float m_scaleZ;
     float m_rotationAngle;
-    QMatrix4x4 m_trans;
     QVector3D m_rotationVector;
     QGLMaterial *m_material;
     QGLMaterial *m_hoverMaterial;
     QGLAbstractEffect *m_effect;
-    int m_objectId;
     bool m_hovering;
     PickType m_type;
-    QGLView *m_view;
 };
 
 #endif
