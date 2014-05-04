@@ -3,6 +3,7 @@
 
 #include <Qt3D/QGLView>
 #include <QtGui/QImage>
+#include "pickobject.h"
 
 class ImageObject;
 class MeshObject;
@@ -34,11 +35,13 @@ protected:
     void resizeEvent(QResizeEvent *);
 
 private:
+    enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
+
     void loadModels();
-    void setupMeshes();
+    void setupObjects();
 
     void paintHud(qreal x, qreal y, QString text);
-    void updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
+    void loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
     void hoverEnter(MeshObject *object);
     void hoverLeave();
     void finishAnimation();
@@ -56,22 +59,14 @@ private:
     QGLMaterial *mat1;
     QGLMaterial *mat2;
 
-    QVector<MeshObject*> background;
+    QVector<MeshObject*> staticMeshes;
     QVector<MeshObject*> boxes;
     QVector<MeshObject*> backBoxes;
-    MeshObject *trashBin;
-    MeshObject *door;
-    MeshObject *leftArrow;
-    MeshObject *rightArrow;
+
     ImageObject *picture;
     ImageObject *backPicture;
     ImageObject *hudObject;
 
-    QVector<QGLAbstractScene*> backgroundModels;
-    QGLAbstractScene *trashBinModel;
-    QGLAbstractScene *doorModel;
-    QGLAbstractScene *leftArrowModel;
-    QGLAbstractScene *rightArrowModel;
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
 

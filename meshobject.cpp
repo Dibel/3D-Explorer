@@ -44,8 +44,8 @@
 
 #include <QtCore/QDebug>
 
-MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
-    : QObject(parent)
+MeshObject::MeshObject(QGLSceneNode *meshObject, QGLView *view, int id)
+    : PickObject(view, id)
 {
     m_meshObject = meshObject;
     m_scale = 1.0f;
@@ -54,16 +54,14 @@ MeshObject::MeshObject(QGLSceneNode *meshObject, PickType type, QObject *parent)
     m_scaleZ = 1.0f;
     m_rotationAngle = 0.0f;
     m_effect = 0;
-    m_objectId = -1;
     m_hovering = false;
     m_material = 0;
     m_hoverMaterial = 0;
-    m_type = type;
-    m_view = NULL;
+    m_type = Normal;
 }
 
-MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
-    : QObject(parent)
+MeshObject::MeshObject(QGLAbstractScene *scene, QGLView *view, int id)
+    : PickObject(view, id)
 {
     scene->setParent(this);
     m_meshObject = scene->mainNode();
@@ -73,26 +71,15 @@ MeshObject::MeshObject(QGLAbstractScene *scene, PickType type, QObject *parent)
     m_scaleZ = 1.0f;
     m_rotationAngle = 0.0f;
     m_effect = 0;
-    m_objectId = -1;
     m_hovering = false;
     m_material = 0;
     m_hoverMaterial = 0;
-    m_type = type;
-    m_view = NULL;
+    m_type = Normal;
 }
 
-MeshObject::~MeshObject()
-{
-    m_view->deregisterObject(m_objectId);
-}
+MeshObject::~MeshObject() { }
 
-void MeshObject::initialize(QGLView *view, QGLPainter *painter)
-{
-    Q_UNUSED(painter);
-    m_view = view;
-    if (m_objectId != -1)
-        view->registerObject(m_objectId, this);
-}
+void MeshObject::initialize(QGLView *view, QGLPainter *painter) { }
 
 void MeshObject::draw(QGLPainter *painter)
 {
@@ -109,8 +96,6 @@ void MeshObject::draw(QGLPainter *painter)
     }
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
-
-    //painter->modelViewMatrix() = m_trans * painter->modelViewMatrix();
 
     // Apply the material and effect to the painter.
     if (m_material) {
@@ -130,8 +115,8 @@ void MeshObject::draw(QGLPainter *painter)
 
     // Mark the object for object picking purposes.
     int prevObjectId = painter->objectPickId();
-    if (m_objectId != -1)
-        painter->setObjectPickId(m_objectId);
+    if (objectId() != -1)
+        painter->setObjectPickId(objectId());
 
     // Draw the geometry mesh.
     if (m_meshObject)
@@ -150,7 +135,7 @@ void MeshObject::draw(QGLPainter *painter)
 
 bool MeshObject::event(QEvent *e)
 {
-//    if (m_type != Pickable) return QObject::event(e);
+//    if (m_type != Normal) return QObject::event(e);
 //
 //    // Convert the raw event into a signal representing the user's action.
 //    if (e->type() == QEvent::MouseButtonPress) {

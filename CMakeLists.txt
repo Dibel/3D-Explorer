@@ -5,6 +5,7 @@ set(PROJECTNAME 3dexplorer)
 set(SOURCE
     main.cpp
     view.cpp
+    pickobject.cpp
     meshobject.cpp
     imageobject.cpp
     directory.cpp
@@ -12,6 +13,7 @@ set(SOURCE
 
 set(HEADER
     view.h
+    pickobject.h
     meshobject.h
     imageobject.h
     directory.h

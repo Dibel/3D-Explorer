@@ -1,18 +1,19 @@
 #ifndef IMAGEOBJECT_H
 #define IMAGEOBJECT_H
 
-#include <QtCore/QObject>
+#include "pickobject.h"
 #include <QtGui/QImage>
 
 class QGLPainter;
 class QGLSceneNode;
 class QGLView;
 
-class ImageObject : public QObject {
+class ImageObject : public PickObject {
     Q_OBJECT
 public:
-    enum Type { Common, Hud };
-    ImageObject(int width, int height, Type type = Common);
+    enum Type { Normal, Background, Hud };
+
+    ImageObject(int width, int height, QGLView *view, Type type = Normal);
     ~ImageObject();
 
     QImage getImage();
@@ -20,13 +21,11 @@ public:
     void setImage(const QString &fileName);
     void setPosition(const QVector3D &pos);
 
-    void regist(QGLView *view, int id);
     void draw(QGLPainter *painter);
 
 private:
     QGLSceneNode *node;
     QGLView *view;
-    int pickId;
     Type type;
     QImage image;
 };

@@ -10,15 +10,17 @@ public:
     void setPageSize(int size);
 
 #ifdef Q_OS_WIN
-    QString absolutePath();
+    QString absolutePath() const;
 #endif
 
     bool cd(const QString &dirName);
     bool cdUp();
-    uint count();
-    uint countDir();
-    QStringList entryList();
-    QString entry(int index);
+    uint count() const;
+    uint countDir() const;
+    QStringList entryList() const;
+    QString entry(int index) const;
+    void refresh();
+    bool remove(int index);
 
     void nextPage();
     void prevPage();
@@ -27,7 +29,7 @@ public:
     QString getNextImage();
 
 private:
-    void updateLists();
+    void update();
 
 #ifdef Q_OS_WIN
     bool isThisPc;
