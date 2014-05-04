@@ -7,6 +7,7 @@
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QDesktopServices>
+#include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
 
 #include <QtCore/QDebug>
@@ -16,7 +17,7 @@ static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), isLeavingDir(false)
+    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false)
 {
     resize(width, height);
 
@@ -33,7 +34,7 @@ View::View(int width, int height) :
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
     animation->setEndValue(QVariant(static_cast<qreal>(1.0)));
-    animation->setDuration(1000);
+    animation->setDuration(500);
 
     connect(animation, &QVariantAnimation::valueChanged, [=](const QVariant &var) {
             animProg = var.toReal(); update(); });
@@ -46,13 +47,28 @@ void View::paintHud(qreal x = 0, qreal y = 0, QString text = QString()) {
     QImage image(width(), height(), QImage::Format_ARGB32_Premultiplied);
     image.fill(Qt::transparent);
     QPainter painter(&image);
+    painter.setRenderHint(QPainter::Antialiasing);
+
     QFont font = painter.font();
     font.setPointSize(16);
-    font.setBold(1);
-    painter.setFont(font);
-    painter.setPen(QColor(Qt::red));
-    painter.drawText(x, y, text);
-    painter.drawText(0, 20, dir->absolutePath());
+    font.setBold(2);
+
+    QPainterPath path;
+    if (!text.isEmpty()) path.addText(x, y, font, text);
+    path.addText(0, 20, font, dir->absolutePath());
+    painter.setBrush(QColor(Qt::white));
+    painter.setPen(QColor(Qt::black));
+    painter.drawPath(path);
+
+    if (text.isEmpty() && isShowingFileName)
+        for (int i = 0; i < dir->count(); ++i) {
+            QVector3D pos = mvp * boxes[i]->position();
+            QRect rect(pos.x() - 30, pos.y(), 60, 30);
+            QString text = boxes[i]->objectName();
+            painter.drawText(rect, Qt::AlignHCenter | Qt::TextWrapAnywhere,
+                    boxes[i]->objectName());
+        }
+    
     hudObject->setImage(image);
 }
 
@@ -108,7 +124,7 @@ void View::paintGL(QGLPainter *painter) {
     if (pickedObject)
         pickedObject->draw(painter);
 
-    if (!enteringDir) hudObject->draw(painter);
+    if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
 }
 
 void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
@@ -143,6 +159,7 @@ void View::finishAnimation() {
     }
     enteringDir = NULL;
     isLeavingDir = false;
+    paintHud();
     update();
 }
 
@@ -167,6 +184,11 @@ void View::keyPressEvent(QKeyEvent *event) {
         camera()->setCenter(QVector3D(0, 50, 0));
         camera()->setEye(QVector3D(0, 50, 300));
         camera()->setUpVector(QVector3D(0, 1, 0));
+        paintHud();
+        update();
+    } else if (event->key() == Qt::Key_Space) {
+        isShowingFileName = !isShowingFileName;
+        paintHud();
         update();
     }
     QGLView::keyPressEvent(event);
@@ -182,7 +204,6 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             dir->cd(pickedObject->objectName());
             loadDir(backBoxes, backPicture);
 
-            paintHud();
             enteringDir = pickedObject;
             startCenter = camera()->center();
             startEye = camera()->eye();
@@ -203,6 +224,7 @@ void View::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::LeftButton) {
         PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
         if (!obj || obj->objectId() == -1) {
+            paintHud();
             QGLView::mousePressEvent(event);
             return;
         }
@@ -221,7 +243,6 @@ void View::mousePressEvent(QMouseEvent *event) {
             loadDir(boxes, picture);
 
             /* TODO: the leaving animation is temporary */
-            paintHud();
             startCenter = camera()->center();
             startEye = camera()->eye();
             deltaCenter = camera()->center() * (0.05 - 1) + boxes[0]->position();
@@ -258,6 +279,7 @@ void View::mousePressEvent(QMouseEvent *event) {
             pickedObject = NULL;
     }
 
+    paintHud();
     QGLView::mousePressEvent(event);
 }
 
@@ -292,6 +314,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         return;
     }
 
+    paintHud();
     QGLView::mouseReleaseEvent(event);
 }
 

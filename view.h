@@ -85,6 +85,7 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+    bool isShowingFileName;
 };
 
 #endif

@@ -8,10 +8,12 @@ Directory::Directory() : QDir(), pageIndex(0) {
 #endif
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
     setSorting(QDir::DirsFirst | QDir::IgnoreCase);
-    update();
 }
 
-void Directory::setPageSize(int size) { pageSize = size; }
+void Directory::setPageSize(int size) {
+    pageSize = size;
+    update();
+}
 
 #ifdef Q_OS_WIN
 QString Directory::absolutePath() const {
