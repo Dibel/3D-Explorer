@@ -234,12 +234,12 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
     }
 
 #ifdef Q_OS_WIN
-    if (dir.dirName() == QString() && !winDrive && pageCnt == 1) {
-        boxes[0]->setObjectName("..");
-        boxes[0]->setPickType(MeshObject::Pickable);
-        offset = 1;
+    if (dir.dirName() == QString() && !winDrive) {
         if (pageCnt == 1) {
             startPos = 0;
+            boxes[0]->setObjectName("..");
+            boxes[0]->setPickType(MeshObject::Pickable);
+            offset = 1;
         } else {
             startPos = (pageCnt - 1) * (slotCnt - 2);
         }
