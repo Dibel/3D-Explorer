@@ -61,6 +61,8 @@ private:
     QVector<MeshObject*> backBoxes;
     MeshObject *trashBin;
     MeshObject *door;
+    MeshObject *leftArrow;
+    MeshObject *rightArrow;
     ImageObject *picture;
     ImageObject *backPicture;
     ImageObject *hudObject;
@@ -68,16 +70,14 @@ private:
     QVector<QGLAbstractScene*> backgroundModels;
     QGLAbstractScene *trashBinModel;
     QGLAbstractScene *doorModel;
+    QGLAbstractScene *leftArrowModel;
+    QGLAbstractScene *rightArrowModel;
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
 
     Directory *dir;
-    int entryCnt;
-    int dirEntryCnt;
+
     int slotCnt;
-    int pageCnt;
-    QStringList pictureList;
-    int currentPicture;
 
     QMatrix4x4 mvp;
 

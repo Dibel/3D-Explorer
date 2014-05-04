@@ -110,6 +110,8 @@ void MeshObject::draw(QGLPainter *painter)
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
 
+    //painter->modelViewMatrix() = m_trans * painter->modelViewMatrix();
+
     // Apply the material and effect to the painter.
     if (m_material) {
         QGLMaterial *material;

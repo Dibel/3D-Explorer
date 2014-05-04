@@ -80,6 +80,8 @@ public:
     QVector3D rotationVector() const { return m_rotationVector; }
     void setRotationVector(const QVector3D& value) { m_rotationVector = value; }
 
+    //void setTransform(const QMatrix4x4& value) { m_trans = value; }
+
     QGLMaterial *material() const { return m_material; }
     void setMaterial(QGLMaterial *value)
         { m_material = value; m_hoverMaterial = value; }
@@ -118,6 +120,7 @@ private:
     float m_scaleY;
     float m_scaleZ;
     float m_rotationAngle;
+    QMatrix4x4 m_trans;
     QVector3D m_rotationVector;
     QGLMaterial *m_material;
     QGLMaterial *m_hoverMaterial;

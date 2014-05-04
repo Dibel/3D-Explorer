@@ -17,7 +17,7 @@ static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), isLeavingDir(false), pageCnt(1)
+    enteringDir(NULL), isLeavingDir(false)
 {
     resize(width, height);
 
@@ -97,6 +97,8 @@ void View::paintGL(QGLPainter *painter) {
         backPicture->draw(painter);
         trashBin->draw(painter);
         door->draw(painter);
+        leftArrow->draw(painter);
+        rightArrow->draw(painter);
 
         painter->modelViewMatrix().pop();
     }
@@ -108,6 +110,8 @@ void View::paintGL(QGLPainter *painter) {
     picture->draw(painter);
     trashBin->draw(painter);
     door->draw(painter);
+    leftArrow->draw(painter);
+    rightArrow->draw(painter);
 
     glClear(GL_DEPTH_BUFFER_BIT);
     if (pickedObject)
@@ -117,44 +121,20 @@ void View::paintGL(QGLPainter *painter) {
 }
 
 void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
-    dir->updateLists();
-
     picture->setImage(dir->getImage());
 
     /* update entry info */
-    entryCnt = dir->count();
-    dirEntryCnt = dir->countDir();
-
-    int offset = 0;
-    if (pageCnt > 1) {
-        boxes[0]->setObjectName("上一页……");
-        boxes[0]->setModel(dirModel);
-        //boxes[0]->setScale(1.2, 1.2, 1.2);
-        offset = 1;
+    for (int i = 0; i < dir->count(); ++i) {
+        boxes[i]->setPickType(MeshObject::Pickable);
+        boxes[i]->setObjectName(dir->entry(i));
+        boxes[i]->setModel(i < dir->countDir() ? dirModel : fileModel);
+    }
+    for (int i = dir->count(); i < slotCnt; ++i) {
+        boxes[i]->setPickType(MeshObject::Anchor);
+        boxes[i]->setObjectName(QString());
+        boxes[i]->setModel(dirModel);
     }
 
-    int startPos;
-    if (pageCnt == 1) {
-        startPos = 0;
-    } else {
-        startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
-    }
-
-    for (int i = 0; startPos + i < entryCnt && i + offset < slotCnt; ++i) {
-        boxes[i + offset]->setPickType(MeshObject::Pickable);
-        boxes[i + offset]->setObjectName(dir->entryList()[startPos + i]);
-        boxes[i + offset]->setModel(startPos + i < dirEntryCnt ? dirModel : fileModel);
-    }
-    for (int i = entryCnt - startPos; i + offset < slotCnt; ++i) {
-        boxes[i + offset]->setPickType(MeshObject::Anchor);
-        boxes[i + offset]->setObjectName(QString());
-        boxes[i + offset]->setModel(dirModel);
-    }
-    if(entryCnt > pageCnt * slotCnt) {
-        boxes[slotCnt - 1]->setObjectName("下一页……");
-        boxes[slotCnt - 1]->setModel(dirModel);
-        //boxes[slotCnt - 1]->setScale(1.2, 1.2, 1.2);
-    }
     paintHud();
     update();
 }
@@ -163,8 +143,6 @@ void View::finishAnimation() {
     camera()->setCenter(startCenter);
     camera()->setEye(startEye);
     if (enteringDir) {
-        qDebug() << "enteringDir:" << enteringDir;
-        qDebug() << "leavingDir:" << isLeavingDir;
         for (int i = 0; i < boxes.size(); ++i) {
             boxes[i]->setPickType(backBoxes[i]->pickType());
             boxes[i]->setObjectName(backBoxes[i]->objectName());
@@ -209,21 +187,13 @@ void View::keyPressEvent(QKeyEvent *event) {
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         /* enter dir or open file */
-        int startPos;
-        if (pageCnt == 1) {
-            startPos = 0;
-        } else {
-            startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
-        }
-
-        if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
+        if (pickedObject->objectId() < dir->countDir()) {
             hoverLeave();
 
             dir->cd(pickedObject->objectName());
             updateDir(backBoxes, backPicture);
 
             paintHud();
-            pageCnt = 1;
             enteringDir = pickedObject;
             startCenter = camera()->center();
             startEye = camera()->eye();
@@ -259,7 +229,6 @@ void View::mousePressEvent(QMouseEvent *event) {
 
             /* TODO: merge with entering animation */
             paintHud();
-            pageCnt = 1;
             startCenter = camera()->center();
             startEye = camera()->eye();
             deltaCenter = camera()->center() * (0.05 - 1) + boxes[0]->position();
@@ -269,19 +238,22 @@ void View::mousePressEvent(QMouseEvent *event) {
             return;
         }
 
+        if (obj == leftArrow) {
+            dir->prevPage();
+            pickedObject = NULL;
+            updateDir(boxes, picture);
+            return;
+        }
+
+        if (obj == rightArrow) {
+            dir->nextPage();
+            pickedObject = NULL;
+            updateDir(boxes, picture);
+            return;
+        }
+
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
-            if (pickedObject->objectName() == "下一页……") {
-                pageCnt++;
-                pickedObject = NULL;
-                updateDir(boxes, picture);
-                return;
-            } else if (pickedObject->objectName() == "上一页……") {
-                pageCnt--;
-                pickedObject = NULL;
-                updateDir(boxes, picture);
-                return;
-            }
             /* pick up object */
             pickedObject->setPickType(MeshObject::Picked);
             pickedPos = pickedObject->position();
@@ -310,9 +282,9 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         //Delete the file
         if (obj == trashBin) {
             if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
-                if (pickedObject->objectName() != ".." && (pickedObject->objectId() < dirEntryCnt
+                if (pickedObject->objectId() < dir->countDir()
                         ? QDir(dir->absoluteFilePath(pickedObject->objectName())).removeRecursively()
-                        : dir->remove(pickedObject->objectName())))
+                        : dir->remove(pickedObject->objectName()))
                 {
                     qDebug()<<"success";
                     hoverLeave();
@@ -410,6 +382,12 @@ void View::loadModels() {
     doorTrans.scale(10);
     doorModel->mainNode()->setLocalTransform(doorTrans);
 
+    leftArrowModel = QGLAbstractScene::loadScene(":/model/leftarrow.obj");
+    leftArrowModel->mainNode()->setMaterial(mat2);
+
+    rightArrowModel = QGLAbstractScene::loadScene(":/model/rightarrow.obj");
+    rightArrowModel->mainNode()->setMaterial(mat2);
+
     QGLBuilder dirBuilder;
     dirBuilder.newSection(QGL::Faceted);
     dirBuilder << QGLCube(6);
@@ -440,8 +418,21 @@ void View::setupMeshes() {
     /* door */
     door = new MeshObject(doorModel, MeshObject::Pickable);
     door->setObjectId(-3);
-    door->setObjectName("..");
+    door->setObjectName("Leave Directory");
     registerObject(-3, door);
+
+    /* arrows */
+    leftArrow = new MeshObject(leftArrowModel, MeshObject::Pickable);
+    leftArrow->setScale(0.4);
+    leftArrow->setPosition(QVector3D(-50, 90, 0));
+    leftArrow->setObjectId(-4);
+    registerObject(-4, leftArrow);
+
+    rightArrow = new MeshObject(rightArrowModel, MeshObject::Pickable);
+    rightArrow->setScale(0.4);
+    rightArrow->setPosition(QVector3D(50, 90, 0));
+    rightArrow->setObjectId(-5);
+    registerObject(-5, rightArrow);
 
     /* directories and files */
     QFile file(":/model/shelf.slots");
@@ -449,6 +440,7 @@ void View::setupMeshes() {
     QTextStream stream(&file);
     qreal x, y, z;
     stream >> slotCnt;
+    dir->setPageSize(slotCnt);
     for (int i = 0; i < slotCnt; ++i) {
         stream >> x >> y >> z;
         MeshObject *box = new MeshObject(dirModel);
@@ -480,17 +472,20 @@ View::~View() {
     for (auto obj : boxes) obj->deleteLater();
     for (auto obj : backBoxes) obj->deleteLater();
     trashBin->deleteLater();
+    door->deleteLater();
 
     for (auto model : backgroundModels) delete model;
     delete trashBinModel;
     delete dirModel;
     delete fileModel;
+    delete doorModel;
 
     delete picture;
     delete backPicture;
     delete hudObject;
 
     delete animation;
+    delete dir;
 }
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {

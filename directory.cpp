@@ -1,6 +1,7 @@
 #include "directory.h"
+#include <QtCore/QDebug>
 
-Directory::Directory() : QDir() {
+Directory::Directory() : QDir(), pageIndex(0) {
 #ifdef Q_OS_WIN
     isThisPc = false;
 #endif
@@ -9,58 +10,90 @@ Directory::Directory() : QDir() {
     updateLists();
 }
 
+void Directory::setPageSize(int size) { pageSize = size; }
+
 #ifdef Q_OS_WIN
 QString Directory::absolutePath() {
     return isThisPc ? "This PC" : QDir::absolutePath();
 }
+#endif
 
 bool Directory::cd(const QString &dirName) {
+#ifdef Q_OS_WIN
     if (isThisPc) {
         setPath(dirName);
         if (exists()) isThisPc = false;
         return !isThisPc;
     }
-    return QDir::cd(dirName);
-}
-
-bool cdUp() {
-    if (isThisPc) return false;
-    if (isRoot) { isThisPc = true; return true; }
-    return QDir::cdUp();
-}
-
-QStringList Directory::entryList() {
-    if (isThisPc) {
-        QStringList ret;
-        for (auto drive : QDir::drives())
-            ret << drive.filePath();
-        return ret;
-    }
-    return QDir::entryList();
-}
 #endif
+    bool success = QDir::cd(dirName);
+    if (success) updateLists();
+    return success;
+}
 
-int Directory::countDir() {
-    return dirCnt;
+bool Directory::cdUp() {
+#ifdef Q_OS_WIN
+    if (isThisPc) return false;
+    if (isRoot()) { isThisPc = true; return true; }
+#endif
+    bool success = QDir::cdUp();
+    if (success) updateLists();
+    return success;
+}
+
+uint Directory::count() {
+#ifdef Q_OS_WIN
+    if (isThisPc) return QDir::drives().size();
+#endif
+    return page.size();
+}
+
+uint Directory::countDir() {
+    int cnt = QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot).size();
+    cnt -= pageSize * pageIndex;
+    return cnt < 0 ? 0 : cnt;
+}
+
+QStringList Directory::entryList() { return page; }
+
+QString Directory::entry(int index) { return page[index]; }
+
+void Directory::nextPage() {
+    if (++pageIndex * pageSize >= QDir::count()) --pageIndex;
+    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+}
+
+void Directory::prevPage() {
+    if (pageIndex > 0) --pageIndex;
+    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
 
 QString Directory::getImage() {
     return imageList.isEmpty() ? ":/model/photo.png"
-        : absoluteFilePath(imageList[curImageIdx]);
+        : absoluteFilePath(imageList[imageIndex]);
 }
 
 QString Directory::getNextImage() {
     if (imageList.isEmpty()) return ":/model/photo.png";
-    if (++curImageIdx >= imageList.size())
-        curImageIdx -= imageList.size();
-    return absoluteFilePath(imageList[curImageIdx]);
+    if (++imageIndex >= imageList.size())
+        imageIndex -= imageList.size();
+    return absoluteFilePath(imageList[imageIndex]);
 }
 
 void Directory::updateLists() {
-    dirCnt = QDir::entryList(QDir::Dirs | QDir::NoDot).size();
+    qDebug() << "updating list";
+    pageIndex = 0;
+#ifdef Q_OS_WIN
+    if (isThisPC) {
+        page.clear();
+        for (auto drive : QDir::drives()) page << drive.filePath();
+        /* warning: assume drives are less than slots */
+    } else
+#endif
+    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 
     static const QStringList imageFilter = {
         "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
     imageList = QDir::entryList(imageFilter, QDir::Files);
-    curImageIdx = 0;
+    imageIndex = 0;
 }

@@ -5,6 +5,8 @@
     <file>model/frame.obj</file>
     <file>model/trash.obj</file>
     <file>model/door.obj</file>
+    <file>model/leftarrow.obj</file>
+    <file>model/rightarrow.obj</file>
     <file>model/photo.png</file>
 </qresource>
 </RCC>

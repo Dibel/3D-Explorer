@@ -7,29 +7,38 @@
 class Directory : public QDir {
 public:
     Directory();
+    void setPageSize(int size);
 
 #ifdef Q_OS_WIN
     QString absolutePath();
-    bool cd(const QString &dirName);
-    bool cdUp();
-    QStringList entryList();
 #endif
 
-    int countDir();
-    void updateLists();
+    bool cd(const QString &dirName);
+    bool cdUp();
+    uint count();
+    uint countDir();
+    QStringList entryList();
+    QString entry(int index);
+
+    void nextPage();
+    void prevPage();
+
     QString getImage();
     QString getNextImage();
 
 private:
+    void updateLists();
+
 #ifdef Q_OS_WIN
     bool isThisPc;
 #endif
 
-    QStringList bufferedEntryList;
-    int dirCnt;
+    int pageSize;
+    QStringList page;
+    int pageIndex;
 
     QStringList imageList;
-    int curImageIdx;
+    int imageIndex;
 };
 
 #endif
