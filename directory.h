@@ -32,7 +32,7 @@ private:
     void update();
 
 #ifdef Q_OS_WIN
-    bool isThisPc;
+    bool isThisPC;
 #endif
 
     int pageSize;
