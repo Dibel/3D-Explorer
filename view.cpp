@@ -7,20 +7,17 @@
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QDesktopServices>
 #include <QtCore/QVariantAnimation>
-
 #include <QtWidgets/QMessageBox>
 
 #include <QtCore/QDebug>
 
-#include <QtGlobal>
-
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
-View::View(int width, int height)
-    : pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL), enteringDir(NULL)
+View::View(int width, int height) :
+    pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
+    enteringDir(NULL), winDrive(false), pageCnt(1)
 {
-    winDrive = false;
     resize(width, height);
 
     camera()->setCenter(QVector3D(0, 50, 0));
@@ -28,49 +25,8 @@ View::View(int width, int height)
 
     mvp = calcMvp(camera(), size());
 
-    /* background */
-    QGLMaterial *shelfMaterial = new QGLMaterial();
-    shelfMaterial->setAmbientColor(QColor(192, 150, 128));
-    shelfMaterial->setSpecularColor(QColor(60, 60, 60));
-    shelfMaterial->setShininess(128);
-
-    QGLAbstractScene *shelfModel = QGLAbstractScene::loadScene(":/model/shelf.obj");
-    shelfModel->mainNode()->setMaterial(shelfMaterial);
-    shelfModel->mainNode()->setPosition(QVector3D(0, 0, 0));
-    MeshObject *shelf = new MeshObject(shelfModel, MeshObject::Static);
-
-    QGLAbstractScene *frameModel = QGLAbstractScene::loadScene(":/model/frame.obj");
-    frameModel->mainNode()->setMaterial(shelfMaterial);
-    frameModel->mainNode()->setPosition(QVector3D(-50, 50, 0));
-    MeshObject *frame = new MeshObject(frameModel, MeshObject::Static);
-
-    backgroundModels << shelfModel << frameModel;
-    background << shelf << frame;
-
-    trashBinModel = QGLAbstractScene::loadScene(":/model/trash.obj");
-    trashBinModel->mainNode()->setMaterial(shelfMaterial);
-    QMatrix4x4 trashBinTrans;
-    trashBinTrans.translate(QVector3D(40, 0, 10));
-    trashBinTrans.scale(0.2);
-    trashBinModel->mainNode()->setLocalTransform(trashBinTrans);
-
-    trashBin = new MeshObject(trashBinModel, MeshObject::Pickable);
-    trashBin->setObjectId(-2);
-    trashBin->setObjectName("垃圾桶");
-    registerObject(-2, trashBin);
-
-    /* boxes */
-    initializeBox();
-
-    /* HUD */
-    hudObject = new ImageObject(2, 2, ImageObject::Hud);
-
-    /* picture */
-    picture = new ImageObject(30, 20);
-    picture->setPosition(QVector3D(-50, 50, 1));
-    picture->regist(this, boxes.size());
-    backPicture = new ImageObject(30, 20);
-    backPicture->setPosition(QVector3D(-50, 50, 1));
+    loadModels();
+    setupMeshes();
 
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
@@ -81,55 +37,13 @@ View::View(int width, int height)
             animProg = var.toReal(); update(); });
     connect(animation, &QVariantAnimation::finished, this, &View::finishAnimation);
 
-    /* Garbage */
-    QGLBuilder builder;
-    builder.newSection(QGL::Faceted);
-    builder << QGLCube(12);
-
-    QGLMaterial *boxMaterial = new QGLMaterial();
-    boxMaterial->setAmbientColor(QColor(255, 255, 255));
-    boxMaterial->setDiffuseColor(QColor(150, 150, 150));
-    boxMaterial->setSpecularColor(QColor(255, 255, 255));
-    boxMaterial->setShininess(128);
-
     updateDir(boxes, picture);
 }
 
-View::~View() {
-    for (auto obj : background) obj->deleteLater();
-    for (auto obj : boxes) obj->deleteLater();
-    for (auto obj : backBoxes) obj->deleteLater();
-    trashBin->deleteLater();
-
-    for (auto model : backgroundModels) {
-        Q_ASSERT(model);
-        delete model;
-    }
-
-    Q_ASSERT(trashBinModel);
-    Q_ASSERT(dirModel);
-    Q_ASSERT(fileModel);
-
-    delete trashBinModel;
-    delete dirModel;
-    delete fileModel;
-
-    Q_ASSERT(picture);
-    Q_ASSERT(backPicture);
-    Q_ASSERT(hudObject);
-
-    delete picture;
-    delete backPicture;
-    delete hudObject;
-
-    Q_ASSERT(animation);
-    delete animation;
-}
-
-QImage View::paintHud(float x, float y, QString text) {
-    QImage ret(width(), height(), QImage::Format_ARGB32_Premultiplied);
-    ret.fill(Qt::transparent);
-    QPainter painter(&ret);
+void View::paintHud(qreal x = 0, qreal y = 0, QString text = QString()) {
+    QImage image(width(), height(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(Qt::transparent);
+    QPainter painter(&image);
     QFont font = painter.font();
     font.setPointSize(16);
     font.setBold(1);
@@ -145,11 +59,11 @@ QImage View::paintHud(float x, float y, QString text) {
 #else
     painter.drawText(0, 20, dir.absolutePath());
 #endif
-    return ret;
+    hudObject->setImage(image);
 }
 
 void View::resizeEvent(QResizeEvent *e) {
-    hudObject->setImage(paintHud(0, 0, QString()));
+    paintHud();
     update();
 }
 
@@ -167,17 +81,19 @@ void View::paintGL(QGLPainter *painter) {
     if (enteringDir) {
         if (painter->isPicking()) return;
 
-        /* TODO: better animation... */
-        painter->modelViewMatrix().scale(QVector3D(1, 1, 1)
-                * (1 + 19 * animProg * animProg));
-        qreal t = 1 - animProg;
-        t = t * t * t - 1;
-        painter->modelViewMatrix().translate(enteringDir->position() * t);
+        qreal t = animProg;
+        if (enteringDir->objectName() == "..") t = 1.0 - t;
+        if (t > 0.5) {
+            t = 2 - t * 2;
+            t = (2 - t * t) * 0.5;
+        } else t = t * t * 2;
+        camera()->setCenter(startCenter + t * deltaCenter);
+        camera()->setEye(startEye + t * deltaEye);
 
         painter->modelViewMatrix().push();
-
         painter->modelViewMatrix().translate(enteringDir->position());
         painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
+
         for (auto obj : background) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
@@ -255,7 +171,7 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
             boxes[i + offset]->setObjectName(QString());
             boxes[i + offset]->setScale(1, 1, 1);
         }
-        hudObject->setImage(paintHud(0, 0, QString()));
+        paintHud();
         update();
         return;
     }
@@ -276,63 +192,22 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
         boxes[slotCnt - 1]->setModel(dirModel);
         //boxes[slotCnt - 1]->setScale(1.2, 1.2, 1.2);
     }
-    hudObject->setImage(paintHud(0, 0, QString()));
+    paintHud();
     update();
 }
 
 void View::finishAnimation() {
+    camera()->setCenter(startCenter);
+    camera()->setEye(startEye);
+    if (enteringDir->objectName() != "..") {
+        for (int i = 0; i < boxes.size(); ++i) {
+            boxes[i]->setPickType(backBoxes[i]->pickType());
+            boxes[i]->setObjectName(backBoxes[i]->objectName());
+            boxes[i]->setModel(backBoxes[i]->model());
+        }
+        picture->setImage(backPicture->getImage());
+    }
     enteringDir = NULL;
-    for (int i = 0; i < boxes.size(); ++i) {
-        boxes[i]->setPickType(backBoxes[i]->pickType());
-        boxes[i]->setObjectName(backBoxes[i]->objectName());
-        boxes[i]->setModel(backBoxes[i]->model());
-    }
-    picture->setImage(backPicture->getImage());
-}
-
-void View::initializeBox() {
-    pageCnt = 1;
-    QFile file(":/model/shelf.slots");
-    file.open(QFile::ReadOnly);
-    QTextStream stream(&file);
-
-    qreal x, y, z;
-
-    QGLMaterial *boxMaterial = new QGLMaterial();
-    boxMaterial->setAmbientColor(QColor(255, 255, 255));
-    boxMaterial->setDiffuseColor(QColor(150, 150, 150));
-    boxMaterial->setSpecularColor(QColor(255, 255, 255));
-    boxMaterial->setShininess(128);
-
-    QGLBuilder dirBuilder;
-    dirBuilder.newSection(QGL::Faceted);
-    dirBuilder << QGLCube(6);
-    dirBuilder.currentNode()->setY(3);
-    dirModel = dirBuilder.finalizedSceneNode();
-
-    QMatrix4x4 trans;
-    trans.scale(QVector3D(0.5, 1, 1));
-    QGLBuilder fileBuilder;
-    fileBuilder.newSection(QGL::Faceted);
-    fileBuilder << QGLCube(6);
-    fileBuilder.currentNode()->setY(3);
-    fileBuilder.currentNode()->setLocalTransform(trans);
-    fileModel = fileBuilder.finalizedSceneNode();
-
-    stream >> slotCnt;
-    for (int i = 0; i < slotCnt; ++i) {
-        stream >> x >> y >> z;
-        MeshObject *box = new MeshObject(dirModel);
-        box->setMaterial(boxMaterial);
-        box->setPosition(QVector3D(x, y, z));
-        box->setObjectId(i);
-        boxes.push_back(box);
-
-        MeshObject *backBox = new MeshObject(dirModel);
-        backBox->setMaterial(boxMaterial);
-        backBox->setPosition(QVector3D(x, y, z));
-        backBoxes.push_back(backBox);
-    }
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -340,14 +215,14 @@ void View::hoverEnter(MeshObject *obj) {
     enteredObject = obj;
     if (!obj->objectName().isEmpty()) {
         QVector3D pos = mvp * obj->position();
-        hudObject->setImage(paintHud(pos.x(), pos.y(), obj->objectName()));
+        paintHud(pos.x(), pos.y(), obj->objectName());
         update();
     }
 }
 
 void View::hoverLeave() {
     enteredObject = NULL;
-    hudObject->setImage(paintHud(0, 0, QString()));
+    paintHud();
     update();
 }
 
@@ -387,11 +262,22 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             if(winDrive && pickedObject->objectName() != "..") {
                 winDrive = false;
             }
+
+            if (pickedObject->objectName() == "..")
+                updateDir(backBoxes, backPicture);
             dir.cd(pickedObject->objectName());
-            hudObject->setImage(paintHud(0, 0, ""));
+            if (pickedObject->objectName() != "..")
+                updateDir(backBoxes, backPicture);
+            else
+                updateDir(boxes, picture);
+
+            paintHud();
             pageCnt = 1;
-            updateDir(backBoxes, backPicture);
             enteringDir = pickedObject;
+            startCenter = camera()->center();
+            startEye = camera()->eye();
+            deltaCenter = camera()->center() * (0.05 - 1) + pickedObject->position();
+            deltaEye = camera()->eye() * (0.05 - 1) + pickedObject->position();
             animation->start();
 
         } else if (!QDesktopServices::openUrl(
@@ -443,7 +329,9 @@ void View::mousePressEvent(QMouseEvent *event) {
     QGLView::mousePressEvent(event);
 }
 
-void View::wheelEvent(QWheelEvent *) {}
+void View::wheelEvent(QWheelEvent *e) {
+    //QGLView::wheelEvent(e);
+}
 
 void View::mouseReleaseEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
@@ -520,6 +408,114 @@ void View::nextPicture() {
     if (++currentPicture >= pictureList.size())
         currentPicture -= pictureList.size();
     picture->setImage(dir.absoluteFilePath(pictureList[currentPicture]));
+}
+
+void View::loadModels() {
+    mat1 = new QGLMaterial();
+    mat1->setAmbientColor(QColor(192, 150, 128));
+    mat1->setSpecularColor(QColor(60, 60, 60));
+    mat1->setShininess(128);
+
+    mat2 = new QGLMaterial();
+    mat2->setAmbientColor(QColor(255, 255, 255));
+    mat2->setDiffuseColor(QColor(150, 150, 150));
+    mat2->setSpecularColor(QColor(255, 255, 255));
+    mat2->setShininess(128);
+
+    QGLAbstractScene *shelfModel = QGLAbstractScene::loadScene(":/model/shelf.obj");
+    shelfModel->mainNode()->setMaterial(mat1);
+    shelfModel->mainNode()->setPosition(QVector3D(0, 0, 0));
+    MeshObject *shelf = new MeshObject(shelfModel, MeshObject::Static);
+
+    QGLAbstractScene *frameModel = QGLAbstractScene::loadScene(":/model/frame.obj");
+    frameModel->mainNode()->setMaterial(mat1);
+    frameModel->mainNode()->setPosition(QVector3D(-50, 50, 0));
+    MeshObject *frame = new MeshObject(frameModel, MeshObject::Static);
+
+    backgroundModels << shelfModel << frameModel;
+
+    trashBinModel = QGLAbstractScene::loadScene(":/model/trash.obj");
+    trashBinModel->mainNode()->setMaterial(mat1);
+    QMatrix4x4 trashBinTrans;
+    trashBinTrans.translate(QVector3D(40, 0, 10));
+    trashBinTrans.scale(0.2);
+    trashBinModel->mainNode()->setLocalTransform(trashBinTrans);
+
+    QGLBuilder dirBuilder;
+    dirBuilder.newSection(QGL::Faceted);
+    dirBuilder << QGLCube(6);
+    dirBuilder.currentNode()->setY(3);
+    dirModel = dirBuilder.finalizedSceneNode();
+
+    QMatrix4x4 trans;
+    trans.scale(QVector3D(0.5, 1, 1));
+    QGLBuilder fileBuilder;
+    fileBuilder.newSection(QGL::Faceted);
+    fileBuilder << QGLCube(6);
+    fileBuilder.currentNode()->setY(3);
+    fileBuilder.currentNode()->setLocalTransform(trans);
+    fileModel = fileBuilder.finalizedSceneNode();
+}
+
+void View::setupMeshes() {
+    /* background items */
+    for (int i = 0; i < backgroundModels.size(); ++i)
+        background.push_back(new MeshObject(backgroundModels[i], MeshObject::Static));
+
+    /* trash bin */
+    trashBin = new MeshObject(trashBinModel, MeshObject::Pickable);
+    trashBin->setObjectId(-2);
+    trashBin->setObjectName("垃圾桶");
+    registerObject(-2, trashBin);
+
+    /* directories and files */
+    QFile file(":/model/shelf.slots");
+    file.open(QFile::ReadOnly);
+    QTextStream stream(&file);
+    qreal x, y, z;
+    stream >> slotCnt;
+    for (int i = 0; i < slotCnt; ++i) {
+        stream >> x >> y >> z;
+        MeshObject *box = new MeshObject(dirModel);
+        box->setMaterial(mat2);
+        box->setPosition(QVector3D(x, y, z));
+        box->setObjectId(i);
+        boxes.push_back(box);
+
+        MeshObject *backBox = new MeshObject(dirModel);
+        backBox->setMaterial(mat2);
+        backBox->setPosition(QVector3D(x, y, z));
+        backBoxes.push_back(backBox);
+    }
+    file.close();
+
+    /* picture */
+    picture = new ImageObject(30, 20);
+    picture->setPosition(QVector3D(-50, 50, 1));
+    picture->regist(this, boxes.size());
+    backPicture = new ImageObject(30, 20);
+    backPicture->setPosition(QVector3D(-50, 50, 1));
+
+    /* HUD */
+    hudObject = new ImageObject(2, 2, ImageObject::Hud);
+}
+
+View::~View() {
+    for (auto obj : background) obj->deleteLater();
+    for (auto obj : boxes) obj->deleteLater();
+    for (auto obj : backBoxes) obj->deleteLater();
+    trashBin->deleteLater();
+
+    for (auto model : backgroundModels) delete model;
+    delete trashBinModel;
+    delete dirModel;
+    delete fileModel;
+
+    delete picture;
+    delete backPicture;
+    delete hudObject;
+
+    delete animation;
 }
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {
