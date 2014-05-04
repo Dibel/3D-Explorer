@@ -1,4 +1,4 @@
-﻿#include "directory.h"
+#include "directory.h"
 #include <QtCore/QDebug>
 #include <QtWidgets/QMessageBox>
 
@@ -8,10 +8,12 @@ Directory::Directory() : QDir(), pageIndex(0) {
 #endif
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
     setSorting(QDir::DirsFirst | QDir::IgnoreCase);
-    update();
 }
 
-void Directory::setPageSize(int size) { pageSize = size; }
+void Directory::setPageSize(int size) {
+    pageSize = size;
+    update();
+}
 
 #ifdef Q_OS_WIN
 QString Directory::absolutePath() const{
@@ -24,6 +26,7 @@ bool Directory::cd(const QString &dirName) {
     if (isThisPC) {
         setPath(dirName);
         if (exists()) isThisPC = false;
+        update();
         return !isThisPC;
     }
 #endif
@@ -35,7 +38,7 @@ bool Directory::cd(const QString &dirName) {
 bool Directory::cdUp() {
 #ifdef Q_OS_WIN
     if (isThisPC) return false;
-    if (isRoot()) { isThisPC = true; return true; }
+    if (isRoot()) { isThisPC = true; update(); return true; }
 #endif
     bool success = QDir::cdUp();
     if (success) update();
@@ -70,7 +73,7 @@ void Directory::refresh() {
 
 bool Directory::remove(int index) {
 #ifdef Q_OS_WIN
-    if (isThisPc) return false;
+    if (isThisPC) return false;
 #endif
     if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
         return false;
@@ -82,11 +85,17 @@ bool Directory::remove(int index) {
 }
 
 void Directory::nextPage() {
+#ifdef Q_OS_WIN
+    if (isThisPC) return;
+#endif
     if (++pageIndex * pageSize >= QDir::count()) --pageIndex;
     page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
 
 void Directory::prevPage() {
+#ifdef Q_OS_WIN
+    if (isThisPC) return;
+#endif
     if (pageIndex > 0) --pageIndex;
     page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
@@ -116,7 +125,6 @@ void Directory::update() {
     }
 #endif
     page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
-
     static const QStringList imageFilter = {
         "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
     imageList = QDir::entryList(imageFilter, QDir::Files);

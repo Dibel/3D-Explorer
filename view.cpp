@@ -1,4 +1,4 @@
-﻿#include "view.h"
+#include "view.h"
 #include "imageobject.h"
 #include "meshobject.h"
 #include "directory.h"

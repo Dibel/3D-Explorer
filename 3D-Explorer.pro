@@ -10,13 +10,15 @@ HEADERS += \
     meshobject.h \
     view.h \
     imageobject.h \
-    directory.h
+    directory.h \
+    pickobject.h
 
 SOURCES += \
     main.cpp \
     meshobject.cpp \
     view.cpp \
     imageobject.cpp \
-    directory.cpp
+    directory.cpp \
+    pickobject.cpp
 
 QMAKE_CXXFLAGS += -std=gnu++0x
