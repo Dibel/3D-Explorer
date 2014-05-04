@@ -3,7 +3,7 @@
 
 Directory::Directory() : QDir(), pageIndex(0) {
 #ifdef Q_OS_WIN
-    isThisPc = false;
+    isThisPC = false;
 #endif
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
     setSorting(QDir::DirsFirst | QDir::IgnoreCase);
@@ -14,16 +14,16 @@ void Directory::setPageSize(int size) { pageSize = size; }
 
 #ifdef Q_OS_WIN
 QString Directory::absolutePath() {
-    return isThisPc ? "This PC" : QDir::absolutePath();
+    return isThisPC ? "This PC" : QDir::absolutePath();
 }
 #endif
 
 bool Directory::cd(const QString &dirName) {
 #ifdef Q_OS_WIN
-    if (isThisPc) {
+    if (isThisPC) {
         setPath(dirName);
-        if (exists()) isThisPc = false;
-        return !isThisPc;
+        if (exists()) isThisPC = false;
+        return !isThisPC;
     }
 #endif
     bool success = QDir::cd(dirName);
@@ -33,8 +33,8 @@ bool Directory::cd(const QString &dirName) {
 
 bool Directory::cdUp() {
 #ifdef Q_OS_WIN
-    if (isThisPc) return false;
-    if (isRoot()) { isThisPc = true; return true; }
+    if (isThisPC) return false;
+    if (isRoot()) { isThisPC = true; return true; }
 #endif
     bool success = QDir::cdUp();
     if (success) updateLists();
@@ -43,7 +43,7 @@ bool Directory::cdUp() {
 
 uint Directory::count() {
 #ifdef Q_OS_WIN
-    if (isThisPc) return QDir::drives().size();
+    if (isThisPC) return QDir::drives().size();
 #endif
     return page.size();
 }
