@@ -7,12 +7,14 @@ set(SOURCE
     view.cpp
     meshobject.cpp
     imageobject.cpp
+    directory.cpp
 )
 
 set(HEADER
     view.h
     meshobject.h
     imageobject.h
+    directory.h
 )
 
 set(RESOURCE

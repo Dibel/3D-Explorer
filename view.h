@@ -3,10 +3,10 @@
 
 #include <Qt3D/QGLView>
 #include <QtGui/QImage>
-#include <QtCore/QDir>
 
 class ImageObject;
 class MeshObject;
+class Directory;
 class QPaintDevice;
 class QGLAbstractScene;
 class QGLMaterial;
@@ -38,13 +38,13 @@ private:
     void setupMeshes();
 
     void paintHud(qreal x, qreal y, QString text);
-    void nextPicture();
     void updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
     void hoverEnter(MeshObject *object);
     void hoverLeave();
     void finishAnimation();
 
     MeshObject *enteringDir;
+    bool isLeavingDir;
     qreal animProg;
     QVariantAnimation *animation;
     QVector3D startCenter;
@@ -60,16 +60,18 @@ private:
     QVector<MeshObject*> boxes;
     QVector<MeshObject*> backBoxes;
     MeshObject *trashBin;
+    MeshObject *door;
     ImageObject *picture;
     ImageObject *backPicture;
     ImageObject *hudObject;
 
     QVector<QGLAbstractScene*> backgroundModels;
     QGLAbstractScene *trashBinModel;
+    QGLAbstractScene *doorModel;
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
 
-    QDir dir;
+    Directory *dir;
     int entryCnt;
     int dirEntryCnt;
     int slotCnt;
@@ -88,8 +90,6 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
-
-    bool winDrive;
 };
 
 #endif
