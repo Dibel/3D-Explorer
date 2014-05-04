@@ -9,12 +9,14 @@ RESOURCES += \
 HEADERS += \
     meshobject.h \
     view.h \
-    imageobject.h
+    imageobject.h \
+    directory.h
 
 SOURCES += \
     main.cpp \
     meshobject.cpp \
     view.cpp \
-    imageobject.cpp
+    imageobject.cpp \
+    directory.cpp
 
 QMAKE_CXXFLAGS += -std=gnu++0x

@@ -14,7 +14,7 @@ public:
     bool cdUp();
     QStringList entryList();
 #endif
-
+    int count();
     int countDir();
     void updateLists();
     QString getImage();

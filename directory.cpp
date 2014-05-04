@@ -23,9 +23,9 @@ bool Directory::cd(const QString &dirName) {
     return QDir::cd(dirName);
 }
 
-bool cdUp() {
+bool Directory::cdUp() {
     if (isThisPc) return false;
-    if (isRoot) { isThisPc = true; return true; }
+    if (isRoot()) { isThisPc = true; return true; }
     return QDir::cdUp();
 }
 
@@ -37,6 +37,10 @@ QStringList Directory::entryList() {
         return ret;
     }
     return QDir::entryList();
+}
+
+int Directory::count() {
+    return entryList().size();
 }
 #endif
 
