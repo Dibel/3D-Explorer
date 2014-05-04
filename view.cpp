@@ -1,6 +1,7 @@
 #include "view.h"
 #include "imageobject.h"
 #include "meshobject.h"
+#include "directory.h"
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLCube>
@@ -16,9 +17,11 @@ static QVector3D extendTo3D(const QPoint &pos, qreal depth);
 
 View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), winDrive(false), pageCnt(1)
+    enteringDir(NULL), isLeavingDir(false), pageCnt(1)
 {
     resize(width, height);
+
+    dir = new Directory;
 
     camera()->setCenter(QVector3D(0, 50, 0));
     camera()->setEye(QVector3D(0, 50, 300));
@@ -50,15 +53,7 @@ void View::paintHud(qreal x = 0, qreal y = 0, QString text = QString()) {
     painter.setFont(font);
     painter.setPen(QColor(Qt::red));
     painter.drawText(x, y, text);
-#ifdef Q_OS_WIN
-    if(winDrive) {
-        painter.drawText(0, 20, "我的电脑");
-    } else {
-        painter.drawText(0, 20, dir.absolutePath());
-    }
-#else
-    painter.drawText(0, 20, dir.absolutePath());
-#endif
+    painter.drawText(0, 20, dir->absolutePath());
     hudObject->setImage(image);
 }
 
@@ -78,11 +73,11 @@ void View::paintGL(QGLPainter *painter) {
 
     mvp = calcMvp(camera(), size());
     
-    if (enteringDir) {
+    if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
 
         qreal t = animProg;
-        if (enteringDir->objectName() == "..") t = 1.0 - t;
+        if (isLeavingDir) t = 1.0 - t;
         if (t > 0.5) {
             t = 2 - t * 2;
             t = (2 - t * t) * 0.5;
@@ -91,13 +86,17 @@ void View::paintGL(QGLPainter *painter) {
         camera()->setEye(startEye + t * deltaEye);
 
         painter->modelViewMatrix().push();
-        painter->modelViewMatrix().translate(enteringDir->position());
+        if (enteringDir)
+            painter->modelViewMatrix().translate(enteringDir->position());
+        else
+            painter->modelViewMatrix().translate(boxes[0]->position());
         painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
 
         for (auto obj : background) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
         trashBin->draw(painter);
+        door->draw(painter);
 
         painter->modelViewMatrix().pop();
     }
@@ -108,6 +107,7 @@ void View::paintGL(QGLPainter *painter) {
             obj->draw(painter);
     picture->draw(painter);
     trashBin->draw(painter);
+    door->draw(painter);
 
     glClear(GL_DEPTH_BUFFER_BIT);
     if (pickedObject)
@@ -117,22 +117,13 @@ void View::paintGL(QGLPainter *painter) {
 }
 
 void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
-    // Show picture
-    static const QStringList filter = {
-        "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
-    pictureList = dir.entryList(filter, QDir::Files);
-    currentPicture = 0;
+    dir->updateLists();
 
-    if (pictureList.isEmpty())
-        picture->setImage(":/model/photo.png");
-    else
-        picture->setImage(dir.absoluteFilePath(pictureList[currentPicture]));
+    picture->setImage(dir->getImage());
 
     /* update entry info */
-    QStringList entryList = dir.entryList(QDir::AllEntries | QDir::NoDot,
-            QDir::DirsFirst | QDir::IgnoreCase);
-    entryCnt = entryList.size();
-    dirEntryCnt = dir.entryList(QDir::Dirs | QDir::NoDot).size();
+    entryCnt = dir->count();
+    dirEntryCnt = dir->countDir();
 
     int offset = 0;
     if (pageCnt > 1) {
@@ -149,37 +140,9 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
         startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
     }
 
-#ifdef Q_OS_WIN
-    if (dir.dirName() == QString() && !winDrive && pageCnt == 1) {
-        boxes[0]->setObjectName("..");
-        boxes[0]->setPickType(MeshObject::Pickable);
-        offset = 1;
-        if (pageCnt == 1) {
-            startPos = 0;
-        } else {
-            startPos = (pageCnt - 1) * (slotCnt - 2);
-        }
-    }
-    if(winDrive) {
-        const QFileInfoList drives = QDir::drives();
-        for (int i = 0; i < drives.size() && i < slotCnt; ++i) {
-            boxes[i]->setPickType(MeshObject::Pickable);
-            boxes[i]->setObjectName(drives.at(i).absolutePath());
-        }
-        for (int i = drives.size(); i + offset < slotCnt; ++i) {
-            boxes[i + offset]->setPickType(MeshObject::Anchor);
-            boxes[i + offset]->setObjectName(QString());
-            boxes[i + offset]->setScale(1, 1, 1);
-        }
-        paintHud();
-        update();
-        return;
-    }
-#endif
-
     for (int i = 0; startPos + i < entryCnt && i + offset < slotCnt; ++i) {
         boxes[i + offset]->setPickType(MeshObject::Pickable);
-        boxes[i + offset]->setObjectName(entryList[startPos + i]);
+        boxes[i + offset]->setObjectName(dir->entryList()[startPos + i]);
         boxes[i + offset]->setModel(startPos + i < dirEntryCnt ? dirModel : fileModel);
     }
     for (int i = entryCnt - startPos; i + offset < slotCnt; ++i) {
@@ -199,7 +162,9 @@ void View::updateDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
 void View::finishAnimation() {
     camera()->setCenter(startCenter);
     camera()->setEye(startEye);
-    if (enteringDir->objectName() != "..") {
+    if (enteringDir) {
+        qDebug() << "enteringDir:" << enteringDir;
+        qDebug() << "leavingDir:" << isLeavingDir;
         for (int i = 0; i < boxes.size(); ++i) {
             boxes[i]->setPickType(backBoxes[i]->pickType());
             boxes[i]->setObjectName(backBoxes[i]->objectName());
@@ -208,6 +173,8 @@ void View::finishAnimation() {
         picture->setImage(backPicture->getImage());
     }
     enteringDir = NULL;
+    isLeavingDir = false;
+    update();
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -248,28 +215,12 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
         } else {
             startPos = (pageCnt - 2) * (slotCnt - 2) + slotCnt - 1;
         }
-#ifdef Q_OS_WIN
-        if (dir.dirName() == QString() && pickedObject->objectName() == "..") {
-            winDrive = true;
-        } else if (winDrive) {
-            dirEntryCnt = slotCnt;
-        } else if (dir.dirName() == QString() && !winDrive) {
-            dirEntryCnt++; //Aviod to open the folder in the Explorer
-        }
-#endif
+
         if (pickedObject->objectId() < (dirEntryCnt - startPos)) {
             hoverLeave();
-            if(winDrive && pickedObject->objectName() != "..") {
-                winDrive = false;
-            }
 
-            if (pickedObject->objectName() == "..")
-                updateDir(backBoxes, backPicture);
-            dir.cd(pickedObject->objectName());
-            if (pickedObject->objectName() != "..")
-                updateDir(backBoxes, backPicture);
-            else
-                updateDir(boxes, picture);
+            dir->cd(pickedObject->objectName());
+            updateDir(backBoxes, backPicture);
 
             paintHud();
             pageCnt = 1;
@@ -282,7 +233,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
 
         } else if (!QDesktopServices::openUrl(
                     "file:///" +
-                    dir.absoluteFilePath(pickedObject->objectName())))
+                    dir->absoluteFilePath(pickedObject->objectName())))
             qDebug() << "Open File Failed";
 
         pickedObject = NULL;
@@ -294,11 +245,29 @@ void View::mousePressEvent(QMouseEvent *event) {
         QObject *obj = objectForPoint(event->pos());
 
         if (obj == picture) {
-            nextPicture();
+            picture->setImage(dir->getNextImage());
             return;
         }
 
         if (obj == trashBin) return;
+
+        if (obj == door) {
+            isLeavingDir = true;
+            updateDir(backBoxes, backPicture);
+            dir->cdUp();
+            updateDir(boxes, picture);
+
+            /* TODO: merge with entering animation */
+            paintHud();
+            pageCnt = 1;
+            startCenter = camera()->center();
+            startEye = camera()->eye();
+            deltaCenter = camera()->center() * (0.05 - 1) + boxes[0]->position();
+            deltaEye = camera()->eye() * (0.05 - 1) + boxes[0]->position();
+            animation->start();
+
+            return;
+        }
 
         pickedObject = qobject_cast<MeshObject*>(obj);
         if (pickedObject && pickedObject->pickType() == MeshObject::Pickable) {
@@ -337,13 +306,13 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     if (pickedObject && event->button() == Qt::LeftButton) {
         /* release picked object */
         QObject *obj = objectForPoint(event->pos());
-        if (obj == picture) return;
+        if (obj == picture || obj == door) return;
         //Delete the file
         if (obj == trashBin) {
             if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) == QMessageBox::Yes) {
                 if (pickedObject->objectName() != ".." && (pickedObject->objectId() < dirEntryCnt
-                        ? QDir(dir.absoluteFilePath(pickedObject->objectName())).removeRecursively()
-                        : dir.remove(pickedObject->objectName())))
+                        ? QDir(dir->absoluteFilePath(pickedObject->objectName())).removeRecursively()
+                        : dir->remove(pickedObject->objectName())))
                 {
                     qDebug()<<"success";
                     hoverLeave();
@@ -381,7 +350,8 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
-    if (enteringDir) return;
+    /* FIXME: screen flicks at the end of leaving directory animation if mouse is moving */
+    if (enteringDir || isLeavingDir) return;
 
     if (pickedObject) {
         /* move picked object */
@@ -400,14 +370,6 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     }
 
     QGLView::mouseMoveEvent(event);
-}
-
-void View::nextPicture() {
-    /* TODO: improve performance */
-    if (pictureList.empty()) return;
-    if (++currentPicture >= pictureList.size())
-        currentPicture -= pictureList.size();
-    picture->setImage(dir.absoluteFilePath(pictureList[currentPicture]));
 }
 
 void View::loadModels() {
@@ -437,9 +399,16 @@ void View::loadModels() {
     trashBinModel = QGLAbstractScene::loadScene(":/model/trash.obj");
     trashBinModel->mainNode()->setMaterial(mat1);
     QMatrix4x4 trashBinTrans;
-    trashBinTrans.translate(QVector3D(40, 0, 10));
+    trashBinTrans.translate(QVector3D(-40, 0, 10));
     trashBinTrans.scale(0.2);
     trashBinModel->mainNode()->setLocalTransform(trashBinTrans);
+
+    doorModel = QGLAbstractScene::loadScene(":/model/door.obj");
+    doorModel->mainNode()->setMaterial(mat1);
+    QMatrix4x4 doorTrans;
+    doorTrans.translate(QVector3D(50, 36, 0));
+    doorTrans.scale(10);
+    doorModel->mainNode()->setLocalTransform(doorTrans);
 
     QGLBuilder dirBuilder;
     dirBuilder.newSection(QGL::Faceted);
@@ -467,6 +436,12 @@ void View::setupMeshes() {
     trashBin->setObjectId(-2);
     trashBin->setObjectName("垃圾桶");
     registerObject(-2, trashBin);
+
+    /* door */
+    door = new MeshObject(doorModel, MeshObject::Pickable);
+    door->setObjectId(-3);
+    door->setObjectName("..");
+    registerObject(-3, door);
 
     /* directories and files */
     QFile file(":/model/shelf.slots");

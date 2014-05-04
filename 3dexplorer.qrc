@@ -4,6 +4,7 @@
     <file>model/shelf.slots</file>
     <file>model/frame.obj</file>
     <file>model/trash.obj</file>
+    <file>model/door.obj</file>
     <file>model/photo.png</file>
 </qresource>
 </RCC>
