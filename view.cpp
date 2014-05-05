@@ -18,6 +18,9 @@ View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
     enteringDir(NULL), isLeavingDir(false)
 {
+    boxEffect = new QGLShaderProgramEffect();
+    boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
+    boxEffect->setFragmentShaderFromFile(":/shader/box.fsh");
     resize(width, height);
 
     dir = new Directory;
@@ -148,6 +151,7 @@ void View::finishAnimation() {
 
 void View::hoverEnter(MeshObject *obj) {
     enteredObject = obj;
+    obj->setEffect(boxEffect);
     QVector3D pos = mvp * obj->position();
     paintHud(pos.x(), pos.y(), obj->objectName());
     update();

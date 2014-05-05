@@ -1,12 +1,14 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>model/shelf.obj</file>
-    <file>model/shelf.slots</file>
-    <file>model/frame.obj</file>
-    <file>model/trash.obj</file>
-    <file>model/door.obj</file>
-    <file>model/leftarrow.obj</file>
-    <file>model/rightarrow.obj</file>
-    <file>model/photo.png</file>
-</qresource>
+<RCC>
+    <qresource prefix="/">
+        <file>model/shelf.obj</file>
+        <file>model/shelf.slots</file>
+        <file>model/frame.obj</file>
+        <file>model/trash.obj</file>
+        <file>model/door.obj</file>
+        <file>model/leftarrow.obj</file>
+        <file>model/rightarrow.obj</file>
+        <file>model/photo.png</file>
+        <file>shader/box.fsh</file>
+        <file>shader/box.vsh</file>
+    </qresource>
 </RCC>

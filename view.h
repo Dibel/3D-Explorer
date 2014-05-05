@@ -85,6 +85,8 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+
+    QGLShaderProgramEffect *boxEffect;
 };
 
 #endif
