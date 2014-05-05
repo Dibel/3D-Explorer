@@ -1,13 +1,11 @@
-varying vec3 normal, lightDir;
-varying vec2 texCoord;
+attribute highp vec4 qt_Vertex;
+attribute highp vec3 qt_Normal;
+uniform mediump mat4 qt_ModelViewProjectionMatrix;
 
-void main()
+void main(void)
 {
-    vec4 ecPos;
-    ecPos = vec4(gl_ModelViewMatrix * gl_Vertex);
-    lightDir = normalize(vec3(gl_LightSource[0].position) - ecPos.xyz);
-    normal = normalize(gl_NormalMatrix * gl_Normal);
 
-    texCoord = vec2(gl_MultiTexCoord0);
-    gl_Position = ftransform();
+   vec4 position = vec4((qt_Vertex.xyz + qt_Normal * 0.4), 1.0);
+   position = qt_ModelViewProjectionMatrix * position;
+   gl_Position = vec4(position);
 }

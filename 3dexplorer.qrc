@@ -10,5 +10,6 @@
         <file>model/photo.png</file>
         <file>shader/box.fsh</file>
         <file>shader/box.vsh</file>
+        <file>maps/floor.jpg</file>
     </qresource>
 </RCC>

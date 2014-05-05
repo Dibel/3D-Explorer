@@ -57,9 +57,10 @@ void View::paintHud(qreal x = 0, qreal y = 0, QString text = QString()) {
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
 
+
     QFont font = painter.font();
-    font.setPointSize(16);
-    font.setBold(2);
+    font.setPointSize(18);
+    font.setBold(1);
 
     QPainterPath path;
     if (!text.isEmpty()) path.addText(x, y, font, text);
@@ -182,6 +183,7 @@ void View::hoverEnter(MeshObject *obj) {
 }
 
 void View::hoverLeave() {
+    if(enteredObject != NULL) enteredObject->setEffect(0);
     enteredObject = NULL;
     paintHud();
     update();
@@ -204,7 +206,6 @@ void View::keyPressEvent(QKeyEvent *event) {
     }
     QGLView::keyPressEvent(event);
 }
-
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (enteringDir || isLeavingDir) return;
     if (pickedObject && event->button() == Qt::LeftButton) {
@@ -353,7 +354,6 @@ void View::mouseMoveEvent(QMouseEvent *event) {
         if (obj && obj->objectId() != -1 && obj->objectId() < dir->count())
             hoverEnter(qobject_cast<MeshObject*>(obj));
     }
-
     if (isRotating) {
         /* FIXME: moving mouse outside window may cause strange behaviour */
         QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - pressPos)).toVector3D();
@@ -451,8 +451,13 @@ void View::loadModels() {
     roomBuilder.newSection(QGL::Faceted);
     roomBuilder.addPane(QSizeF(roomSize * 2, roomHeight));
     QGLSceneNode *pane = roomBuilder.finalizedSceneNode();
-    pane->setMaterial(mat1);
-    pane->setBackMaterial(mat2);
+    QGLMaterial *roomMaterial = new QGLMaterial();
+    roomMaterial->setAmbientColor(QColor(95, 75, 58));
+    roomMaterial->setDiffuseColor(QColor(143, 122, 90));
+    roomMaterial->setSpecularColor(QColor(154, 135, 105));
+    roomMaterial->setShininess(90);
+    pane->setMaterial(roomMaterial);
+    //pane->setBackMaterial(mat2);
     pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
 
     MeshObject *front = new MeshObject(pane, this, -1);
@@ -482,6 +487,15 @@ void View::loadModels() {
     floorBuilder.addPane(roomSize * 2);
     floorBuilder.currentNode()->setLocalTransform(floorTrans);
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
+
+    QGLTexture2D *floorTexture = new QGLTexture2D();
+    QImage newImage;
+    newImage.load(":/maps/floor.jpg");
+    floorTexture->setImage(newImage);
+    QGLMaterial *floorMaterial = new QGLMaterial();
+    floorMaterial->setTexture(floorTexture);
+    floorNode->setMaterial(floorMaterial);
+    floorNode->setEffect(QGL::LitDecalTexture2D);
     MeshObject *floor = new MeshObject(floorNode, this, -1);
 
     QMatrix4x4 ceilTrans;
@@ -492,6 +506,8 @@ void View::loadModels() {
     ceilBuilder.addPane(roomSize * 2);
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
+    ceilNode->setMaterial(roomMaterial);
+    ceilNode->setBackMaterial(roomMaterial);
     MeshObject *ceil = new MeshObject(ceilNode, this, -1);
 
     staticMeshes << floor << ceil;
