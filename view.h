@@ -37,6 +37,10 @@ protected:
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
 
+    static const int roomSize = 100;
+    static const int roomHeight = 120;
+    static const int eyeHeight = 50;
+
     void loadModels();
     void setupObjects();
 
@@ -69,6 +73,12 @@ private:
 
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
+
+    bool isRotating;
+    QPoint pressPos;
+    QVector3D oldCameraCenter;
+
+    QGLLightParameters *light;
 
     Directory *dir;
 

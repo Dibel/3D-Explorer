@@ -13,23 +13,28 @@
 #include <QtCore/QDebug>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
-static QVector3D extendTo3D(const QPoint &pos, qreal depth);
+static QVector3D extendTo3D(const QPoint &pos, qreal depth = 0);
+static QVector3D screenToView(const QPoint &screenPos);
 
 View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false)
+    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false)
 {
     resize(width, height);
 
     dir = new Directory;
 
-    camera()->setCenter(QVector3D(0, 50, 0));
-    camera()->setEye(QVector3D(0, 50, 300));
+    camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
+    camera()->setEye(QVector3D(0, eyeHeight, 0));
+    camera()->setViewSize(QSizeF(6, 6));
 
     mvp = calcMvp(camera(), size());
 
     loadModels();
     setupObjects();
+
+    light = new QGLLightParameters(this);
+    light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
 
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
@@ -87,6 +92,8 @@ void View::paintGL(QGLPainter *painter) {
     Q_ASSERT(hudObject != NULL);
 
     mvp = calcMvp(camera(), size());
+
+    painter->addLight(light);
     
     if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
@@ -181,8 +188,8 @@ void View::keyPressEvent(QKeyEvent *event) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
         update();
     } else if (event->key() == Qt::Key_R) {
-        camera()->setCenter(QVector3D(0, 50, 0));
-        camera()->setEye(QVector3D(0, 50, 300));
+        camera()->setCenter(QVector3D(0, eyeHeight, 0));
+        camera()->setEye(QVector3D(0, eyeHeight, roomSize));
         camera()->setUpVector(QVector3D(0, 1, 0));
         paintHud();
         update();
@@ -204,6 +211,7 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             dir->cd(pickedObject->objectName());
             loadDir(backBoxes, backPicture);
 
+            /* FIXME: animation is broken */
             enteringDir = pickedObject;
             startCenter = camera()->center();
             startEye = camera()->eye();
@@ -225,7 +233,9 @@ void View::mousePressEvent(QMouseEvent *event) {
         PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
         if (!obj || obj->objectId() == -1) {
             paintHud();
-            QGLView::mousePressEvent(event);
+            isRotating = true;
+            pressPos = event->pos();
+            oldCameraCenter = camera()->center();
             return;
         }
 
@@ -280,7 +290,9 @@ void View::mousePressEvent(QMouseEvent *event) {
     }
 
     paintHud();
-    QGLView::mousePressEvent(event);
+    isRotating = true;
+    pressPos = event->pos();
+    oldCameraCenter = camera()->center();
 }
 
 void View::wheelEvent(QWheelEvent *e) { }
@@ -315,7 +327,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     }
 
     paintHud();
-    QGLView::mouseReleaseEvent(event);
+    isRotating = false;
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
@@ -338,7 +350,12 @@ void View::mouseMoveEvent(QMouseEvent *event) {
             hoverEnter(qobject_cast<MeshObject*>(obj));
     }
 
-    QGLView::mouseMoveEvent(event);
+    if (isRotating) {
+        /* FIXME: moving mouse outside window may cause strange behaviour */
+        QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - pressPos)).toVector3D();
+        QQuaternion rotation = QQuaternion::fromAxisAndAngle(QVector3D::crossProduct(oldCameraCenter, -moveVector), moveVector.length() * 40);
+        camera()->setCenter(rotation.rotatedVector(oldCameraCenter - QVector3D(0, eyeHeight, 0)) + QVector3D(0, eyeHeight, 0));
+    }
 }
 
 void View::loadModels() {
@@ -360,14 +377,14 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/shelf.obj");
     model->setParent(this);
     model->mainNode()->setMaterial(mat1);
-    model->mainNode()->setPosition(QVector3D(0, 0, 0));
+    model->mainNode()->setPosition(QVector3D(0, 0, -roomSize));
     staticMeshes << new MeshObject(model, this);
 
     /* photo frame */
     model = QGLAbstractScene::loadScene(":/model/frame.obj");
     model->setParent(this);
     model->mainNode()->setMaterial(mat1);
-    model->mainNode()->setPosition(QVector3D(-50, 50, 0));
+    model->mainNode()->setPosition(QVector3D(-50, 50, -roomSize));
     staticMeshes << new MeshObject(model, this);
 
     /* trash bin */
@@ -375,7 +392,7 @@ void View::loadModels() {
     model->setParent(this);
     model->mainNode()->setMaterial(mat1);
     QMatrix4x4 trashBinTrans;
-    trashBinTrans.translate(QVector3D(-40, 0, 10));
+    trashBinTrans.translate(QVector3D(-40, 0, 10 - roomSize));
     trashBinTrans.scale(0.2);
     model->mainNode()->setLocalTransform(trashBinTrans);
     staticMeshes << new MeshObject(model, this, TrashBin);
@@ -385,7 +402,7 @@ void View::loadModels() {
     model->setParent(this);
     model->mainNode()->setMaterial(mat1);
     QMatrix4x4 doorTrans;
-    doorTrans.translate(QVector3D(50, 36, 0));
+    doorTrans.translate(QVector3D(50, 36, -roomSize));
     doorTrans.scale(10);
     model->mainNode()->setLocalTransform(doorTrans);
     staticMeshes << new MeshObject(model, this, Door);
@@ -396,7 +413,7 @@ void View::loadModels() {
     model->mainNode()->setMaterial(mat2);
     mesh = new MeshObject(model, this, LeftArrow);
     mesh->setScale(0.4);
-    mesh->setPosition(QVector3D(-50, 90, 0));
+    mesh->setPosition(QVector3D(-50, 90, -roomSize));
     staticMeshes << mesh;
 
     model = QGLAbstractScene::loadScene(":/model/rightarrow.obj");
@@ -404,7 +421,7 @@ void View::loadModels() {
     model->mainNode()->setMaterial(mat2);
     mesh = new MeshObject(model, this, RightArrow);
     mesh->setScale(0.4);
-    mesh->setPosition(QVector3D(50, 90, 0));
+    mesh->setPosition(QVector3D(50, 90, -roomSize));
     staticMeshes << mesh;
 
     /* directory and file boxes */
@@ -424,6 +441,69 @@ void View::loadModels() {
     fileBuilder.currentNode()->setLocalTransform(trans);
     fileModel = fileBuilder.finalizedSceneNode();
     fileModel->setParent(this);
+
+    /* room, a cube that inside-out */
+    QGLBuilder roomBuilder;
+    roomBuilder.newSection(QGL::Faceted);
+    roomBuilder.addPane(QSizeF(roomSize * 2, roomHeight));
+    QGLSceneNode *pane = roomBuilder.finalizedSceneNode();
+    pane->setMaterial(mat1);
+    pane->setBackMaterial(mat2);
+    pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
+
+    MeshObject *front = new MeshObject(pane, this, -1);
+    front->setPosition(QVector3D(0, 0, -roomSize));
+
+    MeshObject *right = new MeshObject(pane, this, -1);
+    right->setPosition(QVector3D(-roomSize, 0, 0));
+    right->setRotationVector(QVector3D(0, 1, 0));
+    right->setRotationAngle(90);
+
+    MeshObject *back = new MeshObject(pane, this, -1);
+    back->setPosition(QVector3D(0, 0, roomSize));
+    back->setRotationVector(QVector3D(0, 1, 0));
+    back->setRotationAngle(180);
+
+    MeshObject *left = new MeshObject(pane, this, -1);
+    left->setPosition(QVector3D(roomSize, 0, 0));
+    left->setRotationVector(QVector3D(0, 1, 0));
+    left->setRotationAngle(270);
+
+    staticMeshes << front << right << back << left;
+
+    QMatrix4x4 floorTrans;
+    floorTrans.rotate(90, -1, 0, 0);
+    QGLBuilder floorBuilder;
+    floorBuilder.newSection(QGL::Faceted);
+    floorBuilder.addPane(roomSize * 2);
+    floorBuilder.currentNode()->setLocalTransform(floorTrans);
+    QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
+    MeshObject *floor = new MeshObject(floorNode, this, -1);
+
+    QMatrix4x4 ceilTrans;
+    ceilTrans.rotate(90, 1, 0, 0);
+    ceilTrans.translate(0, 0, -roomHeight);
+    QGLBuilder ceilBuilder;
+    ceilBuilder.newSection(QGL::Faceted);
+    ceilBuilder.addPane(roomSize * 2);
+    ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
+    QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
+    MeshObject *ceil = new MeshObject(ceilNode, this, -1);
+
+    staticMeshes << floor << ceil;
+
+    ////QGLMaterial *roomMat = new QGLMaterial;
+    ////roomMat->setColor(Qt::white);
+    //QGLBuilder roomBuilder;
+    //roomBuilder << QGLCube(300);
+    //roomBuilder.currentNode()->setY(300);
+    //roomBuilder.currentNode()->setMaterial(mat1);
+    //roomBuilder.currentNode()->setBackMaterial(mat2);
+    //QGLSceneNode *scene = roomBuilder.finalizedSceneNode();
+    ////scene->setMaterial(roomMat);
+    //mesh = new MeshObject(scene, this, -1);
+    ////mesh->disableLight();
+    //staticMeshes << mesh;
 }
 
 void View::setupObjects() {
@@ -438,22 +518,22 @@ void View::setupObjects() {
         stream >> x >> y >> z;
         MeshObject *box = new MeshObject(dirModel, this, i);
         box->setMaterial(mat2);
-        box->setPosition(QVector3D(x, y, z));
+        box->setPosition(QVector3D(x, y, z - roomSize));
         boxes.push_back(box);
 
         MeshObject *backBox = new MeshObject(dirModel, this, -2);
         backBox->setMaterial(mat2);
-        backBox->setPosition(QVector3D(x, y, z));
+        backBox->setPosition(QVector3D(x, y, z - roomSize));
         backBoxes.push_back(backBox);
     }
     file.close();
 
     /* picture */
     picture = new ImageObject(30, 20, this, ImageObject::Normal);
-    picture->setPosition(QVector3D(-50, 50, 1));
+    picture->setPosition(QVector3D(-50, 50, 1 - roomSize));
 
     backPicture = new ImageObject(30, 20, this, ImageObject::Background);
-    backPicture->setPosition(QVector3D(-50, 50, 1));
+    backPicture->setPosition(QVector3D(-50, 50, 1 - roomSize));
 
     /* HUD */
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
@@ -471,7 +551,8 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {
     QMatrix4x4 cameraMvp =
         camera->projectionMatrix(w / h) * camera->modelViewMatrix();
     /* transform from (-1~1,-1~1) to (0~800,0~600) */
-    QMatrix4x4 screenMvp = QMatrix4x4(w / 2, 0, 0, w / 2,
+    QMatrix4x4 screenMvp = QMatrix4x4(
+            w / 2, 0, 0, w / 2,
             0, -h / 2, 0, h / 2,
             0, 0, 1, 0,
             0, 0, 0, 1) *
@@ -481,4 +562,8 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {
 
 static QVector3D extendTo3D(const QPoint &pos, qreal depth) {
     return QVector3D(pos.x(), pos.y(), depth);
+}
+
+static QVector3D screenToView(const QPoint &screenPos) {
+    return QVector3D();
 }
