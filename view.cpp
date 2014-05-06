@@ -127,14 +127,46 @@ void View::paintGL(QGLPainter *painter) {
 
     for (auto obj : staticMeshes) obj->draw(painter);
     for (auto obj : boxes) 
-        if (obj != enteringDir && obj != pickedObject)
+        if (obj != enteringDir && obj != pickedObject && obj != enteredObject)
             obj->draw(painter);
     picture->draw(painter);
-
+    if(enteredObject) {
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_LIGHTING);
+        // Set the clear value for the stencil buffer, then clear it
+        glClearStencil(0);
+        glClear(GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_STENCIL_TEST);
+        // Set the stencil buffer to write a 1 in every time
+        // a pixel is written to the screen
+        glStencilFunc(GL_ALWAYS, 1, 0xFFFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        // Render the object in black
+        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+        enteredObject->draw(painter);
+        glDisable(GL_LIGHTING);
+        // Set the stencil buffer to only allow writing
+        // to the screen when the value of the
+        // stencil buffer is not 1
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFFFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        // Draw the object with thick lines
+        glLineWidth(2.0f);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        enteredObject->setEffect(boxEffect);
+        enteredObject->draw(painter);
+        // Pop the state changes off the attribute stack
+        // to set things back how they were
+        glPopAttrib();
+    }
     glClear(GL_DEPTH_BUFFER_BIT);
+
+//    if(enteredObject) {
+//        enteredObject->setEffect(0);
+//        enteredObject->draw(painter);
+//    }
     if (pickedObject)
         pickedObject->draw(painter);
-
     if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
 }
 
@@ -176,7 +208,7 @@ void View::finishAnimation() {
 
 void View::hoverEnter(MeshObject *obj) {
     enteredObject = obj;
-    obj->setEffect(boxEffect);
+    //obj->setEffect(boxEffect);
     QVector3D pos = mvp * obj->position();
     paintHud(pos.x(), pos.y(), obj->objectName());
     update();
@@ -455,7 +487,7 @@ void View::loadModels() {
     roomMaterial->setAmbientColor(QColor(95, 75, 58));
     roomMaterial->setDiffuseColor(QColor(143, 122, 90));
     roomMaterial->setSpecularColor(QColor(154, 135, 105));
-    roomMaterial->setShininess(90);
+    roomMaterial->setShininess(50);
     pane->setMaterial(roomMaterial);
     //pane->setBackMaterial(mat2);
     pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
