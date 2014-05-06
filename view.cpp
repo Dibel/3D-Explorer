@@ -11,8 +11,6 @@
 #include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
 
-//#include "qglviewprivate.h"
-
 #include <QtCore/QDebug>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
@@ -149,58 +147,18 @@ void View::paintGL(QGLPainter *painter) {
 
     for (auto obj : staticMeshes) obj->draw(painter);
     for (auto obj : boxes) 
-        if (obj != enteringDir && obj != pickedObject && obj != enteredObject)
+        if (obj != enteringDir && obj != pickedObject)
             obj->draw(painter);
     picture->draw(painter);
-    if (enteredObject) {
-        enteredObject->draw(painter);
 
-        if (isDrawingOutline) {
-            painter->setObjectPickId(enteredObject->objectId());
-            enteredObjectPickColor = painter->pickColor();
-            isDrawingOutline = false;
-        }
+    if (enteredObject && isDrawingOutline) {
+        painter->setObjectPickId(enteredObject->objectId());
+        enteredObjectPickColor = painter->pickColor();
+        isDrawingOutline = false;
     }
 
-    if (false) {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_LIGHTING);
-        // Set the clear value for the stencil buffer, then clear it
-        glClearStencil(0);
-        glClear(GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_STENCIL_TEST);
-        // Set the stencil buffer to write a 1 in every time
-        // a pixel is written to the screen
-        glStencilFunc(GL_ALWAYS, 1, -1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Render the object in black
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
-        enteredObject->draw(painter);
-
-        glClear(GL_DEPTH_BUFFER_BIT);
-
-        glDisable(GL_LIGHTING);
-        // Set the stencil buffer to only allow writing
-        // to the screen when the value of the
-        // stencil buffer is not 1
-        glStencilFunc(GL_NOTEQUAL, 1, -1);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Draw the object with thick lines
-        glLineWidth(2.0f);
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        enteredObject->setEffect(boxEffect);
-        enteredObject->draw(painter);
-        // Pop the state changes off the attribute stack
-        // to set things back how they were
-        glPopAttrib();
-    }
     glClear(GL_DEPTH_BUFFER_BIT);
 
-//    if(enteredObject) {
-//        enteredObject->setEffect(0);
-//        enteredObject->draw(painter);
-//    }
     if (pickedObject)
         pickedObject->draw(painter);
     if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
@@ -471,7 +429,8 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
     if (obj != enteredObject) {
         hoverLeave();
-        if (obj && obj->objectId() != -1 && obj->objectId() < dir->count())
+        if (obj && obj->objectId() != -1 && obj->objectId() < StartImageId)
+        //if (obj && obj->objectId() != -1 && obj->objectId() < dir->count())
             hoverEnter(qobject_cast<MeshObject*>(obj));
     }
     if (isRotating) {
