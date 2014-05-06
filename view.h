@@ -8,6 +8,7 @@
 class ImageObject;
 class MeshObject;
 class Directory;
+class PickSurface;
 class QPaintDevice;
 class QGLAbstractScene;
 class QGLMaterial;
@@ -15,6 +16,7 @@ class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLTexture2D;
 class QVariantAnimation;
+class QOpenGLFramebufferObject;
 
 class View : public QGLView {
     Q_OBJECT
@@ -49,6 +51,8 @@ private:
     void hoverEnter(MeshObject *object);
     void hoverLeave();
     void finishAnimation();
+
+    void debugFunc();
 
     MeshObject *enteringDir;
     bool isLeavingDir;
@@ -95,6 +99,10 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+    QOpenGLFramebufferObject *outlineFbo;
+    PickSurface *outlineSurface;
+    bool isDrawingOutline;
+    QColor enteredObjectPickColor;
 
     QGLShaderProgramEffect *boxEffect;
     bool isShowingFileName;

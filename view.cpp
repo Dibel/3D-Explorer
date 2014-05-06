@@ -7,8 +7,11 @@
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QDesktopServices>
+#include <QtGui/QOpenGLFramebufferObject>
 #include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
+
+//#include "qglviewprivate.h"
 
 #include <QtCore/QDebug>
 
@@ -16,14 +19,33 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth = 0);
 static QVector3D screenToView(const QPoint &screenPos);
 
+class PickSurface : public QGLAbstractSurface {
+public:
+    PickSurface(QGLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
+        QGLAbstractSurface(504), m_view(view), m_fbo(fbo), m_viewportGL(QPoint(0, 0), areaSize)
+    { }
+
+    QPaintDevice *device() const;
+    bool activate(QGLAbstractSurface *) { if (m_fbo) m_fbo->bind(); return true; }
+    void deactivate(QGLAbstractSurface *) { if (m_fbo) m_fbo->release(); }
+    QRect viewportGL() const { return m_viewportGL; }
+private:
+    QGLView *m_view;
+    QOpenGLFramebufferObject *m_fbo;
+    QRect m_viewportGL;
+};
+
 View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false)
+    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false), isDrawingOutline(false)
 {
     boxEffect = new QGLShaderProgramEffect();
     boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
     boxEffect->setFragmentShaderFromFile(":/shader/box.fsh");
     resize(width, height);
+
+    //outlineFbo = new QOpenGLFramebufferObject(size(), QOpenGLFramebufferObject::CombinedDepthStencil);
+    //outlineSurface = new PickSurface(this, outlineFbo, size());
 
     dir = new Directory;
 
@@ -130,7 +152,17 @@ void View::paintGL(QGLPainter *painter) {
         if (obj != enteringDir && obj != pickedObject && obj != enteredObject)
             obj->draw(painter);
     picture->draw(painter);
-    if(enteredObject) {
+    if (enteredObject) {
+        enteredObject->draw(painter);
+
+        if (isDrawingOutline) {
+            painter->setObjectPickId(enteredObject->objectId());
+            enteredObjectPickColor = painter->pickColor();
+            isDrawingOutline = false;
+        }
+    }
+
+    if (false) {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
         glEnable(GL_LIGHTING);
         // Set the clear value for the stencil buffer, then clear it
@@ -139,19 +171,23 @@ void View::paintGL(QGLPainter *painter) {
         glEnable(GL_STENCIL_TEST);
         // Set the stencil buffer to write a 1 in every time
         // a pixel is written to the screen
-        glStencilFunc(GL_ALWAYS, 1, 0xFFFF);
+        glStencilFunc(GL_ALWAYS, 1, -1);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Render the object in black
         glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
         enteredObject->draw(painter);
+
+        glClear(GL_DEPTH_BUFFER_BIT);
+
         glDisable(GL_LIGHTING);
         // Set the stencil buffer to only allow writing
         // to the screen when the value of the
         // stencil buffer is not 1
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFFFF);
+        glStencilFunc(GL_NOTEQUAL, 1, -1);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Draw the object with thick lines
         glLineWidth(2.0f);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         enteredObject->setEffect(boxEffect);
         enteredObject->draw(painter);
@@ -221,6 +257,56 @@ void View::hoverLeave() {
     update();
 }
 
+QImage drawOutlineImage(const QImage &src) {
+    static bool bmap[1000][800] = { };
+    QImage dst(src.size(), QImage::Format_ARGB32_Premultiplied);
+    //QVector<QRgb> dstTable = { QColor(Qt::transparent).rgba(), QColor(Qt::green).rgba() };
+    //dst.setColorTable(dstTable);
+    dst.fill(Qt::transparent);
+    QPainter painter(&dst);
+    painter.setPen(Qt::green);
+    QVector<QRgb> colorTable = src.colorTable();
+    //dst.setColorTable(colorTable);
+    for (int i = 0; i < src.width(); ++i)
+        for (int j = 0; j < src.height(); ++j)
+            if (src.pixelIndex(i, j))
+                for (int x = -3; x <= 3; ++x)
+                    for (int y = -3; y <= 3; ++y)
+                        if (!src.pixelIndex(i + x, j + y))
+                            painter.drawPoint(i + x, j + y);
+    return dst;
+}
+
+void View::debugFunc() {
+    outlineFbo = new QOpenGLFramebufferObject(size(), QOpenGLFramebufferObject::CombinedDepthStencil);
+    outlineSurface = new PickSurface(this, outlineFbo, size());
+
+    QGLPainter painter(this);
+    painter.pushSurface(outlineSurface);
+    painter.setPicking(true);
+    isDrawingOutline = true;
+    painter.clearPickObjects();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    painter.setEye(QGL::NoEye);
+    painter.setCamera(camera());
+    paintGL(&painter);
+    painter.setPicking(false);
+    painter.popSurface();
+
+    qDebug() << enteredObjectPickColor;
+
+    QImage image = outlineFbo->toImage();
+    image.save("full.png", "PNG", 100);
+    QImage filtered = image.createMaskFromColor(enteredObjectPickColor.rgba());
+    filtered.save("filtered.png", "PNG", 100);
+    QImage outline = drawOutlineImage(filtered);
+    outline.save("outline.png", "PNG", 100);
+    qDebug() << "done";
+
+    hudObject->setImage(outline);
+    update();
+}
+
 void View::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
@@ -235,6 +321,8 @@ void View::keyPressEvent(QKeyEvent *event) {
         isShowingFileName = !isShowingFileName;
         paintHud();
         update();
+    } else if (event->key() == Qt::Key_D) {
+        debugFunc();
     }
     QGLView::keyPressEvent(event);
 }
