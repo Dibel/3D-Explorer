@@ -39,9 +39,9 @@ View::View(int width, int height) :
     enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false),
     fbo(NULL), surface(NULL)
 {
-    //phongEffect = new QGLShaderProgramEffect();
-    //phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
-    //phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
+    phongEffect = new QGLShaderProgramEffect();
+    phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
+    phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
 
     boxEffect = new QGLShaderProgramEffect();
     boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
@@ -123,10 +123,10 @@ void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
 
     painter->addLight(light);
-    //painter->setUserEffect(phongEffect);
-    //phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
-    //phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
-    //phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    painter->setUserEffect(phongEffect);
+    phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
+    phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
     if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
 

@@ -25,7 +25,7 @@ void main(void)
     // Specular Light
     vec3 vReflection = normalize(reflect(-normalize(vVaryingLightDir), normalize(vVaryingNormal)));
     float spec = max(0.0, dot(normalize(vVaryingNormal), vReflection));
-    if(diff != 0) {
+    if(diff != 0.0) {
         float fSpec = pow(spec, 128.0);
         gl_FragColor.rgb += vec3(fSpec, fSpec, fSpec);
     }

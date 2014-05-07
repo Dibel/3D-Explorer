@@ -32,7 +32,7 @@ void main(void)
     vec3 vPosition3 = vPosition4.xyz / vPosition4.w;
 
     // Get vector to light source
-    vVaryingLightDir = normalize(qt_Light.position - vPosition3);
+    vVaryingLightDir = normalize(qt_Light.position.xyz - vPosition3);
 
     // Pass along the texture coordinates
     vTexCoords = qt_MultiTexCoord0.st;
