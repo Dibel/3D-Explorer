@@ -6,6 +6,7 @@
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLShaderProgramEffect>
+#include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QDesktopServices>
 #include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
@@ -20,6 +21,10 @@ View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
     enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false)
 {
+    phongEffect = new QGLShaderProgramEffect();
+    phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
+    phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
+
     boxEffect = new QGLShaderProgramEffect();
     boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
     boxEffect->setFragmentShaderFromFile(":/shader/box.fsh");
@@ -98,7 +103,10 @@ void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
 
     painter->addLight(light);
-    
+    painter->setUserEffect(phongEffect);
+    phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
+    phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
     if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
 
@@ -117,6 +125,7 @@ void View::paintGL(QGLPainter *painter) {
         else
             painter->modelViewMatrix().translate(boxes[0]->position());
         painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
+
 
         for (auto obj : staticMeshes) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
@@ -398,13 +407,13 @@ void View::loadModels() {
     mat1 = new QGLMaterial(this);
     mat1->setAmbientColor(QColor(192, 150, 128));
     mat1->setSpecularColor(QColor(60, 60, 60));
-    mat1->setShininess(128);
+    mat1->setShininess(20);
 
     mat2 = new QGLMaterial(this);
     mat2->setAmbientColor(QColor(255, 255, 255));
     mat2->setDiffuseColor(QColor(150, 150, 150));
     mat2->setSpecularColor(QColor(255, 255, 255));
-    mat2->setShininess(128);
+    mat2->setShininess(20);
 
     QGLAbstractScene *model;
     MeshObject *mesh;
@@ -487,7 +496,7 @@ void View::loadModels() {
     roomMaterial->setAmbientColor(QColor(95, 75, 58));
     roomMaterial->setDiffuseColor(QColor(143, 122, 90));
     roomMaterial->setSpecularColor(QColor(154, 135, 105));
-    roomMaterial->setShininess(50);
+    roomMaterial->setShininess(10);
     pane->setMaterial(roomMaterial);
     //pane->setBackMaterial(mat2);
     pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
@@ -526,6 +535,10 @@ void View::loadModels() {
     floorTexture->setImage(newImage);
     QGLMaterial *floorMaterial = new QGLMaterial();
     floorMaterial->setTexture(floorTexture);
+    floorMaterial->setDiffuseColor(QColor(255, 255, 255));
+    floorMaterial->setSpecularColor(QColor(255, 255, 255));
+    floorMaterial->setShininess(60);
+    floorMaterial->setTextureCombineMode(QGLMaterial::Decal);
     floorNode->setMaterial(floorMaterial);
     floorNode->setEffect(QGL::LitDecalTexture2D);
     MeshObject *floor = new MeshObject(floorNode, this, -1);
@@ -538,8 +551,14 @@ void View::loadModels() {
     ceilBuilder.addPane(roomSize * 2);
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
-    ceilNode->setMaterial(roomMaterial);
-    ceilNode->setBackMaterial(roomMaterial);
+
+    QGLMaterial *ceilMaterial = new QGLMaterial();
+    ceilMaterial->setAmbientColor(QColor(255, 255, 255));
+    ceilMaterial->setDiffuseColor(QColor(255, 255, 255));
+    ceilMaterial->setSpecularColor(QColor(255, 255, 255));
+    ceilMaterial->setShininess(40);
+    ceilNode->setMaterial(ceilMaterial);
+    //ceilNode->setBackMaterial(roomMaterial);
     MeshObject *ceil = new MeshObject(ceilNode, this, -1);
 
     staticMeshes << floor << ceil;

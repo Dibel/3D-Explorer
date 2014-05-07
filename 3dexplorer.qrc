@@ -11,5 +11,7 @@
         <file>shader/box.fsh</file>
         <file>shader/box.vsh</file>
         <file>maps/floor.jpg</file>
+        <file>shader/phong.fsh</file>
+        <file>shader/phong.vsh</file>
     </qresource>
 </RCC>

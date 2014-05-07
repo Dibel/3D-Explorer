@@ -96,6 +96,7 @@ private:
 
     MeshObject *enteredObject;
 
+    QGLShaderProgramEffect *phongEffect;
     QGLShaderProgramEffect *boxEffect;
     bool isShowingFileName;
 };
