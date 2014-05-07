@@ -132,7 +132,6 @@ void View::paintGL(QGLPainter *painter) {
     picture->draw(painter);
     if(enteredObject) {
         glPushAttrib(GL_ALL_ATTRIB_BITS);
-        glEnable(GL_LIGHTING);
         // Set the clear value for the stencil buffer, then clear it
         glClearStencil(0);
         glClear(GL_STENCIL_BUFFER_BIT);
@@ -142,15 +141,16 @@ void View::paintGL(QGLPainter *painter) {
         glStencilFunc(GL_ALWAYS, 1, 0xFFFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Render the object in black
-        glPolygonMode( GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        enteredObject->setEffect(0);
         enteredObject->draw(painter);
-        glDisable(GL_LIGHTING);
         // Set the stencil buffer to only allow writing
         // to the screen when the value of the
         // stencil buffer is not 1
         glStencilFunc(GL_NOTEQUAL, 1, 0xFFFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
         // Draw the object with thick lines
+
         glLineWidth(2.0f);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         enteredObject->setEffect(boxEffect);
@@ -160,11 +160,11 @@ void View::paintGL(QGLPainter *painter) {
         glPopAttrib();
     }
     glClear(GL_DEPTH_BUFFER_BIT);
-
 //    if(enteredObject) {
 //        enteredObject->setEffect(0);
 //        enteredObject->draw(painter);
 //    }
+
     if (pickedObject)
         pickedObject->draw(painter);
     if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
