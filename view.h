@@ -8,6 +8,8 @@
 class ImageObject;
 class MeshObject;
 class Directory;
+class PickSurface;
+class QGLFramebufferObjectSurface;
 class QPaintDevice;
 class QGLAbstractScene;
 class QGLMaterial;
@@ -50,6 +52,8 @@ private:
     void hoverLeave();
     void finishAnimation();
 
+    void debugFunc();
+
     MeshObject *enteringDir;
     bool isLeavingDir;
     qreal animProg;
@@ -70,6 +74,7 @@ private:
     ImageObject *picture;
     ImageObject *backPicture;
     ImageObject *hudObject;
+    ImageObject *outline;
 
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
@@ -95,6 +100,8 @@ private:
     qreal pickedDepth;
 
     MeshObject *enteredObject;
+    QOpenGLFramebufferObject *fbo;
+    PickSurface *surface;
 
     QGLShaderProgramEffect *phongEffect;
     QGLShaderProgramEffect *boxEffect;

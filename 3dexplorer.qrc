@@ -13,5 +13,7 @@
         <file>maps/floor.jpg</file>
         <file>shader/phong.fsh</file>
         <file>shader/phong.vsh</file>
+        <file>shader/outline.fsh</file>
+        <file>shader/outline.vsh</file>
     </qresource>
 </RCC>

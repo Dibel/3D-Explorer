@@ -6,12 +6,13 @@
 
 class QGLPainter;
 class QGLSceneNode;
+class QGLShaderProgramEffect;
 class QGLView;
 
 class ImageObject : public PickObject {
     Q_OBJECT
 public:
-    enum Type { Normal, Background, Hud };
+    enum Type { Normal, Background, Hud, Outline };
 
     ImageObject(int width, int height, QGLView *view, Type type = Normal);
     ~ImageObject();
@@ -28,6 +29,8 @@ private:
     QGLView *view;
     Type type;
     QImage image;
+
+    QGLShaderProgramEffect *outlineEffect;
 };
 
 #endif

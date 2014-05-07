@@ -5,25 +5,43 @@
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLCube>
+#include <Qt3D/QGLFramebufferObjectSurface>
 #include <Qt3D/QGLShaderProgramEffect>
-#include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QDesktopServices>
+#include <QtGui/QOpenGLFramebufferObject>
+#include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
-
 #include <QtCore/QDebug>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth = 0);
 static QVector3D screenToView(const QPoint &screenPos);
 
+class PickSurface : public QGLAbstractSurface {
+public:
+    PickSurface(QGLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
+        QGLAbstractSurface(504), m_view(view), m_fbo(fbo),
+        m_viewportGL(QPoint(0, 0), areaSize) { }
+
+    QPaintDevice *device() const;
+    bool activate(QGLAbstractSurface *) { if (m_fbo) m_fbo->bind(); return true; }
+    void deactivate(QGLAbstractSurface *) { if (m_fbo) m_fbo->release(); }
+    QRect viewportGL() const { return m_viewportGL; }
+private:
+    QGLView *m_view;
+    QOpenGLFramebufferObject *m_fbo;
+    QRect m_viewportGL;
+};
+
 View::View(int width, int height) :
-    pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL),
-    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false)
+    pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL), outline(NULL),
+    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false),
+    fbo(NULL), surface(NULL)
 {
-    phongEffect = new QGLShaderProgramEffect();
-    phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
-    phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
+    //phongEffect = new QGLShaderProgramEffect();
+    //phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
+    //phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
 
     boxEffect = new QGLShaderProgramEffect();
     boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
@@ -52,6 +70,8 @@ View::View(int width, int height) :
     connect(animation, &QVariantAnimation::valueChanged, [=](const QVariant &var) {
             animProg = var.toReal(); update(); });
     connect(animation, &QVariantAnimation::finished, this, &View::finishAnimation);
+
+    outline = new ImageObject(2, 2, this, ImageObject::Outline);
 
     loadDir(boxes, picture);
 }
@@ -103,10 +123,10 @@ void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
 
     painter->addLight(light);
-    painter->setUserEffect(phongEffect);
-    phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
-    phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
-    phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    //painter->setUserEffect(phongEffect);
+    //phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
+    //phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    //phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
     if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
 
@@ -136,46 +156,16 @@ void View::paintGL(QGLPainter *painter) {
 
     for (auto obj : staticMeshes) obj->draw(painter);
     for (auto obj : boxes) 
-        if (obj != enteringDir && obj != pickedObject && obj != enteredObject)
+        if (obj != enteringDir && obj != pickedObject) // && obj != enteredObject)
             obj->draw(painter);
     picture->draw(painter);
-    if(enteredObject) {
-        glPushAttrib(GL_ALL_ATTRIB_BITS);
-        // Set the clear value for the stencil buffer, then clear it
-        glClearStencil(0);
-        glClear(GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_STENCIL_TEST);
-        // Set the stencil buffer to write a 1 in every time
-        // a pixel is written to the screen
-        glStencilFunc(GL_ALWAYS, 1, 0xFFFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Render the object in black
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        enteredObject->setEffect(0);
-        enteredObject->draw(painter);
-        // Set the stencil buffer to only allow writing
-        // to the screen when the value of the
-        // stencil buffer is not 1
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFFFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        // Draw the object with thick lines
 
-        glLineWidth(2.0f);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        enteredObject->setEffect(boxEffect);
-        enteredObject->draw(painter);
-        // Pop the state changes off the attribute stack
-        // to set things back how they were
-        glPopAttrib();
-    }
     glClear(GL_DEPTH_BUFFER_BIT);
-//    if(enteredObject) {
-//        enteredObject->setEffect(0);
-//        enteredObject->draw(painter);
-//    }
-
     if (pickedObject)
         pickedObject->draw(painter);
+
+    if (enteredObject && enteredObject->pickType() == MeshObject::Normal) outline->draw(painter);
+    glClear(GL_DEPTH_BUFFER_BIT);
     if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
 }
 
@@ -215,16 +205,51 @@ void View::finishAnimation() {
     update();
 }
 
+void View::debugFunc() {
+    qDebug() << "done";
+    update();
+}
+
 void View::hoverEnter(MeshObject *obj) {
     enteredObject = obj;
-    //obj->setEffect(boxEffect);
+    if (enteredObject->pickType() != MeshObject::Normal) return;
+
     QVector3D pos = mvp * obj->position();
     paintHud(pos.x(), pos.y(), obj->objectName());
+
+    if (!fbo)
+        fbo = new QOpenGLFramebufferObject(size(), QOpenGLFramebufferObject::CombinedDepthStencil);
+    if (!surface)
+        surface = new PickSurface(this, fbo, size());
+    QGLPainter painter(this);
+    painter.pushSurface(surface);
+    painter.setPicking(true);
+    painter.clearPickObjects();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    painter.setEye(QGL::NoEye);
+    painter.setCamera(camera());
+
+    enteredObject->ignoreMuting(true);
+    PickObject::muteObjectId(true);
+
+    paintGL(&painter);
+
+    enteredObject->ignoreMuting(false);
+    PickObject::muteObjectId(false);
+
+    painter.setPicking(false);
+    painter.popSurface();
+
+    /* FIXME: use texture id */
+    outline->setImage(fbo->toImage());
+
     update();
 }
 
 void View::hoverLeave() {
-    if(enteredObject != NULL) enteredObject->setEffect(0);
+    //if (enteredObject)
+    //qDebug() << "left" << enteredObject;
+    //if(enteredObject != NULL) enteredObject->setEffect(0);
     enteredObject = NULL;
     paintHud();
     update();
@@ -244,9 +269,11 @@ void View::keyPressEvent(QKeyEvent *event) {
         isShowingFileName = !isShowingFileName;
         paintHud();
         update();
-    }
+    } else if (event->key() == Qt::Key_D)
+        debugFunc();
     QGLView::keyPressEvent(event);
 }
+
 void View::mouseDoubleClickEvent(QMouseEvent *event) {
     if (enteringDir || isLeavingDir) return;
     if (pickedObject && event->button() == Qt::LeftButton) {
@@ -293,6 +320,7 @@ void View::mousePressEvent(QMouseEvent *event) {
         if (obj->objectId() == TrashBin) return;
 
         if (obj->objectId() == Door) {
+            enteredObject = NULL;
             isLeavingDir = true;
             loadDir(backBoxes, backPicture);
             dir->cdUp();
@@ -380,6 +408,13 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     /* FIXME: screen flicks at the end of leaving directory animation if mouse is moving */
     if (enteringDir || isLeavingDir) return;
 
+    PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
+    if (obj != enteredObject) {
+        hoverLeave();
+        if (obj && obj->objectId() != -1 && obj->objectId() < StartImageId)
+            hoverEnter(qobject_cast<MeshObject*>(obj));
+    }
+
     if (pickedObject) {
         /* move picked object */
         pickedObject->setPosition(mvp.inverted() *
@@ -389,12 +424,6 @@ void View::mouseMoveEvent(QMouseEvent *event) {
         return;
     }
 
-    PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
-    if (obj != enteredObject) {
-        hoverLeave();
-        if (obj && obj->objectId() != -1 && obj->objectId() < dir->count())
-            hoverEnter(qobject_cast<MeshObject*>(obj));
-    }
     if (isRotating) {
         /* FIXME: moving mouse outside window may cause strange behaviour */
         QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - pressPos)).toVector3D();

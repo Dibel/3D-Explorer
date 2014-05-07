@@ -1,6 +1,7 @@
 #include "imageobject.h"
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLPainter>
+#include <Qt3D/QGLShaderProgramEffect>
 #include <Qt3D/QGLTexture2D>
 #include <Qt3D/QGLView>
 
@@ -13,7 +14,14 @@ ImageObject::ImageObject(int width, int height, QGLView *view, Type type)
     node = builder.finalizedSceneNode();
 
     node->setMaterial(new QGLMaterial());
-    node->setEffect(QGL::FlatReplaceTexture2D);
+    if (type != Outline)
+        node->setEffect(QGL::FlatReplaceTexture2D);
+    else {
+        outlineEffect = new QGLShaderProgramEffect();
+        outlineEffect->setVertexShaderFromFile(":/shader/outline.vsh");
+        outlineEffect->setFragmentShaderFromFile(":/shader/outline.fsh");
+        node->setUserEffect(outlineEffect);
+    }
 }
 
 ImageObject::~ImageObject() {
@@ -58,6 +66,12 @@ void ImageObject::draw(QGLPainter *painter) {
 
         painter->modelViewMatrix().pop();
         painter->projectionMatrix().pop();
+
+    } else if (type == Outline) {
+        glEnable(GL_BLEND);
+        outlineEffect->setActive(painter, true);
+        node->draw(painter);
+        glDisable(GL_BLEND);
 
     } else if (painter->isPicking()) {
         int prevPickId = painter->objectPickId();
