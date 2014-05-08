@@ -408,6 +408,15 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     /* FIXME: screen flicks at the end of leaving directory animation if mouse is moving */
     if (enteringDir || isLeavingDir) return;
 
+    if (isRotating) {
+        /* FIXME: moving mouse outside window may cause strange behaviour */
+        /* The bug is caused by center() - eye() == (0, y, 0), which is parallel to up vector */
+        QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - pressPos)).toVector3D();
+        QQuaternion rotation = QQuaternion::fromAxisAndAngle(QVector3D::crossProduct(oldCameraCenter, -moveVector), moveVector.length() * 40);
+        camera()->setCenter(rotation.rotatedVector(oldCameraCenter - QVector3D(0, eyeHeight, 0)) + QVector3D(0, eyeHeight, 0));
+        return;
+    }
+
     PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
     if (obj != enteredObject) {
         hoverLeave();
@@ -422,13 +431,6 @@ void View::mouseMoveEvent(QMouseEvent *event) {
                 pickedModelPos);
         update();
         return;
-    }
-
-    if (isRotating) {
-        /* FIXME: moving mouse outside window may cause strange behaviour */
-        QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - pressPos)).toVector3D();
-        QQuaternion rotation = QQuaternion::fromAxisAndAngle(QVector3D::crossProduct(oldCameraCenter, -moveVector), moveVector.length() * 40);
-        camera()->setCenter(rotation.rotatedVector(oldCameraCenter - QVector3D(0, eyeHeight, 0)) + QVector3D(0, eyeHeight, 0));
     }
 }
 
