@@ -14,6 +14,8 @@
 #include <QtCore/QVariantAnimation>
 #include <QtCore/QDebug>
 
+const qreal View::boxScale = 0.05;
+
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 static QVector3D extendTo3D(const QPoint &pos, qreal depth = 0);
 static QVector3D screenToView(const QPoint &screenPos);
@@ -52,7 +54,7 @@ View::View(int width, int height) :
 
     camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
     camera()->setEye(QVector3D(0, eyeHeight, 0));
-    camera()->setViewSize(QSizeF(6, 6));
+    camera()->setNearPlane(roomSize * 0.015);
 
     mvp = calcMvp(camera(), size());
 
@@ -71,7 +73,7 @@ View::View(int width, int height) :
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
     animation->setEndValue(QVariant(static_cast<qreal>(1.0)));
-    animation->setDuration(500);
+    animation->setDuration(2500);
 
     connect(animation, &QVariantAnimation::valueChanged, [=](const QVariant &var) {
             animProg = var.toReal(); update(); });
@@ -134,6 +136,14 @@ void View::paintGL(QGLPainter *painter) {
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
     phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
+    for (auto obj : staticMeshes) obj->draw(painter);
+    floor->draw(painter);
+    ceil->draw(painter);
+    for (auto obj : boxes) 
+        if (obj != enteringDir && obj != pickedObject) // && obj != enteredObject)
+            obj->draw(painter);
+    picture->draw(painter);
+
     if (enteringDir || isLeavingDir) {
         if (painter->isPicking()) return;
 
@@ -151,21 +161,16 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(enteringDir->position());
         else
             painter->modelViewMatrix().translate(boxes[0]->position());
-        painter->modelViewMatrix().scale(0.05, 0.05, 0.05);
-
+        painter->modelViewMatrix().scale(boxScale * 0.99);
 
         for (auto obj : staticMeshes) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
 
+        painter->modelViewMatrix().translate(0, 0.1, 0);
+        floor->draw(painter);
         painter->modelViewMatrix().pop();
     }
-
-    for (auto obj : staticMeshes) obj->draw(painter);
-    for (auto obj : boxes) 
-        if (obj != enteringDir && obj != pickedObject) // && obj != enteredObject)
-            obj->draw(painter);
-    picture->draw(painter);
 
     glClear(GL_DEPTH_BUFFER_BIT);
     if (pickedObject)
@@ -196,8 +201,23 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
 }
 
 void View::finishAnimation() {
-    camera()->setCenter(startCenter);
-    camera()->setEye(startEye);
+    if (animationStage == 1) {
+        QVector3D endCenter = QVector3D(0, eyeHeight, -roomSize) * boxScale + enteringDir->position();
+        QVector3D endEye = QVector3D(0, eyeHeight, 0) * boxScale + enteringDir->position();
+
+        startCenter = camera()->center();
+        startEye = camera()->eye();
+
+        deltaCenter = endCenter - startCenter;
+        deltaEye = endEye - startEye;
+
+        animationStage = 2;
+        animation->start();
+        return;
+    }
+
+    camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
+    camera()->setEye(QVector3D(0, eyeHeight, 0));
     if (enteringDir) {
         for (int i = 0; i < boxes.size(); ++i) {
             boxes[i]->setPickType(backBoxes[i]->pickType());
@@ -206,6 +226,8 @@ void View::finishAnimation() {
         }
         picture->setImage(backPicture->getImage());
     }
+
+    pickedObject = NULL;
     enteringDir = NULL;
     isLeavingDir = false;
     paintHud();
@@ -295,8 +317,14 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             enteringDir = pickedObject;
             startCenter = camera()->center();
             startEye = camera()->eye();
-            deltaCenter = camera()->center() * (0.05 - 1) + pickedObject->position();
-            deltaEye = camera()->eye() * (0.05 - 1) + pickedObject->position();
+
+            QVector3D endCenter = pickedObject->position();
+            QVector3D endEye = pickedObject->position() + QVector3D(0, roomHeight * boxScale * 2, 0);
+
+            deltaCenter = endCenter - startCenter;
+            deltaEye = endEye - startEye;
+
+            animationStage = 1;
             animation->start();
 
         } else if (!QDesktopServices::openUrl("file:///" +
@@ -336,8 +364,8 @@ void View::mousePressEvent(QMouseEvent *event) {
             /* TODO: the leaving animation is temporary */
             startCenter = camera()->center();
             startEye = camera()->eye();
-            deltaCenter = camera()->center() * (0.05 - 1) + boxes[0]->position();
-            deltaEye = camera()->eye() * (0.05 - 1) + boxes[0]->position();
+            deltaCenter = camera()->center() * (boxScale - 1) + boxes[0]->position();
+            deltaEye = camera()->eye() * (boxScale - 1) + boxes[0]->position();
             animation->start();
 
             return;
@@ -508,10 +536,14 @@ void View::loadModels() {
     staticMeshes << mesh;
 
     /* directory and file boxes */
+    QMatrix4x4 dirTrans;
+    dirTrans.scale(QVector3D(roomSize * boxScale * 2, roomHeight * boxScale, roomSize * boxScale * 2));
+    dirTrans.translate(QVector3D(0, 0.5, 0));
     QGLBuilder dirBuilder;
     dirBuilder.newSection(QGL::Faceted);
-    dirBuilder << QGLCube(6);
-    dirBuilder.currentNode()->setY(3);
+    dirBuilder << QGLCube(1);
+    dirBuilder.currentNode()->setLocalTransform(dirTrans);
+    //dirBuilder.currentNode()->setY(3);
     dirModel = dirBuilder.finalizedSceneNode();
     dirModel->setParent(this);
 
@@ -579,7 +611,7 @@ void View::loadModels() {
     floorMaterial->setTextureCombineMode(QGLMaterial::Decal);
     floorNode->setMaterial(floorMaterial);
     floorNode->setEffect(QGL::LitDecalTexture2D);
-    MeshObject *floor = new MeshObject(floorNode, this, -1);
+    floor = new MeshObject(floorNode, this, -1);
 
     QMatrix4x4 ceilTrans;
     ceilTrans.rotate(90, 1, 0, 0);
@@ -597,9 +629,9 @@ void View::loadModels() {
     ceilMaterial->setShininess(40);
     ceilNode->setMaterial(ceilMaterial);
     //ceilNode->setBackMaterial(roomMaterial);
-    MeshObject *ceil = new MeshObject(ceilNode, this, -1);
+    ceil = new MeshObject(ceilNode, this, -1);
 
-    staticMeshes << floor << ceil;
+    //staticMeshes << floor << ceil;
 
     ////QGLMaterial *roomMat = new QGLMaterial;
     ////roomMat->setColor(Qt::white);

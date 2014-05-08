@@ -39,9 +39,10 @@ protected:
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
 
-    static const int roomSize = 100;
+    static const int roomSize = 80;
     static const int roomHeight = 120;
     static const int eyeHeight = 50;
+    static const qreal boxScale;
 
     void loadModels();
     void setupObjects();
@@ -60,8 +61,11 @@ private:
     QVariantAnimation *animation;
     QVector3D startCenter;
     QVector3D startEye;
+    QVector3D startUp;
     QVector3D deltaCenter;
     QVector3D deltaEye;
+    QVector3D deltaUp;
+    int animationStage;
 
     /* temporary materials for debug purpose */
     QGLMaterial *mat1;
@@ -70,6 +74,8 @@ private:
     QVector<MeshObject*> staticMeshes;
     QVector<MeshObject*> boxes;
     QVector<MeshObject*> backBoxes;
+    MeshObject *floor;
+    MeshObject *ceil;
 
     ImageObject *picture;
     ImageObject *backPicture;
