@@ -84,6 +84,7 @@ private:
     QVector3D oldCameraCenter;
 
     QGLLightParameters *light;
+    QGLLightParameters *light2;
 
     Directory *dir;
 
