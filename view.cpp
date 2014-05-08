@@ -61,6 +61,12 @@ View::View(int width, int height) :
 
     light = new QGLLightParameters(this);
     light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
+    light->setAmbientColor(QColor(120, 120, 120));
+    light2 = new QGLLightParameters(this);
+//    light2->setPosition(QVector3D(0, roomHeight * 0.8, -roomSize * 0.8));
+//    light2->setDirection(QVector3D(0, 0, -1));
+//    light2->setAmbientColor(QColor(255, 255, 255));
+//    qDebug()<<light2->diffuseColor()<<light2->ambientColor();
 
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
@@ -123,6 +129,7 @@ void View::paintGL(QGLPainter *painter) {
     mvp = calcMvp(camera(), size());
 
     painter->addLight(light);
+    //painter->addLight(light2);
     painter->setUserEffect(phongEffect);
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
