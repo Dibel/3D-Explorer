@@ -13,6 +13,7 @@
 #include <QtGui/QPainterPath>
 #include <QtCore/QVariantAnimation>
 #include <QtCore/QDebug>
+#include <QtCore/qmath.h>
 
 const qreal View::boxScale = 0.05;
 
@@ -140,7 +141,7 @@ void View::paintGL(QGLPainter *painter) {
     floor->draw(painter);
     ceil->draw(painter);
     for (auto obj : boxes) 
-        if (obj != enteringDir && obj != pickedObject) // && obj != enteredObject)
+        if (obj != enteringDir && obj != pickedObject)
             obj->draw(painter);
     picture->draw(painter);
 
@@ -155,6 +156,7 @@ void View::paintGL(QGLPainter *painter) {
         } else t = t * t * 2;
         camera()->setCenter(startCenter + t * deltaCenter);
         camera()->setEye(startEye + t * deltaEye);
+        camera()->setUpVector(startUp + t * deltaUp);
 
         painter->modelViewMatrix().push();
         if (enteringDir)
@@ -207,9 +209,12 @@ void View::finishAnimation() {
 
         startCenter = camera()->center();
         startEye = camera()->eye();
+        startUp = QVector3D(0, 0, -1);
+
 
         deltaCenter = endCenter - startCenter;
         deltaEye = endEye - startEye;
+        deltaUp = QVector3D(0, 1, 1);
 
         animationStage = 2;
         animation->start();
@@ -218,6 +223,7 @@ void View::finishAnimation() {
 
     camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
     camera()->setEye(QVector3D(0, eyeHeight, 0));
+    camera()->setUpVector(QVector3D(0, 1, 0));
     if (enteringDir) {
         for (int i = 0; i < boxes.size(); ++i) {
             boxes[i]->setPickType(backBoxes[i]->pickType());
@@ -276,9 +282,6 @@ void View::hoverEnter(MeshObject *obj) {
 }
 
 void View::hoverLeave() {
-    //if (enteredObject)
-    //qDebug() << "left" << enteredObject;
-    //if(enteredObject != NULL) enteredObject->setEffect(0);
     enteredObject = NULL;
     paintHud();
     update();
@@ -317,12 +320,14 @@ void View::mouseDoubleClickEvent(QMouseEvent *event) {
             enteringDir = pickedObject;
             startCenter = camera()->center();
             startEye = camera()->eye();
+            startUp = QVector3D(0, 1, 0);
 
             QVector3D endCenter = pickedObject->position();
             QVector3D endEye = pickedObject->position() + QVector3D(0, roomHeight * boxScale * 2, 0);
 
             deltaCenter = endCenter - startCenter;
             deltaEye = endEye - startEye;
+            deltaUp = QVector3D(0, -1, -1);
 
             animationStage = 1;
             animation->start();
@@ -364,8 +369,10 @@ void View::mousePressEvent(QMouseEvent *event) {
             /* TODO: the leaving animation is temporary */
             startCenter = camera()->center();
             startEye = camera()->eye();
+            startUp = camera()->upVector();
             deltaCenter = camera()->center() * (boxScale - 1) + boxes[0]->position();
             deltaEye = camera()->eye() * (boxScale - 1) + boxes[0]->position();
+            deltaUp = QVector3D(0, 0, 0);
             animation->start();
 
             return;
@@ -418,12 +425,6 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
                     qDebug()<<"success";
                     loadDir(boxes, picture);
                 }
-
-            /* move picked object */
-            } else if (obj->objectId() < MaxBoxId) {
-                MeshObject *anchor = qobject_cast<MeshObject*>(obj);
-                destPos = anchor->position();
-                anchor->setPosition(pickedPos);
             }
         }
 
@@ -440,7 +441,6 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
-    /* FIXME: screen flicks at the end of leaving directory animation if mouse is moving */
     if (enteringDir || isLeavingDir) return;
 
     if (isRotating) {
@@ -628,23 +628,7 @@ void View::loadModels() {
     ceilMaterial->setSpecularColor(QColor(255, 255, 255));
     ceilMaterial->setShininess(40);
     ceilNode->setMaterial(ceilMaterial);
-    //ceilNode->setBackMaterial(roomMaterial);
     ceil = new MeshObject(ceilNode, this, -1);
-
-    //staticMeshes << floor << ceil;
-
-    ////QGLMaterial *roomMat = new QGLMaterial;
-    ////roomMat->setColor(Qt::white);
-    //QGLBuilder roomBuilder;
-    //roomBuilder << QGLCube(300);
-    //roomBuilder.currentNode()->setY(300);
-    //roomBuilder.currentNode()->setMaterial(mat1);
-    //roomBuilder.currentNode()->setBackMaterial(mat2);
-    //QGLSceneNode *scene = roomBuilder.finalizedSceneNode();
-    ////scene->setMaterial(roomMat);
-    //mesh = new MeshObject(scene, this, -1);
-    ////mesh->disableLight();
-    //staticMeshes << mesh;
 }
 
 void View::setupObjects() {
