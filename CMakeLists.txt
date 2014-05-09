@@ -9,6 +9,9 @@ set(SOURCE
     meshobject.cpp
     imageobject.cpp
     directory.cpp
+    paint.cpp
+    control.cpp
+    loadmodel.cpp
 )
 
 set(HEADER

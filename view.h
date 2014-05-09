@@ -8,7 +8,7 @@
 class ImageObject;
 class MeshObject;
 class Directory;
-class PickSurface;
+class Surface;
 class QGLFramebufferObjectSurface;
 class QPaintDevice;
 class QGLAbstractScene;
@@ -31,10 +31,9 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
     void keyPressEvent(QKeyEvent *event);
-    void wheelEvent(QWheelEvent *);
     void resizeEvent(QResizeEvent *);
+    void wheelEvent(QWheelEvent *);
 
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
@@ -46,14 +45,18 @@ private:
 
     void loadModels();
     void setupObjects();
-
-    void paintHud(qreal x, qreal y, QString text);
     void loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
     void hoverEnter(MeshObject *object);
     void hoverLeave();
     void finishAnimation();
-
     void debugFunc();
+
+    void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
+    void paintOutline(MeshObject *obj);
+
+    void startRotate(QPoint pos);
+    void invokeObject(PickObject *obj);
+    void openEntry(MeshObject *obj);
 
     MeshObject *enteringDir;
     bool isLeavingDir;
@@ -108,7 +111,7 @@ private:
 
     MeshObject *enteredObject;
     QOpenGLFramebufferObject *fbo;
-    PickSurface *surface;
+    Surface *surface;
 
     QGLShaderProgramEffect *phongEffect;
     QGLShaderProgramEffect *boxEffect;
