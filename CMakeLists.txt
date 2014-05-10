@@ -30,7 +30,7 @@ project(${PROJECTNAME})
 
 find_package(Qt53D REQUIRED)
 
-set(CMAKE_CXX_FLAGS "-std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wunused-parameter")
 
 set(CMAKE_BUILD_TYPE Debug)
 

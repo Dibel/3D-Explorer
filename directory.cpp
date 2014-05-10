@@ -45,14 +45,14 @@ bool Directory::cdUp() {
     return success;
 }
 
-uint Directory::count() const {
+int Directory::count() const {
 #ifdef Q_OS_WIN
     if (isThisPC) return QDir::drives().size();
 #endif
     return page.size();
 }
 
-uint Directory::countDir() const {
+int Directory::countDir() const {
     int cnt = QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot).size();
     cnt -= pageSize * pageIndex;
     return cnt < 0 ? 0 : cnt;
@@ -67,8 +67,9 @@ void Directory::refresh() {
     QDir::refresh();
     update();
     pageIndex = pageIndexBackup;
-    while (pageIndex * pageSize >= QDir::count())
+    while (pageIndex * pageSize >= (int)QDir::count())
         --pageIndex;
+    if (pageIndex < 0) pageIndex = 0;
 }
 
 bool Directory::remove(int index) {
@@ -88,7 +89,7 @@ void Directory::nextPage() {
 #ifdef Q_OS_WIN
     if (isThisPC) return;
 #endif
-    if (++pageIndex * pageSize >= QDir::count()) --pageIndex;
+    if (++pageIndex * pageSize >= (int)QDir::count()) --pageIndex;
     page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
 

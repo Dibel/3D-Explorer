@@ -96,11 +96,12 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     }
 
     PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
-    if (obj && obj->objectId() != -1)
+    if (obj && obj->objectId() != -1) {
         if (obj->objectId() < dir->count() && event->pos() == pressPos)
             openEntry(qobject_cast<MeshObject*>(obj));
         else
             invokeObject(obj);
+    }
 
     pickedObject = NULL;
     update();

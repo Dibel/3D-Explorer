@@ -10,9 +10,9 @@
 const qreal View::boxScale = 0.05;
 
 View::View(int width, int height) :
-    pickedObject(NULL), enteredObject(NULL), hudObject(NULL), picture(NULL), outline(NULL),
-    enteringDir(NULL), isLeavingDir(false), isShowingFileName(false), isRotating(false),
-    fbo(NULL), surface(NULL)
+    enteringDir(NULL), isLeavingDir(false), isRotating(false),
+    pickedObject(NULL), enteredObject(NULL), fbo(NULL), surface(NULL),
+    isShowingFileName(false)
 {
     phongEffect = new QGLShaderProgramEffect();
     phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
@@ -175,10 +175,7 @@ void View::debugFunc() {
     update();
 }
 
-void View::initializeGL(QGLPainter *painter) {
-    for (auto obj : boxes) obj->initialize(this, painter);
-    for (auto obj : backBoxes) obj->initialize(this, painter);
-}
+void View::initializeGL(QGLPainter *) { }
 
 void View::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {
@@ -199,9 +196,9 @@ void View::keyPressEvent(QKeyEvent *event) {
     QGLView::keyPressEvent(event);
 }
 
-void View::resizeEvent(QResizeEvent *e) {
+void View::resizeEvent(QResizeEvent *) {
     paintHud();
     update();
 }
 
-void View::wheelEvent(QWheelEvent *e) { }
+void View::wheelEvent(QWheelEvent *) { }

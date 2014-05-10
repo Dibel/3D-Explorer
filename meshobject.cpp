@@ -79,7 +79,7 @@ MeshObject::MeshObject(QGLAbstractScene *scene, QGLView *view, int id)
 
 MeshObject::~MeshObject() { }
 
-void MeshObject::initialize(QGLView *view, QGLPainter *painter) { }
+//void MeshObject::initialize(QGLView *view, QGLPainter *painter) { }
 
 void MeshObject::draw(QGLPainter *painter)
 {
@@ -133,8 +133,8 @@ void MeshObject::draw(QGLPainter *painter)
     painter->modelViewMatrix().pop();
 }
 
-bool MeshObject::event(QEvent *e)
-{
+//bool MeshObject::event(QEvent *e)
+//{
 //    if (m_type != Normal) return QObject::event(e);
 //
 //    // Convert the raw event into a signal representing the user's action.
@@ -159,4 +159,4 @@ bool MeshObject::event(QEvent *e)
 //        emit hoverChanged(false);
 //    }
 //    return QObject::event(e);
-}
+//}

@@ -93,7 +93,7 @@ public:
     PickType pickType() const { return m_type; }
     void setPickType(PickType type) { m_type = type; }
 
-    void initialize(QGLView *view, QGLPainter *painter);
+    //void initialize(QGLView *view, QGLPainter *painter);
     void draw(QGLPainter *painter);
 
 signals:
@@ -104,7 +104,7 @@ signals:
     void hoverChanged(bool hovering);
 
 protected:
-    bool event(QEvent *e);
+    //bool event(QEvent *e);
 
 private:
     QGLSceneNode *m_meshObject;

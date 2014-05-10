@@ -19,8 +19,8 @@ public:
     static void muteObjectId(bool mute);
 
 private:
-    int id;
     QGLView *view;
+    int id;
 
     bool ignoringMuting;
     static bool idMuted;

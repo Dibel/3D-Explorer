@@ -15,8 +15,8 @@ public:
 
     bool cd(const QString &dirName);
     bool cdUp();
-    uint count() const;
-    uint countDir() const;
+    int count() const;
+    int countDir() const;
     QStringList entryList() const;
     QString entry(int index) const;
     void refresh();
