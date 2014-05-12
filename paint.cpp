@@ -14,8 +14,6 @@ void View::paintGL(QGLPainter *painter) {
 
     mvp = calcMvp(camera(), size());
 
-    painter->addLight(light);
-    //painter->addLight(light2);
     painter->setUserEffect(phongEffect);
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -29,6 +27,8 @@ void View::paintGL(QGLPainter *painter) {
     picture->draw(painter);
 
     if (enteringDir || isLeavingDir) {
+        painter->removeLight(0);
+        int light2ID = painter->addLight(light);
         if (painter->isPicking()) return;
 
         //QVector3D lPos = light->position();
@@ -52,7 +52,7 @@ void View::paintGL(QGLPainter *painter) {
         else
             painter->modelViewMatrix().translate(boxes[0]->position());
         painter->modelViewMatrix().scale(boxScale * 0.99);
-
+        //int id = painter->addLight(light2);
         for (auto obj : staticMeshes) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
@@ -60,8 +60,8 @@ void View::paintGL(QGLPainter *painter) {
         painter->modelViewMatrix().translate(0, 0.1, 0);
         floor->draw(painter);
         painter->modelViewMatrix().pop();
-
-        //light->setPosition(lPos);
+        painter->removeLight(light2ID);
+        painter->addLight(light);
     }
 
     glClear(GL_DEPTH_BUFFER_BIT);

@@ -26,7 +26,7 @@ void View::loadModels() {
     staticMeshes << new MeshObject(model, this);
 
     /* photo frame */
-    model = QGLAbstractScene::loadScene(":/model/frame.obj");
+    model = QGLAbstractScene::loadScene(":/model/frame2.obj");
     model->setParent(this);
     model->mainNode()->setMaterial(mat1);
     model->mainNode()->setPosition(QVector3D(-50, 50, -roomSize));

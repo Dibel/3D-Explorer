@@ -34,11 +34,10 @@ View::View(int width, int height) :
 
     light = new QGLLightParameters(this);
     light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
-    light->setAmbientColor(QColor(120, 120, 120));
+    light->setAmbientColor(QColor(90, 90, 90));
     light2 = new QGLLightParameters(this);
-//    light2->setPosition(QVector3D(0, roomHeight * 0.8, -roomSize * 0.8));
-//    light2->setDirection(QVector3D(0, 0, -1));
-//    light2->setAmbientColor(QColor(255, 255, 255));
+    light2->setPosition(QVector3D(0, roomHeight * 0.8, 0));
+    light2->setAmbientColor(QColor(90, 90, 90));
 //    qDebug()<<light2->diffuseColor()<<light2->ambientColor();
 
     animation = new QVariantAnimation();
@@ -175,7 +174,9 @@ void View::debugFunc() {
     update();
 }
 
-void View::initializeGL(QGLPainter *) { }
+void View::initializeGL(QGLPainter *painter) {
+    painter->addLight(light);
+}
 
 void View::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Tab) {

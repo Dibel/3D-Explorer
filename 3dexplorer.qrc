@@ -15,5 +15,6 @@
         <file>shader/phong.vsh</file>
         <file>shader/outline.fsh</file>
         <file>shader/outline.vsh</file>
+        <file>model/frame2.obj</file>
     </qresource>
 </RCC>
