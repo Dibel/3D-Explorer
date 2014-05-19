@@ -34,10 +34,10 @@ View::View(int width, int height) :
 
     light = new QGLLightParameters(this);
     light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
-    light->setAmbientColor(QColor(90, 90, 90));
+    light->setAmbientColor(QColor(120, 120, 120));
     light2 = new QGLLightParameters(this);
     light2->setPosition(QVector3D(0, roomHeight * 0.8, 0));
-    light2->setAmbientColor(QColor(90, 90, 90));
+    light2->setAmbientColor(QColor(120, 120, 120));
 //    qDebug()<<light2->diffuseColor()<<light2->ambientColor();
 
     animation = new QVariantAnimation();
