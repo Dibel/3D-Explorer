@@ -35,10 +35,6 @@ View::View(int width, int height) :
     light = new QGLLightParameters(this);
     light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
     light->setAmbientColor(QColor(120, 120, 120));
-    light2 = new QGLLightParameters(this);
-    light2->setPosition(QVector3D(0, roomHeight * 0.8, 0));
-    light2->setAmbientColor(QColor(120, 120, 120));
-//    qDebug()<<light2->diffuseColor()<<light2->ambientColor();
 
     animation = new QVariantAnimation();
     animation->setStartValue(QVariant(static_cast<qreal>(0.0)));
@@ -162,6 +158,8 @@ void View::finishAnimation() {
         picture->setImage(backPicture->getImage());
     }
 
+    animationStage = 0;
+
     pickedObject = NULL;
     enteringDir = NULL;
     isLeavingDir = false;
@@ -175,7 +173,8 @@ void View::debugFunc() {
 }
 
 void View::initializeGL(QGLPainter *painter) {
-    painter->addLight(light);
+    lightId = painter->addLight(light);
+    qDebug() << "initial light id:" << lightId;
 }
 
 void View::keyPressEvent(QKeyEvent *event) {

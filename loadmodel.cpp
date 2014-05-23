@@ -5,17 +5,14 @@
 #include <Qt3D/QGLMaterialCollection>
 #include <QSharedPointer>
 
-void FixNodesRecursive(int matIndex, QGLSceneNode* pNode)
+static void FixNodesRecursive(int matIndex, QGLSceneNode* pNode)
 {
-    if (pNode) {
-        pNode->setMaterialIndex(matIndex);
-        pNode->setEffect(QGL::LitModulateTexture2D);
-        if(!pNode->children().isEmpty()) {
-        foreach (QGLSceneNode* pCh, pNode->children()) {
-            FixNodesRecursive(matIndex, pCh);
-        }
-        }
-    }
+    pNode->setMaterialIndex(matIndex);
+    pNode->setEffect(QGL::LitModulateTexture2D);
+    for (auto node : pNode->allChildren()) {
+        node->setMaterialIndex(matIndex);
+        node->setEffect(QGL::LitModulateTexture2D);
+    };
 }
 
 void View::loadModels() {
@@ -37,9 +34,7 @@ void View::loadModels() {
     ceilMaterial->setShininess(120);
 
     QGLTexture2D *floorTexture = new QGLTexture2D();
-    QImage newImage;
-    newImage.load(":/maps/floor.jpg");
-    floorTexture->setImage(newImage);
+    floorTexture->setImage(QImage(":/maps/floor.jpg"));
     QGLMaterial *floorMaterial = new QGLMaterial();
     floorMaterial->setTexture(floorTexture);
     floorMaterial->setDiffuseColor(QColor(255, 255, 255));
@@ -54,12 +49,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/shelf.obj");
     model->setParent(this);
     int matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
-    model->mainNode()->setMaterialIndex(matIndex);
-    model->mainNode()->setEffect(QGL::LitModulateTexture2D);
     FixNodesRecursive(matIndex, model->mainNode());
-    //model->mainNode()->setBackMaterial(ceilMaterial);
-    //model->mainNode()->setMaterial(ceilMaterial);
-    //model->mainNode()->setMaterial(mat1);
     model->mainNode()->setPosition(QVector3D(0, 0, -roomSize));
     staticMeshes << new MeshObject(model, this);
 
@@ -67,10 +57,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/frame2.obj");
     model->setParent(this);
     matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
-    model->mainNode()->setMaterialIndex(matIndex);
-    model->mainNode()->setEffect(QGL::LitModulateTexture2D);
     FixNodesRecursive(matIndex, model->mainNode());
-    //model->mainNode()->setMaterial(mat1);
     model->mainNode()->setPosition(QVector3D(-50, 50, -roomSize));
     staticMeshes << new MeshObject(model, this);
 
@@ -78,10 +65,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/trash.obj");
     model->setParent(this);
     matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
-    model->mainNode()->setMaterialIndex(matIndex);
-    model->mainNode()->setEffect(QGL::LitModulateTexture2D);
     FixNodesRecursive(matIndex, model->mainNode());
-    //model->mainNode()->setMaterial(mat1);
     QMatrix4x4 trashBinTrans;
     trashBinTrans.translate(QVector3D(-40, 0, 10 - roomSize));
     trashBinTrans.scale(0.2);
@@ -92,10 +76,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/door.obj");
     model->setParent(this);
     matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
-    model->mainNode()->setMaterialIndex(matIndex);
-    model->mainNode()->setEffect(QGL::LitModulateTexture2D);
     FixNodesRecursive(matIndex, model->mainNode());
-    //model->mainNode()->setMaterial(mat1);
     QMatrix4x4 doorTrans;
     doorTrans.translate(QVector3D(50, 36, -roomSize));
     doorTrans.scale(10);
@@ -127,7 +108,6 @@ void View::loadModels() {
     dirBuilder.newSection(QGL::Faceted);
     dirBuilder << QGLCube(1);
     dirBuilder.currentNode()->setLocalTransform(dirTrans);
-    //dirBuilder.currentNode()->setY(3);
     dirModel = dirBuilder.finalizedSceneNode();
     dirModel->setParent(this);
 
@@ -186,8 +166,6 @@ void View::loadModels() {
     matIndex = floorNode->palette()->addMaterial(floorMaterial);
     floorNode->setMaterialIndex(matIndex);
     floorNode->setEffect(QGL::LitModulateTexture2D);
-//    floorNode->setMaterial(floorMaterial);
-//    floorNode->setEffect(QGL::LitModulateTexture2D);
     floor = new MeshObject(floorNode, this, -1);
 
     QMatrix4x4 ceilTrans;

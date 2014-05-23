@@ -14,6 +14,9 @@ void View::paintGL(QGLPainter *painter) {
 
     mvp = calcMvp(camera(), size());
 
+    painter->removeLight(0);
+    painter->addLight(light);
+
     painter->setUserEffect(phongEffect);
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
@@ -26,15 +29,8 @@ void View::paintGL(QGLPainter *painter) {
             obj->draw(painter);
     picture->draw(painter);
 
-    if (enteringDir || isLeavingDir) {
-        painter->removeLight(0);
-        int light2ID = painter->addLight(light);
-        if (painter->isPicking()) return;
-
-        //QVector3D lPos = light->position();
-        //light->setPosition(lPos + enteringDir->position());
-        //painter->addLight(light);
-        //phongEffect->setActive(painter, true);
+    if (animationStage && !painter->isPicking()) {
+        painter->removeLight(lightId);
 
         qreal t = animProg;
         if (isLeavingDir) t = 1.0 - t;
@@ -51,17 +47,19 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(enteringDir->position());
         else
             painter->modelViewMatrix().translate(boxes[0]->position());
-        painter->modelViewMatrix().scale(boxScale * 0.99);
-        //int id = painter->addLight(light2);
+        painter->modelViewMatrix().scale(boxScale * 0.999);
+
+        int tmpLightId = painter->addLight(light);
         for (auto obj : staticMeshes) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
 
-        painter->modelViewMatrix().translate(0, 0.1, 0);
+        painter->modelViewMatrix().translate(0, 0.01, 0);
         floor->draw(painter);
         painter->modelViewMatrix().pop();
-        painter->removeLight(light2ID);
-        painter->addLight(light);
+
+        painter->removeLight(tmpLightId);
+        lightId = painter->addLight(light);
     }
 
     glClear(GL_DEPTH_BUFFER_BIT);
