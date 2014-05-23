@@ -27,20 +27,12 @@ void View::invokeObject(PickObject *obj) {
             if (!pickedObject) {
                 enteredObject = NULL;
                 isLeavingDir = true;
-                loadDir(backBoxes, backPicture);
                 dir->cdUp();
-                loadDir(boxes, picture);
+                loadDir(backBoxes, backPicture);
 
-                /* TODO: change the leaving animation */
-                startCenter = camera()->center();
-                startEye = camera()->eye();
-                startUp = camera()->upVector();
-                deltaCenter = camera()->center() * (boxScale - 1) + boxes[0]->position();
-                deltaEye = camera()->eye() * (boxScale - 1) + boxes[0]->position();
-                deltaUp = QVector3D(0, 0, 0);
-                animation->start();
+                startAnimation(Leaving1);
             } else {
-                /* TODO: move file to paretn directory */
+                /* TODO: move file to parent directory */
             }
             break;
 
@@ -144,19 +136,7 @@ void View::openEntry(MeshObject *obj) {
         loadDir(backBoxes, backPicture);
 
         enteringDir = obj;
-        startCenter = camera()->center();
-        startEye = camera()->eye();
-        startUp = QVector3D(0, 1, 0);
-
-        QVector3D endCenter = obj->position();
-        QVector3D endEye = obj->position() + QVector3D(0, roomHeight * boxScale * 2, 0);
-
-        deltaCenter = endCenter - startCenter;
-        deltaEye = endEye - startEye;
-        deltaUp = QVector3D(0, -1, -1);
-
-        animationStage = 1;
-        animation->start();
+        startAnimation(Entering1);
     } else {
         QString path = dir->absoluteFilePath(obj->objectName());
         if (!QDesktopServices::openUrl("file:///" + path))

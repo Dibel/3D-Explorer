@@ -29,33 +29,42 @@ void View::paintGL(QGLPainter *painter) {
             obj->draw(painter);
     picture->draw(painter);
 
-    if (animationStage && !painter->isPicking()) {
+    if (animStage != NoAnim && !painter->isPicking()) {
         painter->removeLight(lightId);
 
         qreal t = animProg;
-        if (isLeavingDir) t = 1.0 - t;
         if (t > 0.5) {
             t = 2 - t * 2;
             t = (2 - t * t) * 0.5;
         } else t = t * t * 2;
+
         camera()->setCenter(startCenter + t * deltaCenter);
         camera()->setEye(startEye + t * deltaEye);
         camera()->setUpVector(startUp + t * deltaUp);
 
         painter->modelViewMatrix().push();
-        if (enteringDir)
+        if (enteringDir) {
             painter->modelViewMatrix().translate(enteringDir->position());
-        else
-            painter->modelViewMatrix().translate(boxes[0]->position());
-        painter->modelViewMatrix().scale(boxScale * 0.999);
+            painter->modelViewMatrix().scale(boxScale * 0.999);
+        } else {
+            painter->modelViewMatrix().scale(1.0 / boxScale);
+            painter->modelViewMatrix().translate(QVector3D(0, -50, -roomSize * 0.9));
+        }
 
         int tmpLightId = painter->addLight(light);
+
         for (auto obj : staticMeshes) obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
 
-        painter->modelViewMatrix().translate(0, 0.01, 0);
-        floor->draw(painter);
+        if (enteringDir) {
+            painter->modelViewMatrix().translate(0, 0.01, 0);
+            floor->draw(painter);
+        } else {
+            floor->draw(painter);
+            ceil->draw(painter);
+        }
+
         painter->modelViewMatrix().pop();
 
         painter->removeLight(tmpLightId);

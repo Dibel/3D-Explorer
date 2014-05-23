@@ -24,6 +24,11 @@ public:
     View(int width = 800, int height = 600);
     ~View();
 
+    static const int roomSize;
+    static const int roomHeight;
+    static const int eyeHeight;
+    static const qreal boxScale;
+
 protected:
     void initializeGL(QGLPainter *painter);
     void paintGL(QGLPainter *painter);
@@ -37,17 +42,14 @@ protected:
 
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
-
-    static const int roomSize = 80;
-    static const int roomHeight = 120;
-    static const int eyeHeight = 50;
-    static const qreal boxScale;
+    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2 };
 
     void loadModels();
     void setupObjects();
     void loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
     void hoverEnter(MeshObject *object);
     void hoverLeave();
+    void startAnimation(AnimStage stage);
     void finishAnimation();
     void debugFunc();
 
@@ -62,13 +64,14 @@ private:
     bool isLeavingDir;
     qreal animProg;
     QVariantAnimation *animation;
+    AnimStage animStage;
+
     QVector3D startCenter;
     QVector3D startEye;
     QVector3D startUp;
     QVector3D deltaCenter;
     QVector3D deltaEye;
     QVector3D deltaUp;
-    int animationStage;
 
     /* temporary materials for debug purpose */
     QGLMaterial *mat1;
