@@ -21,7 +21,9 @@ void View::paintGL(QGLPainter *painter) {
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
     phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
-    for (auto obj : staticMeshes) obj->draw(painter);
+    for (auto obj : staticMeshes)
+        if (!isLeavingDir || obj->objectId() != Door)
+            obj->draw(painter);
     floor->draw(painter);
     ceil->draw(painter);
     for (auto obj : boxes) 
@@ -53,7 +55,8 @@ void View::paintGL(QGLPainter *painter) {
 
         int tmpLightId = painter->addLight(light);
 
-        for (auto obj : staticMeshes) obj->draw(painter);
+        for (auto obj : staticMeshes)
+            obj->draw(painter);
         for (auto obj : backBoxes) obj->draw(painter);
         backPicture->draw(painter);
 

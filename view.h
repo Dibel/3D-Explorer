@@ -82,6 +82,7 @@ private:
     QVector<MeshObject*> backBoxes;
     MeshObject *floor;
     MeshObject *ceil;
+    MeshObject *door;
 
     ImageObject *picture;
     ImageObject *backPicture;

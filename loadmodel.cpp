@@ -78,7 +78,7 @@ void View::loadModels() {
     matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
     FixNodesRecursive(matIndex, model->mainNode());
     QMatrix4x4 doorTrans;
-    doorTrans.translate(QVector3D(50, 36, -roomSize));
+    doorTrans.translate(QVector3D(50, 36, -roomSize - 4));
     doorTrans.scale(10);
     model->mainNode()->setLocalTransform(doorTrans);
     staticMeshes << new MeshObject(model, this, Door);
@@ -121,21 +121,46 @@ void View::loadModels() {
     fileModel = fileBuilder.finalizedSceneNode();
     fileModel->setParent(this);
 
-    /* room, a cube that inside-out */
-    QGLBuilder roomBuilder;
-    roomBuilder.newSection(QGL::Faceted);
-    roomBuilder.addPane(QSizeF(roomSize * 2, roomHeight));
-    QGLSceneNode *pane = roomBuilder.finalizedSceneNode();
     QGLMaterial *roomMaterial = new QGLMaterial();
     roomMaterial->setAmbientColor(QColor(95, 75, 58));
     roomMaterial->setDiffuseColor(QColor(143, 122, 90));
     roomMaterial->setSpecularColor(QColor(154, 135, 105));
     roomMaterial->setShininess(10);
+
+    /* FIXME: the front wall can't share material with other walls */
+    QGLMaterial *wallMaterial = new QGLMaterial();
+    wallMaterial->setAmbientColor(QColor(95, 75, 58));
+    wallMaterial->setDiffuseColor(QColor(143, 122, 90));
+    wallMaterial->setSpecularColor(QColor(154, 135, 105));
+    wallMaterial->setShininess(10);
+
+    /* room, a cube that inside-out */
+    QGLBuilder roomBuilder;
+    roomBuilder.newSection(QGL::Faceted);
+    roomBuilder.addPane(QSizeF(roomSize * 2, roomHeight));
+    QGLSceneNode *pane = roomBuilder.finalizedSceneNode();
     pane->setMaterial(roomMaterial);
-    //pane->setBackMaterial(mat2);
     pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
 
-    MeshObject *front = new MeshObject(pane, this, -1);
+    QVector3DArray wallVertices;
+    wallVertices.append(-roomSize, 0, 0);
+    wallVertices.append(28, 0, 0);
+    wallVertices.append(-roomSize, roomHeight, 0);
+    wallVertices.append(28, 78, 0);
+    wallVertices.append(roomSize, roomHeight, 0);
+    wallVertices.append(73, 78, 0);
+    wallVertices.append(roomSize, 0, 0);
+    wallVertices.append(73, 0, 0);
+
+    QGeometryData wallStrip;
+    wallStrip.appendVertexArray(wallVertices);
+    QGLBuilder wallBuilder;
+    wallBuilder.newSection(QGL::Faceted);
+    wallBuilder.addTriangleStrip(wallStrip);
+    QGLSceneNode *wall = wallBuilder.finalizedSceneNode();
+    wall->setMaterial(wallMaterial);
+
+    MeshObject *front = new MeshObject(wall, this, -1);
     front->setPosition(QVector3D(0, 0, -roomSize));
 
     MeshObject *right = new MeshObject(pane, this, -1);
