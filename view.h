@@ -13,6 +13,7 @@ class QGLFramebufferObjectSurface;
 class QPaintDevice;
 class QGLAbstractScene;
 class QGLMaterial;
+class QGLMaterialCollection;
 class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLTexture2D;
@@ -76,6 +77,10 @@ private:
     /* temporary materials for debug purpose */
     QGLMaterial *mat1;
     QGLMaterial *mat2;
+
+    /* FIXME: unable to use QGLMaterialCollection */
+    //QSharedPointer<QGLMaterialCollection> palette;
+    QVector<QGLMaterial*> palette;
 
     QVector<MeshObject*> staticMeshes;
     QVector<MeshObject*> boxes;

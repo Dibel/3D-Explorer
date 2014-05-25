@@ -22,7 +22,7 @@ static const QVector3D defaultEye(0, View::eyeHeight, 0);
 View::View(int width, int height) :
     enteringDir(NULL), isLeavingDir(false), isRotating(false),
     pickedObject(NULL), enteredObject(NULL), fbo(NULL), surface(NULL),
-    isShowingFileName(false)
+    isShowingFileName(false)//, palette(new QGLMaterialCollection())
 {
     phongEffect = new QGLShaderProgramEffect();
     phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
@@ -39,6 +39,8 @@ View::View(int width, int height) :
     camera()->setEye(defaultEye);
     camera()->setNearPlane(roomSize * 0.015);
     camera()->setFarPlane(roomSize * 50);
+
+    //palette = new QGLMaterialCollection(this);
 
     loadModels();
     setupObjects();

@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>config/main.conf</file>
         <file>model/shelf.obj</file>
         <file>model/shelf.slots</file>
         <file>model/frame.obj</file>
