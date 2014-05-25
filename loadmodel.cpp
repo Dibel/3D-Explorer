@@ -44,11 +44,12 @@ void View::loadModels() {
 
     QGLAbstractScene *model;
     MeshObject *mesh;
+    int matIndex;
 
     /* shelf */
     model = QGLAbstractScene::loadScene(":/model/shelf.obj");
     model->setParent(this);
-    int matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
+    matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
     FixNodesRecursive(matIndex, model->mainNode());
     model->mainNode()->setPosition(QVector3D(0, 0, -roomSize));
     staticMeshes << new MeshObject(model, this);
@@ -75,13 +76,23 @@ void View::loadModels() {
     /* door */
     model = QGLAbstractScene::loadScene(":/model/door.obj");
     model->setParent(this);
-    matIndex = model->mainNode()->palette()->addMaterial(floorMaterial);
-    FixNodesRecursive(matIndex, model->mainNode());
+    matIndex = model->mainNode()->palette()->addMaterial(mat2);
+    //FixNodesRecursive(matIndex, model->mainNode());
     QMatrix4x4 doorTrans;
-    doorTrans.translate(QVector3D(50, 36, -roomSize - 4));
-    doorTrans.scale(10);
+    doorTrans.translate(QVector3D(21, 0, 0));
     model->mainNode()->setLocalTransform(doorTrans);
-    staticMeshes << new MeshObject(model, this, Door);
+    mesh = new MeshObject(model, this, Door);
+    mesh->setPosition(QVector3D(-50, 0, roomSize));
+    mesh->setRotationVector(QVector3D(0, -1, 0));
+    staticMeshes << mesh;
+
+    model = QGLAbstractScene::loadScene(":/model/doorframe.obj");
+    model->setParent(this);
+    model->mainNode()->setMaterial(mat2);
+    model->mainNode()->setLocalTransform(doorTrans);
+    mesh = new MeshObject(model, this);
+    mesh->setPosition(QVector3D(-50, 0, roomSize));
+    staticMeshes << mesh;
 
     /* arrows */
     model = QGLAbstractScene::loadScene(":/model/leftarrow.obj");
@@ -144,13 +155,13 @@ void View::loadModels() {
 
     QVector3DArray wallVertices;
     wallVertices.append(-roomSize, 0, 0);
-    wallVertices.append(28, 0, 0);
+    wallVertices.append(4, 0, 0);
     wallVertices.append(-roomSize, roomHeight, 0);
-    wallVertices.append(28, 78, 0);
+    wallVertices.append(4, 95, 0);
     wallVertices.append(roomSize, roomHeight, 0);
-    wallVertices.append(73, 78, 0);
+    wallVertices.append(54, 95, 0);
     wallVertices.append(roomSize, 0, 0);
-    wallVertices.append(73, 0, 0);
+    wallVertices.append(54, 0, 0);
 
     QGeometryData wallStrip;
     wallStrip.appendVertexArray(wallVertices);
@@ -160,7 +171,7 @@ void View::loadModels() {
     QGLSceneNode *wall = wallBuilder.finalizedSceneNode();
     wall->setMaterial(wallMaterial);
 
-    MeshObject *front = new MeshObject(wall, this, -1);
+    MeshObject *front = new MeshObject(pane, this, -1);
     front->setPosition(QVector3D(0, 0, -roomSize));
 
     MeshObject *right = new MeshObject(pane, this, -1);
@@ -168,7 +179,7 @@ void View::loadModels() {
     right->setRotationVector(QVector3D(0, 1, 0));
     right->setRotationAngle(90);
 
-    MeshObject *back = new MeshObject(pane, this, -1);
+    MeshObject *back = new MeshObject(wall, this, -1);
     back->setPosition(QVector3D(0, 0, roomSize));
     back->setRotationVector(QVector3D(0, 1, 0));
     back->setRotationAngle(180);

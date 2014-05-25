@@ -28,7 +28,8 @@ void View::invokeObject(PickObject *obj) {
                 enteredObject = NULL;
                 isLeavingDir = true;
                 dir->cdUp();
-                loadDir(backBoxes, backPicture);
+                backBoxes[8]->setPickType(MeshObject::Anchor);
+                //loadDir(backBoxes, backPicture);
 
                 startAnimation(Leaving1);
             } else {

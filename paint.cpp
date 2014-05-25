@@ -22,7 +22,16 @@ void View::paintGL(QGLPainter *painter) {
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
     phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
     for (auto obj : staticMeshes)
-        if (!isLeavingDir || obj->objectId() != Door)
+        if (obj->objectId() == Door && (animStage == Leaving1 || animStage == Leaving2)) {
+            qreal t = animProg;
+            if (animStage == Leaving1)
+                t = t > 0.5 ? 1 : t * 2;
+            else
+                t = 1;
+            obj->setRotationAngle(90.0 * t);
+            obj->draw(painter);
+            obj->setRotationAngle(0);
+        } else
             obj->draw(painter);
     floor->draw(painter);
     ceil->draw(painter);
@@ -50,7 +59,7 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
             painter->modelViewMatrix().scale(1.0 / boxScale);
-            painter->modelViewMatrix().translate(QVector3D(0, -50, -roomSize * 0.9));
+            painter->modelViewMatrix().translate(-boxes[8]->position() - QVector3D(0, 0.1, 0));
         }
 
         int tmpLightId = painter->addLight(light);
@@ -64,8 +73,8 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(0, 0.01, 0);
             floor->draw(painter);
         } else {
-            floor->draw(painter);
             ceil->draw(painter);
+            floor->draw(painter);
         }
 
         painter->modelViewMatrix().pop();

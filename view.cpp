@@ -15,6 +15,10 @@ const qreal View::boxScale = 0.05;
 static const QVector3D defaultCenter(0, View::eyeHeight, -View::roomSize);
 static const QVector3D defaultEye(0, View::eyeHeight, 0);
 
+//static void swap(const ImageObject *p, const ImageObject *q) {
+//    const ImageObject *t = p; p = q; q = t;
+//}
+
 View::View(int width, int height) :
     enteringDir(NULL), isLeavingDir(false), isRotating(false),
     pickedObject(NULL), enteredObject(NULL), fbo(NULL), surface(NULL),
@@ -151,14 +155,14 @@ void View::startAnimation(AnimStage stage) {
             break;
 
         case Leaving1:
-            endCenter = QVector3D(50, eyeHeight, -roomSize * 2 - 10);
-            endEye = QVector3D(50, eyeHeight, -roomSize - 10);
+            endCenter = QVector3D(-29, eyeHeight, roomSize * 2);
+            endEye = QVector3D(-29, eyeHeight, roomSize);
             deltaUp = QVector3D(0, 0, 0);
             break;
 
         case Leaving2:
-            endCenter = (defaultCenter + QVector3D(0, -50, -roomSize * 0.9)) / boxScale;
-            endEye = (defaultEye + QVector3D(0, -50, -roomSize * 0.9)) / boxScale;
+            endCenter = (QVector3D(0, eyeHeight, roomSize) - boxes[8]->position()) / boxScale;
+            endEye = (defaultEye - boxes[8]->position()) / boxScale;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -179,32 +183,38 @@ void View::finishAnimation() {
     switch (animStage) {
         case Entering1:
             startAnimation(Entering2);
-            break;
+            return;
 
         case Leaving1:
+            loadDir(backBoxes, backPicture);
             startAnimation(Leaving2);
-            break;
+            return;
 
         case Entering2:
-        case Leaving2:
             camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
             camera()->setEye(QVector3D(0, eyeHeight, 0));
+            break;
 
-            for (int i = 0; i < boxes.size(); ++i) {
-                boxes[i]->setPickType(backBoxes[i]->pickType());
-                boxes[i]->setObjectName(backBoxes[i]->objectName());
-                boxes[i]->setModel(backBoxes[i]->model());
-            }
-            picture->setImage(backPicture->getImage());
-
-            animStage = NoAnim;
-            enteringDir = NULL;
-            isLeavingDir = false;
+        case Leaving2:
+            camera()->setCenter(QVector3D(0, eyeHeight, roomSize));
+            camera()->setEye(QVector3D(0, eyeHeight, 0));
             break;
 
         default:
             qDebug() << "finishAnimation: Unkown stage!";
     }
+
+    for (int i = 0; i < boxes.size(); ++i) {
+        boxes[i]->setPickType(backBoxes[i]->pickType());
+        boxes[i]->setObjectName(backBoxes[i]->objectName());
+        boxes[i]->setModel(backBoxes[i]->model());
+    }
+    picture->setImage(backPicture->getImage());
+
+
+    animStage = NoAnim;
+    enteringDir = NULL;
+    isLeavingDir = false;
 }
 
 void View::debugFunc() {

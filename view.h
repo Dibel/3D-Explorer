@@ -42,7 +42,7 @@ protected:
 
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
-    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2 };
+    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3 };
 
     void loadModels();
     void setupObjects();
@@ -82,7 +82,6 @@ private:
     QVector<MeshObject*> backBoxes;
     MeshObject *floor;
     MeshObject *ceil;
-    MeshObject *door;
 
     ImageObject *picture;
     ImageObject *backPicture;
