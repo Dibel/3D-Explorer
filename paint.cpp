@@ -38,6 +38,7 @@ void View::paintGL(QGLPainter *painter) {
     for (auto obj : boxes) 
         if (obj != enteringDir && obj != pickedObject)
             obj->draw(painter);
+
     picture->draw(painter);
 
     if (animStage != NoAnim && !painter->isPicking()) {
@@ -66,16 +67,20 @@ void View::paintGL(QGLPainter *painter) {
 
         for (auto obj : staticMeshes)
             obj->draw(painter);
-        for (auto obj : backBoxes) obj->draw(painter);
-        backPicture->draw(painter);
 
         if (enteringDir) {
-            painter->modelViewMatrix().translate(0, 0.01, 0);
+            floor->setPosition(floor->position() + QVector3D(0, 0.001, 0));
             floor->draw(painter);
+            floor->setPosition(floor->position() - QVector3D(0, 0.001, 0));
         } else {
-            ceil->draw(painter);
             floor->draw(painter);
+            ceil->draw(painter);
         }
+
+        if (!enteringDir) ceil->draw(painter);
+
+        for (auto obj : backBoxes) obj->draw(painter);
+        backPicture->draw(painter);
 
         painter->modelViewMatrix().pop();
 
