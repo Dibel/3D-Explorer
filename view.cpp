@@ -41,6 +41,7 @@ View::View(int width, int height) :
     camera()->setFarPlane(roomSize * 50);
 
     //palette = new QGLMaterialCollection(this);
+    palette = QSharedPointer<QGLMaterialCollection>::create();
 
     loadModels();
     setupObjects();

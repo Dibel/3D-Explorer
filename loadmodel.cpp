@@ -20,11 +20,11 @@ void View::loadModels() {
     ceilMaterial->setAmbientColor(QColor(255, 255, 255));
     ceilMaterial->setDiffuseColor(QColor(255, 255, 255));
     ceilMaterial->setSpecularColor(QColor(255, 255, 255));
-    ceilMaterial->setShininess(120);
+    ceilMaterial->setShininess(30);
 
     QGLAbstractScene *model;
     MeshObject *mesh;
-    int matIndex;
+    //int matIndex;
 
     QFile confFile("./config/main.conf");
     qDebug() << confFile.open(QIODevice::ReadOnly);
@@ -63,11 +63,12 @@ void View::loadModels() {
 
         if (name == "floor.jpg") m->setTextureCombineMode(QGLMaterial::Decal);
 
-        palette.push_back(m);
+        matIndex.push_back(palette->addMaterial(m));
+        //palette.push_back(m);
         stream.readLine();
     }
 
-    mat2 = palette[2];
+    //mat2 = palette[2];
 
     while (name != "[model]" && !stream.atEnd()) name = stream.readLine();
     while (true) {
@@ -83,10 +84,12 @@ void View::loadModels() {
         model->setParent(this);
 
         if (recursive) {
-            matIndex = model->mainNode()->palette()->addMaterial(palette[0]);
-            FixNodesRecursive(matIndex, model->mainNode());
+            //matIndex = model->mainNode()->palette()->addMaterial(palette[0]);
+            model->mainNode()->setPalette(palette);
+            FixNodesRecursive(matIndex[0], model->mainNode());
         } else
-            model->mainNode()->setMaterial(palette[matId]);
+            FixNodesRecursive(matIndex[matId], model->mainNode());
+            //model->mainNode()->setMaterial(palette[matId]);
 
         mesh = new MeshObject(model, this, id[type]);
         mesh->setPosition(QVector3D(x, y, z));
@@ -106,7 +109,9 @@ void View::loadModels() {
     /* arrows */
     model = QGLAbstractScene::loadScene(":/model/leftarrow.obj");
     model->setParent(this);
-    model->mainNode()->setMaterial(palette[2]);
+    model->mainNode()->setPalette(palette);
+    FixNodesRecursive(matIndex[2], model->mainNode());
+    //model->mainNode()->setMaterial(palette[2]);
     mesh = new MeshObject(model, this, LeftArrow);
     mesh->setScale(0.4);
     mesh->setPosition(QVector3D(-50, 90, -roomSize));
@@ -114,7 +119,9 @@ void View::loadModels() {
 
     model = QGLAbstractScene::loadScene(":/model/rightarrow.obj");
     model->setParent(this);
-    model->mainNode()->setMaterial(palette[2]);
+    model->mainNode()->setPalette(palette);
+    FixNodesRecursive(matIndex[2], model->mainNode());
+    //model->mainNode()->setMaterial(palette[2]);
     mesh = new MeshObject(model, this, RightArrow);
     mesh->setScale(0.4);
     mesh->setPosition(QVector3D(50, 90, -roomSize));
@@ -208,7 +215,7 @@ void View::loadModels() {
     floorBuilder.currentNode()->setLocalTransform(floorTrans);
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
 
-    floorNode->setMaterialIndex(matIndex);
+    floorNode->setMaterialIndex(matIndex[0]);
     floorNode->setEffect(QGL::LitModulateTexture2D);
     floor = new MeshObject(floorNode, this, -1);
 

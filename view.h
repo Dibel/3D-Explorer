@@ -79,8 +79,9 @@ private:
     QGLMaterial *mat2;
 
     /* FIXME: unable to use QGLMaterialCollection */
-    //QSharedPointer<QGLMaterialCollection> palette;
-    QVector<QGLMaterial*> palette;
+    QSharedPointer<QGLMaterialCollection> palette;
+    QVector<int> matIndex;
+    //QVector<QGLMaterial*> palette;
 
     QVector<MeshObject*> staticMeshes;
     QVector<MeshObject*> boxes;
