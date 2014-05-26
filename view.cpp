@@ -225,31 +225,11 @@ void View::initializeGL(QGLPainter *painter) {
     lightId = painter->addLight(light);
 }
 
-void View::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Tab) {
-        setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
-        update();
-    } else if (event->key() == Qt::Key_R) {
-        camera()->setCenter(QVector3D(0, eyeHeight, 0));
-        camera()->setEye(QVector3D(0, eyeHeight, roomSize));
-        camera()->setUpVector(QVector3D(0, 1, 0));
-        paintHud();
-        update();
-    } else if (event->key() == Qt::Key_Space) {
-        isShowingFileName = !isShowingFileName;
-        paintHud();
-        update();
-    } else if (event->key() == Qt::Key_D)
-        debugFunc();
-    QGLView::keyPressEvent(event);
-}
-
 void View::resizeEvent(QResizeEvent *) {
     paintHud();
     update();
 }
 
-void View::wheelEvent(QWheelEvent *) { }
 
 QVector3D View::rotate(QVector3D vec, qreal angle) {
     return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);

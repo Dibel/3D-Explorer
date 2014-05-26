@@ -79,7 +79,7 @@ bool Directory::remove(int index) {
     //qDebug() << "try to remove file";
     //return false;
 
-    if (QMessageBox::question(NULL, "确认", "确认要删除吗？", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+    if (QMessageBox::question(NULL, "Confirm", "Delete it?", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
         return false;
     if (index < countDir() ? QDir(absoluteFilePath(page[index])).removeRecursively() : QDir::remove(page[index])) {
         refresh();
