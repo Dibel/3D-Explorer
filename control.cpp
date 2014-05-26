@@ -168,8 +168,12 @@ void View::keyPressEvent(QKeyEvent *event) {
         paintHud();
         update();
         //debugFunc();
+    } else if (event->key() == Qt::Key_U) {
+        hoverLeave();
+        dir->cdUp();
+        loadDir(boxes, picture);
     }
-    QGLView::keyPressEvent(event);
+    //QGLView::keyPressEvent(event);
 }
 
 void View::wheelEvent(QWheelEvent *) { }
