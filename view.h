@@ -30,6 +30,9 @@ public:
     static const int eyeHeight;
     static const qreal boxScale;
 
+    static QVector3D rotate(QVector3D vec, qreal angle);
+    static QVector3D rotate(qreal x, qreal y, qreal z, qreal angle);
+
 protected:
     void initializeGL(QGLPainter *painter);
     void paintGL(QGLPainter *painter);
@@ -62,7 +65,7 @@ private:
     void openEntry(MeshObject *obj);
 
     MeshObject *enteringDir;
-    bool isLeavingDir;
+    MeshObject *leavingDoor;
     qreal animProg;
     QVariantAnimation *animation;
     AnimStage animStage;
@@ -73,6 +76,9 @@ private:
     QVector3D deltaCenter;
     QVector3D deltaEye;
     QVector3D deltaUp;
+
+    QVector3D cdUpPosition;
+    qreal cdUpDirection;
 
     /* temporary materials for debug purpose */
     QGLMaterial *mat1;

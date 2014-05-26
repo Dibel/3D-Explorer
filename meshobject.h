@@ -91,7 +91,10 @@ public:
     void setEffect(QGLAbstractEffect *value) { m_effect = value; }
 
     PickType pickType() const { return m_type; }
-    void setPickType(PickType type) { m_type = type; }
+    void setPickType(PickType value) { m_type = value; }
+
+    QString info() const { return m_info; }
+    void setInfo(const QString &value) { m_info = value; }
 
     //void initialize(QGLView *view, QGLPainter *painter);
     void draw(QGLPainter *painter);
@@ -121,6 +124,7 @@ private:
     QGLAbstractEffect *m_effect;
     bool m_hovering;
     PickType m_type;
+    QString m_info;
 };
 
 #endif

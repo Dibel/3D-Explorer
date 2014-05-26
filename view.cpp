@@ -20,7 +20,7 @@ static const QVector3D defaultEye(0, View::eyeHeight, 0);
 //}
 
 View::View(int width, int height) :
-    enteringDir(NULL), isLeavingDir(false), isRotating(false),
+    enteringDir(NULL), leavingDoor(NULL), isRotating(false),
     pickedObject(NULL), enteredObject(NULL), fbo(NULL), surface(NULL),
     isShowingFileName(false)//, palette(new QGLMaterialCollection())
 {
@@ -42,6 +42,7 @@ View::View(int width, int height) :
 
     //palette = new QGLMaterialCollection(this);
 
+    slotCnt = 0;
     loadModels();
     setupObjects();
 
@@ -71,27 +72,6 @@ View::~View() {
 }
 
 void View::setupObjects() {
-    /* directories and files */
-    QFile file(":/model/shelf.slots");
-    file.open(QFile::ReadOnly);
-    QTextStream stream(&file);
-    qreal x, y, z;
-    stream >> slotCnt;
-    dir->setPageSize(slotCnt);
-    for (int i = 0; i < slotCnt; ++i) {
-        stream >> x >> y >> z;
-        MeshObject *box = new MeshObject(dirModel, this, i);
-        box->setMaterial(mat2);
-        box->setPosition(QVector3D(x, y, z - roomSize));
-        boxes.push_back(box);
-
-        MeshObject *backBox = new MeshObject(dirModel, this, -2);
-        backBox->setMaterial(mat2);
-        backBox->setPosition(QVector3D(x, y, z - roomSize));
-        backBoxes.push_back(backBox);
-    }
-    file.close();
-
     /* picture */
     picture = new ImageObject(30, 20, this, ImageObject::Normal);
     picture->setPosition(QVector3D(-50, 50, 1 - roomSize));
@@ -101,6 +81,10 @@ void View::setupObjects() {
 
     /* HUD */
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
+
+    dir->setPageSize(slotCnt);
+
+    loadDir(boxes, picture);
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -131,6 +115,7 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
         boxes[i]->setModel(dirModel);
     }
 
+
     paintHud();
     update();
 }
@@ -138,6 +123,7 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
 void View::startAnimation(AnimStage stage) {
     QVector3D endCenter;
     QVector3D endEye;
+    QVector3D tmp1, tmp2;
 
     startCenter = camera()->center();
     startEye = camera()->eye();
@@ -157,14 +143,18 @@ void View::startAnimation(AnimStage stage) {
             break;
 
         case Leaving1:
-            endCenter = QVector3D(-29, eyeHeight, roomSize * 2);
-            endEye = QVector3D(-29, eyeHeight, roomSize);
+            tmp1 = rotate(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
+            tmp2 = rotate(0, 0, -roomSize, leavingDoor->rotationAngle());
+            endCenter = leavingDoor->position() + QVector3D(0, eyeHeight, 0) - tmp1 + tmp2;
+            endEye = leavingDoor->position() + QVector3D(0, eyeHeight, 0) - tmp1;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
         case Leaving2:
-            endCenter = (QVector3D(0, eyeHeight, roomSize) - boxes[8]->position()) / boxScale;
+            endCenter = (QVector3D(0, eyeHeight, roomSize) - cdUpPosition) / boxScale;
+            endCenter = rotate(endCenter, leavingDoor->rotationAngle() - cdUpDirection);
             endEye = (defaultEye - boxes[8]->position()) / boxScale;
+            endEye = rotate(endEye, leavingDoor->rotationAngle() - cdUpDirection);
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -200,6 +190,7 @@ void View::finishAnimation() {
         case Leaving2:
             camera()->setCenter(QVector3D(0, eyeHeight, roomSize));
             camera()->setEye(QVector3D(0, eyeHeight, 0));
+            leavingDoor = NULL;
             break;
 
         default:
@@ -216,7 +207,6 @@ void View::finishAnimation() {
 
     animStage = NoAnim;
     enteringDir = NULL;
-    isLeavingDir = false;
 }
 
 void View::debugFunc() {
@@ -254,3 +244,11 @@ void View::resizeEvent(QResizeEvent *) {
 }
 
 void View::wheelEvent(QWheelEvent *) { }
+
+QVector3D View::rotate(QVector3D vec, qreal angle) {
+    return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);
+}
+
+QVector3D View::rotate(qreal x, qreal y, qreal z, qreal angle) {
+    return rotate(QVector3D(x, y, z), angle);
+}

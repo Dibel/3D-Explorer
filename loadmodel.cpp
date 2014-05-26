@@ -26,10 +26,14 @@ void View::loadModels() {
     MeshObject *mesh;
     int matIndex;
 
-    QFile confFile("./config/main.conf");
-    qDebug() << confFile.open(QIODevice::ReadOnly);
-    QTextStream stream(&confFile);
+    QFile file(":/config/main.conf");
+    qDebug() << file.open(QIODevice::ReadOnly);
+    QTextStream stream(&file);
     QString name = stream.readLine();
+    QString extra;
+
+    QFile file2;
+    QTextStream stream2;
 
     static int id[4] = { -1, -1, TrashBin, Door };
 
@@ -50,6 +54,7 @@ void View::loadModels() {
             tex = new QGLTexture2D();
             tex->setImage(QImage(":/maps/" + name));
             m->setTexture(tex);
+	    m->setTextureCombineMode(QGLMaterial::Decal);
         }
 
         int r, g, b;
@@ -60,8 +65,6 @@ void View::loadModels() {
         stream >> r >> g >> b;
         if (r != -1) m->setSpecularColor(QColor(r, g, b));
         stream >> r; m->setShininess(r);
-
-        if (name == "floor.jpg") m->setTextureCombineMode(QGLMaterial::Decal);
 
         palette.push_back(m);
         stream.readLine();
@@ -75,9 +78,10 @@ void View::loadModels() {
         if (name[0] == '[') { stream.readLine(); break; }
         if (name[0] == '#') { stream.readLine(); continue; }
 
-        int type, matId, recursive;
+        int type, matId, recursive, tmp;
         qreal x, y, z, w, angle;
-        stream >> type >> x >> y >> z >> w >> angle >> matId >> recursive;
+        stream >> type >> x >> y >> z >> w >> angle >> matId >> recursive >> extra;
+        qDebug() << extra;
 
         model = QGLAbstractScene::loadScene(":/model/" + name + ".obj");
         model->setParent(this);
@@ -91,17 +95,59 @@ void View::loadModels() {
         mesh = new MeshObject(model, this, id[type]);
         mesh->setPosition(QVector3D(x, y, z));
         mesh->setScale(w);
+        mesh->setRotationVector(QVector3D(0, 1, 0));
+        mesh->setRotationAngle(angle);
 
-        if (type == 3) { // door
-            model->mainNode()->setLocalTransform(doorTrans);
-            mesh->setRotationVector(QVector3D(0, -1, 0));
+        switch (type) {
+            case 1:
+                file2.setFileName(":/config/" + extra);
+                file2.open(QFile::ReadOnly);
+                stream2.setDevice(&file2);
+
+                stream2 >> tmp >> matId;
+                slotCnt += tmp;
+                qDebug() << slotCnt;
+                for (int i = 0; i < tmp; ++i) {
+                    stream2 >> x >> y >> z;
+                    MeshObject *box = new MeshObject(dirModel, this, boxes.size());
+                    box->setMaterial(palette[matId]);
+                    box->setPosition(QVector3D(x, y, z) + mesh->position());
+                    boxes.push_back(box);
+
+                    box = new MeshObject(dirModel, this, -2);
+                    box->setMaterial(palette[matId]);
+                    box->setPosition(QVector3D(x, y, z) + mesh->position());
+                    backBoxes.push_back(box);
+                }
+
+                stream2.setDevice(NULL);
+                file2.close();
+                break;
+
+            case 3:
+                tmp = extra.toInt();
+                model->mainNode()->setX(-tmp);
+                mesh->setPosition(QVector3D(x, y, z) + rotate(tmp, 0, 0, angle));
+                mesh->setInfo(extra);
+                break;
+
+            default:
+                qDebug() << "no config";
         }
 
         staticMeshes << mesh;
         stream.readLine();
     }
 
-    confFile.close();
+    while (name != "[misc]" && !stream.atEnd()) name = stream.readLine();
+    int x, y, z, angle;
+    stream >> x >> y >> z >> angle;
+    cdUpPosition = QVector3D(x, y, z);
+    cdUpDirection = angle;
+
+    qDebug() << cdUpPosition << cdUpDirection;
+
+    file.close();
 
     /* arrows */
     model = QGLAbstractScene::loadScene(":/model/leftarrow.obj");
@@ -183,20 +229,20 @@ void View::loadModels() {
     MeshObject *front = new MeshObject(pane, this, -1);
     front->setPosition(QVector3D(0, 0, -roomSize));
 
-    MeshObject *right = new MeshObject(pane, this, -1);
-    right->setPosition(QVector3D(-roomSize, 0, 0));
-    right->setRotationVector(QVector3D(0, 1, 0));
-    right->setRotationAngle(90);
+    MeshObject *left = new MeshObject(pane, this, -1);
+    left->setPosition(QVector3D(-roomSize, 0, 0));
+    left->setRotationVector(QVector3D(0, 1, 0));
+    left->setRotationAngle(90);
 
     MeshObject *back = new MeshObject(wall, this, -1);
     back->setPosition(QVector3D(0, 0, roomSize));
     back->setRotationVector(QVector3D(0, 1, 0));
     back->setRotationAngle(180);
 
-    MeshObject *left = new MeshObject(pane, this, -1);
-    left->setPosition(QVector3D(roomSize, 0, 0));
-    left->setRotationVector(QVector3D(0, 1, 0));
-    left->setRotationAngle(270);
+    MeshObject *right = new MeshObject(pane, this, -1);
+    right->setPosition(QVector3D(roomSize, 0, 0));
+    right->setRotationVector(QVector3D(0, 1, 0));
+    right->setRotationAngle(270);
 
     staticMeshes << front << right << back << left;
 
@@ -224,4 +270,6 @@ void View::loadModels() {
 
     ceilNode->setMaterial(ceilMaterial);
     ceil = new MeshObject(ceilNode, this, -1);
+
+    /* directories and files */
 }

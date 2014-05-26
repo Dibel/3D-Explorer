@@ -28,14 +28,15 @@ void View::paintGL(QGLPainter *painter) {
                 t = t > 0.5 ? 1 : t * 2;
             else
                 t = 1;
-            obj->setRotationAngle(90.0 * t);
+            qreal old = obj->rotationAngle();
+            obj->setRotationAngle(old - 90.0 * t);
             obj->draw(painter);
-            obj->setRotationAngle(0);
+            obj->setRotationAngle(old);
         } else
             obj->draw(painter);
     floor->draw(painter);
     ceil->draw(painter);
-    for (auto obj : boxes) 
+    for (auto obj : boxes)
         if (obj != enteringDir && obj != pickedObject)
             obj->draw(painter);
 
@@ -59,8 +60,9 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(enteringDir->position());
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
+            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - cdUpDirection));
             painter->modelViewMatrix().scale(1.0 / boxScale);
-            painter->modelViewMatrix().translate(-boxes[8]->position() - QVector3D(0, 0.1, 0));
+            painter->modelViewMatrix().translate(-cdUpPosition - QVector3D(0, 0.1, 0));
         }
 
         int tmpLightId = painter->addLight(light);
@@ -79,8 +81,10 @@ void View::paintGL(QGLPainter *painter) {
 
         if (!enteringDir) ceil->draw(painter);
 
-        for (auto obj : backBoxes) obj->draw(painter);
-        backPicture->draw(painter);
+        if (animStage != Leaving1) {
+            for (auto obj : backBoxes) obj->draw(painter);
+            backPicture->draw(painter);
+        }
 
         painter->modelViewMatrix().pop();
 
@@ -94,7 +98,7 @@ void View::paintGL(QGLPainter *painter) {
 
     if (enteredObject && enteredObject->pickType() == MeshObject::Normal) outline->draw(painter);
     glClear(GL_DEPTH_BUFFER_BIT);
-    if (!(enteringDir || isLeavingDir)) hudObject->draw(painter);
+    if (!(enteringDir || leavingDoor)) hudObject->draw(painter);
 }
 
 void View::paintHud(qreal x, qreal y, QString text) {

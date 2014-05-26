@@ -26,9 +26,10 @@ void View::invokeObject(PickObject *obj) {
         case Door:
             if (!pickedObject) {
                 enteredObject = NULL;
-                isLeavingDir = true;
+                leavingDoor = qobject_cast<MeshObject*>(obj);
                 dir->cdUp();
-                backBoxes[8]->setPickType(MeshObject::Anchor);
+                //for (int i = 0; i < slotCnt; ++i)
+                //    backBoxes[i]->setPickType(MeshObject::Anchor);
                 //loadDir(backBoxes, backPicture);
 
                 startAnimation(Leaving1);
@@ -57,7 +58,7 @@ void View::invokeObject(PickObject *obj) {
 }
 
 void View::mousePressEvent(QMouseEvent *event) {
-    if (enteringDir || isLeavingDir || event->button() != Qt::LeftButton) return;
+    if (enteringDir || leavingDoor || event->button() != Qt::LeftButton) return;
     PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
     pressPos = event->pos();
 
@@ -76,7 +77,7 @@ void View::mousePressEvent(QMouseEvent *event) {
 }
 
 void View::mouseReleaseEvent(QMouseEvent *event) {
-    if (enteringDir || isLeavingDir || event->button() != Qt::LeftButton) return;
+    if (enteringDir || leavingDoor || event->button() != Qt::LeftButton) return;
 
     if (isRotating) {
         isRotating = false;
@@ -101,7 +102,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
-    if (enteringDir || isLeavingDir) return;
+    if (enteringDir || leavingDoor) return;
 
     if (isRotating) {
         /* FIXME: moving mouse outside window may cause strange behaviour */
