@@ -28,9 +28,6 @@ void View::invokeObject(PickObject *obj) {
                 enteredObject = NULL;
                 leavingDoor = qobject_cast<MeshObject*>(obj);
                 dir->cdUp();
-                //for (int i = 0; i < slotCnt; ++i)
-                //    backBoxes[i]->setPickType(MeshObject::Anchor);
-                //loadDir(backBoxes, backPicture);
 
                 startAnimation(Leaving1);
             } else {
@@ -68,6 +65,7 @@ void View::mousePressEvent(QMouseEvent *event) {
         pickedPos = pickedObject->position();
         pickedDepth = (mvp * pickedPos).z();
         pickedModelPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
+        isNear = true;
         update();
 
     } else if (!obj || obj->objectId() <= MaxBoxId) {

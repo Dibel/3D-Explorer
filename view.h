@@ -41,7 +41,7 @@ protected:
 
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
-    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3 };
+    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
 
     static const int roomSize;
     static const int roomHeight;
@@ -125,6 +125,7 @@ private:
     QVector3D pickedModelPos;
     /* picked object's depth in projected coordinate */
     qreal pickedDepth;
+    bool isNear;
 
     MeshObject *enteredObject;
     QOpenGLFramebufferObject *fbo;
