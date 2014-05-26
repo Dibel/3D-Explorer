@@ -21,7 +21,17 @@ void View::paintGL(QGLPainter *painter) {
     phongEffect->program()->setUniformValue("ambientColor", 0.2f, 0.2f, 0.2f, 1.0f);
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
     phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
-    for (auto obj : staticMeshes)
+
+     if (animStage == Leaving3) {
+        qreal t;
+        if (cdUpDirection > 180)
+            t = cdUpDirection + (360 - cdUpDirection) * animProg;
+        else
+            t = cdUpDirection * (1 - animProg);
+        camera()->setCenter(rotate(defaultCenter, t));
+     }
+
+     for (auto obj : staticMeshes)
         if (obj->objectId() == Door && (animStage == Leaving1 || animStage == Leaving2)) {
             qreal t = animProg;
             if (animStage == Leaving1)
@@ -34,6 +44,7 @@ void View::paintGL(QGLPainter *painter) {
             obj->setRotationAngle(old);
         } else
             obj->draw(painter);
+
     floor->draw(painter);
     ceil->draw(painter);
     for (auto obj : boxes)
@@ -42,7 +53,7 @@ void View::paintGL(QGLPainter *painter) {
 
     picture->draw(painter);
 
-    if (animStage != NoAnim && !painter->isPicking()) {
+    if (animStage != NoAnim && animStage != Leaving3 && !painter->isPicking()) {
         painter->removeLight(lightId);
 
         qreal t = animProg;

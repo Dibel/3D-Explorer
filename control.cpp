@@ -58,7 +58,7 @@ void View::invokeObject(PickObject *obj) {
 }
 
 void View::mousePressEvent(QMouseEvent *event) {
-    if (enteringDir || leavingDoor || event->button() != Qt::LeftButton) return;
+    if (animStage != NoAnim || event->button() != Qt::LeftButton) return;
     PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
     pressPos = event->pos();
 
@@ -77,7 +77,7 @@ void View::mousePressEvent(QMouseEvent *event) {
 }
 
 void View::mouseReleaseEvent(QMouseEvent *event) {
-    if (enteringDir || leavingDoor || event->button() != Qt::LeftButton) return;
+    if (animStage != NoAnim || event->button() != Qt::LeftButton) return;
 
     if (isRotating) {
         isRotating = false;
@@ -102,7 +102,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void View::mouseMoveEvent(QMouseEvent *event) {
-    if (enteringDir || leavingDoor) return;
+    if (animStage != NoAnim) return;
 
     if (isRotating) {
         /* FIXME: moving mouse outside window may cause strange behaviour */

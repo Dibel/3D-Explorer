@@ -25,11 +25,6 @@ public:
     View(int width = 800, int height = 600);
     ~View();
 
-    static const int roomSize;
-    static const int roomHeight;
-    static const int eyeHeight;
-    static const qreal boxScale;
-
     static QVector3D rotate(QVector3D vec, qreal angle);
     static QVector3D rotate(qreal x, qreal y, qreal z, qreal angle);
 
@@ -47,6 +42,14 @@ protected:
 private:
     enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
     enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3 };
+
+    static const int roomSize;
+    static const int roomHeight;
+    static const int eyeHeight;
+    static const qreal boxScale;
+
+    static const QVector3D defaultCenter;
+    static const QVector3D defaultEye;
 
     void loadModels();
     void setupObjects();

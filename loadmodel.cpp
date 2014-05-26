@@ -27,7 +27,7 @@ void View::loadModels() {
     int matIndex;
 
     QFile file(":/config/main.conf");
-    qDebug() << file.open(QIODevice::ReadOnly);
+    file.open(QIODevice::ReadOnly);
     QTextStream stream(&file);
     QString name = stream.readLine();
     QString extra;
@@ -81,7 +81,6 @@ void View::loadModels() {
         int type, matId, recursive, tmp;
         qreal x, y, z, w, angle;
         stream >> type >> x >> y >> z >> w >> angle >> matId >> recursive >> extra;
-        qDebug() << extra;
 
         model = QGLAbstractScene::loadScene(":/model/" + name + ".obj");
         model->setParent(this);
@@ -106,7 +105,6 @@ void View::loadModels() {
 
                 stream2 >> tmp >> matId;
                 slotCnt += tmp;
-                qDebug() << slotCnt;
                 for (int i = 0; i < tmp; ++i) {
                     stream2 >> x >> y >> z;
                     MeshObject *box = new MeshObject(dirModel, this, boxes.size());
@@ -144,8 +142,6 @@ void View::loadModels() {
     stream >> x >> y >> z >> angle;
     cdUpPosition = QVector3D(x, y, z);
     cdUpDirection = angle;
-
-    qDebug() << cdUpPosition << cdUpDirection;
 
     file.close();
 

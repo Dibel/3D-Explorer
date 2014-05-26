@@ -12,12 +12,8 @@ const int View::roomHeight = 120;
 const int View::eyeHeight = 50;
 const qreal View::boxScale = 0.05;
 
-static const QVector3D defaultCenter(0, View::eyeHeight, -View::roomSize);
-static const QVector3D defaultEye(0, View::eyeHeight, 0);
-
-//static void swap(const ImageObject *p, const ImageObject *q) {
-//    const ImageObject *t = p; p = q; q = t;
-//}
+const QVector3D View::defaultCenter(0, eyeHeight, -roomSize);
+const QVector3D View::defaultEye(0, eyeHeight, 0);
 
 View::View(int width, int height) :
     enteringDir(NULL), leavingDoor(NULL), isRotating(false),
@@ -39,8 +35,6 @@ View::View(int width, int height) :
     camera()->setEye(defaultEye);
     camera()->setNearPlane(roomSize * 0.015);
     camera()->setFarPlane(roomSize * 50);
-
-    //palette = new QGLMaterialCollection(this);
 
     slotCnt = 0;
     loadModels();
@@ -83,8 +77,6 @@ void View::setupObjects() {
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
 
     dir->setPageSize(slotCnt);
-
-    loadDir(boxes, picture);
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -145,16 +137,14 @@ void View::startAnimation(AnimStage stage) {
         case Leaving1:
             tmp1 = rotate(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
             tmp2 = rotate(0, 0, -roomSize, leavingDoor->rotationAngle());
-            endCenter = leavingDoor->position() + QVector3D(0, eyeHeight, 0) - tmp1 + tmp2;
-            endEye = leavingDoor->position() + QVector3D(0, eyeHeight, 0) - tmp1;
+            endCenter = leavingDoor->position() + defaultEye - tmp1 + tmp2;
+            endEye = leavingDoor->position() + defaultEye - tmp1;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
         case Leaving2:
-            endCenter = (QVector3D(0, eyeHeight, roomSize) - cdUpPosition) / boxScale;
-            endCenter = rotate(endCenter, leavingDoor->rotationAngle() - cdUpDirection);
-            endEye = (defaultEye - boxes[8]->position()) / boxScale;
-            endEye = rotate(endEye, leavingDoor->rotationAngle() - cdUpDirection);
+            endEye = (defaultEye - rotate(cdUpPosition, leavingDoor->rotationAngle() - cdUpDirection)) / boxScale;
+            endCenter = endEye + rotate(0, 0, -roomSize, leavingDoor->rotationAngle()) / boxScale;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -183,15 +173,32 @@ void View::finishAnimation() {
             return;
 
         case Entering2:
-            camera()->setCenter(QVector3D(0, eyeHeight, -roomSize));
-            camera()->setEye(QVector3D(0, eyeHeight, 0));
+            camera()->setCenter(defaultCenter);
+            camera()->setEye(defaultEye);
             break;
 
         case Leaving2:
-            camera()->setCenter(QVector3D(0, eyeHeight, roomSize));
-            camera()->setEye(QVector3D(0, eyeHeight, 0));
+            camera()->setEye(defaultEye);
+            camera()->setCenter(rotate(defaultCenter, cdUpDirection));
             leavingDoor = NULL;
-            break;
+
+            for (int i = 0; i < boxes.size(); ++i) {
+                boxes[i]->setPickType(backBoxes[i]->pickType());
+                boxes[i]->setObjectName(backBoxes[i]->objectName());
+                boxes[i]->setModel(backBoxes[i]->model());
+            }
+            picture->setImage(backPicture->getImage());
+
+            //animStage = NoAnim;
+            animStage = Leaving3;
+            animation->start();
+            return;
+
+        case Leaving3:
+            animStage = NoAnim;
+            camera()->setCenter(defaultCenter);
+            camera()->setEye(defaultEye);
+            return;
 
         default:
             qDebug() << "finishAnimation: Unkown stage!";
@@ -216,7 +223,6 @@ void View::debugFunc() {
 
 void View::initializeGL(QGLPainter *painter) {
     lightId = painter->addLight(light);
-    qDebug() << "initial light id:" << lightId;
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
