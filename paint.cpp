@@ -22,16 +22,21 @@ void View::paintGL(QGLPainter *painter) {
     phongEffect->program()->setUniformValue("diffuseColor", 1.0f, 1.0f, 1.0f, 1.0f);
     phongEffect->program()->setUniformValue("specularColor", 1.0f, 1.0f, 1.0f, 1.0f);
 
-     if (animStage == Leaving3) {
+    if (animStage == Leaving3) {
         qreal t;
         if (cdUpDirection > 180)
             t = cdUpDirection + (360 - cdUpDirection) * animProg;
         else
             t = cdUpDirection * (1 - animProg);
         camera()->setCenter(rotate(defaultCenter, t));
-     }
 
-     for (auto obj : staticMeshes)
+    } else if (animStage == TurningLeft) {
+        camera()->setCenter(rotate(startCenter, 90.0 * animProg));
+    } else if (animStage == TurningRight) {
+        camera()->setCenter(rotate(startCenter, -90.0 * animProg));
+    }
+
+    for (auto obj : staticMeshes)
         if (obj->objectId() == Door && (animStage == Leaving1 || animStage == Leaving2)) {
             qreal t = animProg;
             if (animStage == Leaving1)
@@ -53,7 +58,7 @@ void View::paintGL(QGLPainter *painter) {
 
     picture->draw(painter);
 
-    if (animStage != NoAnim && animStage != Leaving3 && !painter->isPicking()) {
+    if (animStage > NoAnim && animStage < Leaving3 && !painter->isPicking()) {
         painter->removeLight(lightId);
 
         qreal t = animProg;
@@ -103,9 +108,12 @@ void View::paintGL(QGLPainter *painter) {
         lightId = painter->addLight(light);
     }
 
-    glClear(GL_DEPTH_BUFFER_BIT);
-    if (pickedObject)
+    if (pickedObject) {
+        QVector3D delta = pickedObject->position() - pickedPos;
+        if (delta.length() > 1) isNear = false;
+        if (!isNear) glClear(GL_DEPTH_BUFFER_BIT);
         pickedObject->draw(painter);
+    }
 
     if (enteredObject && enteredObject->pickType() == MeshObject::Normal) outline->draw(painter);
     glClear(GL_DEPTH_BUFFER_BIT);

@@ -189,7 +189,6 @@ void View::finishAnimation() {
             }
             picture->setImage(backPicture->getImage());
 
-            //animStage = NoAnim;
             animStage = Leaving3;
             animation->start();
             return;
@@ -198,6 +197,12 @@ void View::finishAnimation() {
             animStage = NoAnim;
             camera()->setCenter(defaultCenter);
             camera()->setEye(defaultEye);
+            return;
+
+        case TurningLeft:
+        case TurningRight:
+            animStage = NoAnim;
+            animation->setDuration(1500);
             return;
 
         default:

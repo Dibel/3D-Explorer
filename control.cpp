@@ -28,9 +28,6 @@ void View::invokeObject(PickObject *obj) {
                 enteredObject = NULL;
                 leavingDoor = qobject_cast<MeshObject*>(obj);
                 dir->cdUp();
-                //for (int i = 0; i < slotCnt; ++i)
-                //    backBoxes[i]->setPickType(MeshObject::Anchor);
-                //loadDir(backBoxes, backPicture);
 
                 startAnimation(Leaving1);
             } else {
@@ -68,6 +65,7 @@ void View::mousePressEvent(QMouseEvent *event) {
         pickedPos = pickedObject->position();
         pickedDepth = (mvp * pickedPos).z();
         pickedModelPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
+        isNear = true;
         update();
 
     } else if (!obj || obj->objectId() <= MaxBoxId) {
@@ -131,12 +129,25 @@ void View::mouseMoveEvent(QMouseEvent *event) {
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Tab) {
+    if (animStage != NoAnim) return;
+    if (event->key() == Qt::Key_Left) {
+        hoverLeave();
+        startCenter = camera()->center();
+        animStage = TurningLeft;
+        animation->setDuration(500);
+        animation->start();
+    } else if (event->key() == Qt::Key_Right) {
+        hoverLeave();
+        startCenter = camera()->center();
+        animStage = TurningRight;
+        animation->setDuration(500);
+        animation->start();
+    } if (event->key() == Qt::Key_Tab) {
         setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
         update();
     } else if (event->key() == Qt::Key_R) {
-        camera()->setCenter(QVector3D(0, eyeHeight, 0));
-        camera()->setEye(QVector3D(0, eyeHeight, roomSize));
+        camera()->setCenter(defaultCenter);
+        camera()->setEye(defaultEye);
         camera()->setUpVector(QVector3D(0, 1, 0));
         paintHud();
         update();
