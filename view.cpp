@@ -226,43 +226,10 @@ void View::initializeGL(QGLPainter *painter) {
     lightId = painter->addLight(light);
 }
 
-void View::keyPressEvent(QKeyEvent *event) {
-    if (animStage != NoAnim) return;
-    if (event->key() == Qt::Key_Left) {
-        hoverLeave();
-        startCenter = camera()->center();
-        animStage = TurningLeft;
-        animation->setDuration(500);
-        animation->start();
-    } else if (event->key() == Qt::Key_Right) {
-        hoverLeave();
-        startCenter = camera()->center();
-        animStage = TurningRight;
-        animation->setDuration(500);
-        animation->start();
-    } if (event->key() == Qt::Key_Tab) {
-        setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
-        update();
-    } else if (event->key() == Qt::Key_R) {
-        camera()->setCenter(defaultCenter);
-        camera()->setEye(defaultEye);
-        camera()->setUpVector(QVector3D(0, 1, 0));
-        paintHud();
-        update();
-    } else if (event->key() == Qt::Key_Space) {
-        isShowingFileName = !isShowingFileName;
-        paintHud();
-        update();
-    } else if (event->key() == Qt::Key_D)
-        debugFunc();
-    QGLView::keyPressEvent(event);
-}
-
 void View::resizeEvent(QResizeEvent *) {
     paintHud();
     update();
 }
 
-void View::wheelEvent(QWheelEvent *) { }
 
 

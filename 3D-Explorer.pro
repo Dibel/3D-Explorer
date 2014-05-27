@@ -11,7 +11,9 @@ HEADERS += \
     view.h \
     imageobject.h \
     directory.h \
-    pickobject.h
+    pickobject.h \
+    room.h \
+    common.h
 
 SOURCES += \
     main.cpp \
@@ -22,6 +24,7 @@ SOURCES += \
     pickobject.cpp \
     paint.cpp \
     control.cpp \
-    loadmodel.cpp
+    loadmodel.cpp \
+    room.cpp
 
 QMAKE_CXXFLAGS += -std=gnu++0x

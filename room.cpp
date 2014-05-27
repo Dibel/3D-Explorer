@@ -59,7 +59,6 @@ void Room::paintNextRoom(QGLPainter *painter, int stage) {
 
 
 Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette, QGLView *view) {
-    //QGLMaterial *dirModel, *fileModel;
     Room *room = this;
 
     QMatrix4x4 dirTrans;
@@ -108,20 +107,16 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
         if (line[0] == '#' || line[0] == '\n') continue;
 
         stream.seek(0);
-        //stream.setString(&line, QIODevice::ReadOnly);
 
         QString mat;
         qreal x, y, z, w, angle;
         int type, recursive, tmp;
         stream >> name >> type >> x >> y >> z >> w >> angle >> mat >> recursive >> extra;
 
-        qDebug() << name << type << x << y << z;
-
         model = QGLAbstractScene::loadScene(":/model/" + name + ".obj");
         model->setParent(view);
 
         if (recursive) {
-            qDebug() << mat;
             matIndex = model->mainNode()->palette()->addMaterial(palette[mat]);
             FixNodesRecursive(matIndex, model->mainNode());
         } else
@@ -180,7 +175,6 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
         if (line[0] == '#' || line[0] == '\n') continue;
 
         stream.seek(0);
-        //stream.setString(&line, QIODevice::ReadOnly);
 
         qreal x, y, z, angle;
         stream >> x >> y >> z >> angle;
@@ -204,13 +198,10 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
         if (line[0] == '#' || line[0] == '\n') continue;
 
         stream.seek(0);
-        //stream.setString(&line, QIODevice::ReadOnly);
 
         for (int i = 0; i < 4; ++i) {
             qreal l, r, h;
             stream >> l >> r >> h;
-
-            qDebug() << l << r << h;
 
             if (l == -1) {
                 mesh = new MeshObject(pane, view, -1);
@@ -253,7 +244,6 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
     floorBuilder.currentNode()->setLocalTransform(floorTrans);
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
 
-    //floorNode->setMaterialIndex(0);
     floorNode->setMaterial(palette["wood"]);
     floorNode->setEffect(QGL::LitModulateTexture2D);
     room->floor = new MeshObject(floorNode, view, -1);
@@ -266,8 +256,6 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
     ceilBuilder.addPane(roomSize * 2);
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
-
-    QGLMaterial *ceilMaterial = palette["ceil"];
 
     ceilNode->setMaterial(palette["ceil"]);
     room->ceil = new MeshObject(ceilNode, view, -1);

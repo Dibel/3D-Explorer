@@ -129,6 +129,56 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     }
 }
 
+void View::keyPressEvent(QKeyEvent *event) {
+    if (animStage != NoAnim) return;
+    if (event->key() == Qt::Key_Left) {
+        hoverLeave();
+        startCenter = camera()->center();
+        animStage = TurningLeft;
+        animation->setDuration(500);
+        animation->start();
+    } else if (event->key() == Qt::Key_Right) {
+        hoverLeave();
+        startCenter = camera()->center();
+        animStage = TurningRight;
+        animation->setDuration(500);
+        animation->start();
+    } if (event->key() == Qt::Key_Tab) {
+        setOption(QGLView::ShowPicking, !(options() & QGLView::ShowPicking));
+        update();
+    } else if (event->key() == Qt::Key_R) {
+        hoverLeave();
+        camera()->setCenter(defaultCenter);
+        camera()->setEye(defaultEye);
+        camera()->setNearPlane(roomSize * 0.015);
+        camera()->setFarPlane(roomSize * 50);
+        camera()->setUpVector(QVector3D(0, 1, 0));
+        paintHud();
+        update();
+    } else if (event->key() == Qt::Key_Space) {
+        isShowingFileName = !isShowingFileName;
+        paintHud();
+        update();
+    } else if (event->key() == Qt::Key_D) {
+        hoverLeave();
+        camera()->setCenter(QVector3D(0, eyeHeight, roomSize));
+        camera()->setEye(defaultEye);
+        camera()->setNearPlane(roomSize * 0.015);
+        camera()->setFarPlane(roomSize * 50);
+        camera()->setUpVector(QVector3D(0, 1, 0));
+        paintHud();
+        update();
+        //debugFunc();
+    } else if (event->key() == Qt::Key_U) {
+        hoverLeave();
+        dir->cdUp();
+        loadDir(curRoom->entry, picture);
+    }
+    //QGLView::keyPressEvent(event);
+}
+
+void View::wheelEvent(QWheelEvent *) { }
+
 void View::openEntry(MeshObject *obj) {
     Q_ASSERT(obj && obj->objectId() != -1);
     if (obj->objectId() < dir->countDir()) {
