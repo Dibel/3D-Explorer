@@ -10,6 +10,7 @@ class QGLMaterial;
 class QGLPainter;
 class QGLSceneNode;
 class QGLView;
+class QTextStream;
 class MeshObject;
 
 class Room {
@@ -25,12 +26,21 @@ public:
     qreal cdUpDirection;
     int slotNum;
 
+    const QHash<QString, QGLMaterial*> &palette;
+    QGLView *view;
+
     QGLSceneNode *dirModel;
     QGLSceneNode *fileModel;
 
-    static Room *loadRoom(const QString &fileName, const QHash<QString, QGLMaterial*> &palette, QGLView *view);
     void paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg);
     void paintNextRoom(QGLPainter *painter, int stage);
+
+private:
+    void loadProperty(const QString &property, QTextStream &value);
+
+    void loadDefaultModels();
+    void loadModel(QTextStream &value);
+    void loadWall(QTextStream &value);
 };
 
 #endif
