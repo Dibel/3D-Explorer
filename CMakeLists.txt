@@ -4,21 +4,24 @@ set(PROJECTNAME 3dexplorer)
 
 set(SOURCE
     main.cpp
-    view.cpp
     pickobject.cpp
     meshobject.cpp
     imageobject.cpp
-    directory.cpp
+    room.cpp
+    view.cpp
     paint.cpp
     control.cpp
     loadmodel.cpp
+    directory.cpp
 )
 
 set(HEADER
-    view.h
+    common.h
     pickobject.h
     meshobject.h
     imageobject.h
+    room.h
+    view.h
     directory.h
 )
 

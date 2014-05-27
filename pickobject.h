@@ -5,9 +5,6 @@
 
 class QGLView;
 
-const int MaxBoxId = 100;
-const int StartImageId = 200;
-
 class PickObject : public QObject {
     Q_OBJECT
 public:

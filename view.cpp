@@ -2,15 +2,11 @@
 #include "imageobject.h"
 #include "meshobject.h"
 #include "directory.h"
+#include "common.h"
 #include <Qt3D/QGLShaderProgramEffect>
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtCore/QVariantAnimation>
 #include <QtCore/QDebug>
-
-const int View::roomSize = 80;
-const int View::roomHeight = 120;
-const int View::eyeHeight = 50;
-const qreal View::boxScale = 0.05;
 
 const QVector3D View::defaultCenter(0, eyeHeight, -roomSize);
 const QVector3D View::defaultEye(0, eyeHeight, 0);
@@ -36,7 +32,7 @@ View::View(int width, int height) :
     camera()->setNearPlane(roomSize * 0.015);
     camera()->setFarPlane(roomSize * 50);
 
-    slotCnt = 0;
+    //slotCnt = 0;
     loadModels();
     setupObjects();
 
@@ -56,7 +52,7 @@ View::View(int width, int height) :
 
     outline = new ImageObject(2, 2, this, ImageObject::Outline);
 
-    loadDir(boxes, picture);
+    loadDir(curRoom->entry, picture);
 }
 
 View::~View() {
@@ -76,7 +72,7 @@ void View::setupObjects() {
     /* HUD */
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
 
-    dir->setPageSize(slotCnt);
+    dir->setPageSize(curRoom->slotNum);
 }
 
 void View::hoverEnter(MeshObject *obj) {
@@ -99,12 +95,12 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
     for (int i = 0; i < dir->count(); ++i) {
         boxes[i]->setPickType(MeshObject::Normal);
         boxes[i]->setObjectName(dir->entry(i));
-        boxes[i]->setModel(i < dir->countDir() ? dirModel : fileModel);
+        boxes[i]->setModel(i < dir->countDir() ? curRoom->dirModel : curRoom->fileModel);
     }
-    for (int i = dir->count(); i < slotCnt; ++i) {
+    for (int i = dir->count(); i < curRoom->slotNum; ++i) {
         boxes[i]->setPickType(MeshObject::Anchor);
         boxes[i]->setObjectName(QString());
-        boxes[i]->setModel(dirModel);
+        boxes[i]->setModel(curRoom->dirModel);
     }
 
 
@@ -135,16 +131,16 @@ void View::startAnimation(AnimStage stage) {
             break;
 
         case Leaving1:
-            tmp1 = rotate(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
-            tmp2 = rotate(0, 0, -roomSize, leavingDoor->rotationAngle());
+            tmp1 = rotateCcw(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
+            tmp2 = rotateCcw(0, 0, -roomSize, leavingDoor->rotationAngle());
             endCenter = leavingDoor->position() + defaultEye - tmp1 + tmp2;
             endEye = leavingDoor->position() + defaultEye - tmp1;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
         case Leaving2:
-            endEye = (defaultEye - rotate(cdUpPosition, leavingDoor->rotationAngle() - cdUpDirection)) / boxScale;
-            endCenter = endEye + rotate(0, 0, -roomSize, leavingDoor->rotationAngle()) / boxScale;
+            endEye = (defaultEye - rotateCcw(curRoom->cdUpPosition, leavingDoor->rotationAngle() - curRoom->cdUpDirection)) / boxScale;
+            endCenter = endEye + rotateCcw(0, 0, -roomSize, leavingDoor->rotationAngle()) / boxScale;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -168,7 +164,7 @@ void View::finishAnimation() {
             return;
 
         case Leaving1:
-            loadDir(backBoxes, backPicture);
+            loadDir(curRoom->backEntry, backPicture);
             startAnimation(Leaving2);
             return;
 
@@ -179,13 +175,13 @@ void View::finishAnimation() {
 
         case Leaving2:
             camera()->setEye(defaultEye);
-            camera()->setCenter(rotate(defaultCenter, cdUpDirection));
+            camera()->setCenter(rotateCcw(defaultCenter, curRoom->cdUpDirection));
             leavingDoor = NULL;
 
-            for (int i = 0; i < boxes.size(); ++i) {
-                boxes[i]->setPickType(backBoxes[i]->pickType());
-                boxes[i]->setObjectName(backBoxes[i]->objectName());
-                boxes[i]->setModel(backBoxes[i]->model());
+            for (int i = 0; i < curRoom->entry.size(); ++i) {
+                curRoom->entry[i]->setPickType(curRoom->backEntry[i]->pickType());
+                curRoom->entry[i]->setObjectName(curRoom->backEntry[i]->objectName());
+                curRoom->entry[i]->setModel(curRoom->backEntry[i]->model());
             }
             picture->setImage(backPicture->getImage());
 
@@ -209,10 +205,10 @@ void View::finishAnimation() {
             qDebug() << "finishAnimation: Unkown stage!";
     }
 
-    for (int i = 0; i < boxes.size(); ++i) {
-        boxes[i]->setPickType(backBoxes[i]->pickType());
-        boxes[i]->setObjectName(backBoxes[i]->objectName());
-        boxes[i]->setModel(backBoxes[i]->model());
+    for (int i = 0; i < curRoom->entry.size(); ++i) {
+        curRoom->entry[i]->setPickType(curRoom->backEntry[i]->pickType());
+        curRoom->entry[i]->setObjectName(curRoom->backEntry[i]->objectName());
+        curRoom->entry[i]->setModel(curRoom->backEntry[i]->model());
     }
     picture->setImage(backPicture->getImage());
 
@@ -269,10 +265,4 @@ void View::resizeEvent(QResizeEvent *) {
 
 void View::wheelEvent(QWheelEvent *) { }
 
-QVector3D View::rotate(QVector3D vec, qreal angle) {
-    return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);
-}
 
-QVector3D View::rotate(qreal x, qreal y, qreal z, qreal angle) {
-    return rotate(QVector3D(x, y, z), angle);
-}

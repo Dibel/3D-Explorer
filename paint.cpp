@@ -2,11 +2,13 @@
 #include "meshobject.h"
 #include "imageobject.h"
 #include "directory.h"
+#include "common.h"
 #include <QtGui/QOpenGLShaderProgram>
 #include <Qt3D/QGLFramebufferObjectSurface>
 #include <Qt3D/QGLShaderProgramEffect>
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
+
 
 void View::paintGL(QGLPainter *painter) {
     Q_ASSERT(picture != NULL);
@@ -24,37 +26,26 @@ void View::paintGL(QGLPainter *painter) {
 
     if (animStage == Leaving3) {
         qreal t;
-        if (cdUpDirection > 180)
-            t = cdUpDirection + (360 - cdUpDirection) * animProg;
+        if (curRoom->cdUpDirection > 180)
+            t = curRoom->cdUpDirection + (360 - curRoom->cdUpDirection) * animProg;
         else
-            t = cdUpDirection * (1 - animProg);
-        camera()->setCenter(rotate(defaultCenter, t));
+            t = curRoom->cdUpDirection * (1 - animProg);
+        camera()->setCenter(rotateCcw(defaultCenter, t));
 
     } else if (animStage == TurningLeft) {
-        camera()->setCenter(rotate(startCenter, 90.0 * animProg));
+        camera()->setCenter(rotateCcw(startCenter, 90.0 * animProg));
     } else if (animStage == TurningRight) {
-        camera()->setCenter(rotate(startCenter, -90.0 * animProg));
+        camera()->setCenter(rotateCcw(startCenter, -90.0 * animProg));
     }
 
-    for (auto obj : staticMeshes)
-        if (obj->objectId() == Door && (animStage == Leaving1 || animStage == Leaving2)) {
-            qreal t = animProg;
-            if (animStage == Leaving1)
-                t = t > 0.5 ? 1 : t * 2;
-            else
-                t = 1;
-            qreal old = obj->rotationAngle();
-            obj->setRotationAngle(old - 90.0 * t);
-            obj->draw(painter);
-            obj->setRotationAngle(old);
-        } else
-            obj->draw(painter);
+    qreal t = animProg;
+    if (animStage == Leaving1)
+        t = t > 0.5 ? 1 : t * 2;
+    else
+        t = 1;
 
-    floor->draw(painter);
-    ceil->draw(painter);
-    for (auto obj : boxes)
-        if (obj != enteringDir && obj != pickedObject)
-            obj->draw(painter);
+    if (enteringDir) enteringDir->setPickType(MeshObject::Anchor);
+    curRoom->paintCurRoom(painter, leavingDoor, t);
 
     picture->draw(painter);
 
@@ -76,29 +67,38 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(enteringDir->position());
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
-            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - cdUpDirection));
+            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - curRoom->cdUpDirection));
             painter->modelViewMatrix().scale(1.0 / boxScale);
-            painter->modelViewMatrix().translate(-cdUpPosition - QVector3D(0, 0.1, 0));
+            painter->modelViewMatrix().translate(-curRoom->cdUpPosition - QVector3D(0, 0.1, 0));
         }
 
         int tmpLightId = painter->addLight(light);
 
-        for (auto obj : staticMeshes)
-            obj->draw(painter);
+        //paintRoom(painter, curRoom, 1, NULL, 0);
 
-        if (enteringDir) {
-            floor->setPosition(floor->position() + QVector3D(0, 0.001, 0));
-            floor->draw(painter);
-            floor->setPosition(floor->position() - QVector3D(0, 0.001, 0));
-        } else {
-            floor->draw(painter);
-            ceil->draw(painter);
-        }
+        //if (enteringDir) {
+        //    floor->setPosition(floor->position() + QVector3D(0, 0.001, 0));
+        //    floor->draw(painter);
+        //    floor->setPosition(floor->position() - QVector3D(0, 0.001, 0));
+        //} else {
+        //    floor->draw(painter);
+        //    ceil->draw(painter);
+        //}
 
-        if (!enteringDir) ceil->draw(painter);
+        //if (!enteringDir) ceil->draw(painter);
+
+        int stage;
+        if (enteringDir)
+            stage = 0;
+        else if (animStage == Leaving1)
+            stage = 1;
+        else
+            stage = 2;
+
+        curRoom->paintNextRoom(painter, stage);
 
         if (animStage != Leaving1) {
-            for (auto obj : backBoxes) obj->draw(painter);
+            //for (auto obj : curRoom->backEntry) obj->draw(painter);
             backPicture->draw(painter);
         }
 
@@ -140,11 +140,11 @@ void View::paintHud(qreal x, qreal y, QString text) {
 
     if (text.isEmpty() && isShowingFileName)
         for (int i = 0; i < dir->count(); ++i) {
-            QVector3D pos = mvp * boxes[i]->position();
+            QVector3D pos = mvp * curRoom->entry[i]->position();
             QRect rect(pos.x() - 30, pos.y(), 60, 30);
-            QString text = boxes[i]->objectName();
+            QString text = curRoom->entry[i]->objectName();
             painter.drawText(rect, Qt::AlignHCenter | Qt::TextWrapAnywhere,
-                    boxes[i]->objectName());
+                    curRoom->entry[i]->objectName());
         }
     
     hudObject->setImage(image);

@@ -2,6 +2,7 @@
 #include "meshobject.h"
 #include "imageobject.h"
 #include "directory.h"
+#include "common.h"
 #include <QtCore/QVariantAnimation>
 #include <QtGui/QDesktopServices>
 
@@ -15,7 +16,7 @@ void View::invokeObject(PickObject *obj) {
     switch (obj->objectId()) {
         case TrashBin:
             if (pickedObject && dir->remove(pickedObject->objectId()))
-                loadDir(boxes, picture);
+                loadDir(curRoom->entry, picture);
             break;
 
         case Picture:
@@ -38,14 +39,14 @@ void View::invokeObject(PickObject *obj) {
         case LeftArrow:
             if (!pickedObject) {
                 dir->prevPage();
-                loadDir(boxes, picture);
+                loadDir(curRoom->entry, picture);
             }
             break;
 
         case RightArrow:
             if (!pickedObject) {
                 dir->nextPage();
-                loadDir(boxes, picture);
+                loadDir(curRoom->entry, picture);
             }
             break;
 
@@ -133,7 +134,7 @@ void View::openEntry(MeshObject *obj) {
     if (obj->objectId() < dir->countDir()) {
         hoverLeave();
         dir->cd(obj->objectName());
-        loadDir(backBoxes, backPicture);
+        loadDir(curRoom->backEntry, backPicture);
 
         enteringDir = obj;
         startAnimation(Entering1);

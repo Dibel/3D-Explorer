@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>config/main.conf</file>
         <file>config/shelf.conf</file>
+        <file>config/room1.conf</file>
         <file>model/shelf.obj</file>
         <file>model/frame.obj</file>
         <file>model/trash.obj</file>

@@ -1,4 +1,5 @@
 #include "imageobject.h"
+#include "common.h"
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLPainter>
 #include <Qt3D/QGLShaderProgramEffect>

@@ -3,7 +3,10 @@
 
 #include <Qt3D/QGLView>
 #include <QtGui/QImage>
+#include <QtCore/QHash>
 #include "pickobject.h"
+
+#include "room.h"
 
 class ImageObject;
 class MeshObject;
@@ -18,15 +21,13 @@ class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLTexture2D;
 class QVariantAnimation;
+enum AnimStage : int;
 
 class View : public QGLView {
     Q_OBJECT
 public:
     View(int width = 800, int height = 600);
     ~View();
-
-    static QVector3D rotate(QVector3D vec, qreal angle);
-    static QVector3D rotate(qreal x, qreal y, qreal z, qreal angle);
 
 protected:
     void initializeGL(QGLPainter *painter);
@@ -40,16 +41,10 @@ protected:
     void wheelEvent(QWheelEvent *);
 
 private:
-    enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
-    enum AnimStage { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
-
-    static const int roomSize;
-    static const int roomHeight;
-    static const int eyeHeight;
-    static const qreal boxScale;
 
     static const QVector3D defaultCenter;
     static const QVector3D defaultEye;
+
 
     void loadModels();
     void setupObjects();
@@ -67,6 +62,8 @@ private:
     void invokeObject(PickObject *obj);
     void openEntry(MeshObject *obj);
 
+    Room *curRoom;
+
     MeshObject *enteringDir;
     MeshObject *leavingDoor;
     qreal animProg;
@@ -80,30 +77,18 @@ private:
     QVector3D deltaEye;
     QVector3D deltaUp;
 
-    QVector3D cdUpPosition;
-    qreal cdUpDirection;
-
     /* temporary materials for debug purpose */
     QGLMaterial *mat1;
     QGLMaterial *mat2;
 
     /* FIXME: unable to use QGLMaterialCollection */
     //QSharedPointer<QGLMaterialCollection> palette;
-    QVector<QGLMaterial*> palette;
-
-    QVector<MeshObject*> staticMeshes;
-    QVector<MeshObject*> boxes;
-    QVector<MeshObject*> backBoxes;
-    MeshObject *floor;
-    MeshObject *ceil;
+    QHash<QString, QGLMaterial*> palette;
 
     ImageObject *picture;
     ImageObject *backPicture;
     ImageObject *hudObject;
     ImageObject *outline;
-
-    QGLSceneNode *dirModel;
-    QGLSceneNode *fileModel;
 
     bool isRotating;
     QPoint pressPos;
@@ -113,8 +98,6 @@ private:
     int lightId;
 
     Directory *dir;
-
-    int slotCnt;
 
     QMatrix4x4 mvp;
 
