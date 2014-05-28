@@ -29,7 +29,8 @@ void View::invokeObject(PickObject *obj) {
                 enteredObject = NULL;
                 leavingDoor = qobject_cast<MeshObject*>(obj);
                 dir->cdUp();
-
+                for (MeshObject *obj : curRoom->backEntry)
+                    obj->setPickType(MeshObject::Anchor);
                 startAnimation(Leaving1);
             } else {
                 /* TODO: move file to parent directory */
@@ -150,8 +151,8 @@ void View::keyPressEvent(QKeyEvent *event) {
         hoverLeave();
         camera()->setCenter(defaultCenter);
         camera()->setEye(defaultEye);
-        camera()->setNearPlane(roomSize * 0.015);
-        camera()->setFarPlane(roomSize * 50);
+        camera()->setNearPlane(roomLength / 2 * 0.015);
+        camera()->setFarPlane(roomLength / 2 * 50);
         camera()->setUpVector(QVector3D(0, 1, 0));
         paintHud();
         update();
@@ -161,10 +162,10 @@ void View::keyPressEvent(QKeyEvent *event) {
         update();
     } else if (event->key() == Qt::Key_D) {
         hoverLeave();
-        camera()->setCenter(QVector3D(0, eyeHeight, roomSize));
+        camera()->setCenter(QVector3D(0, eyeHeight, roomLength / 2));
         camera()->setEye(defaultEye);
-        camera()->setNearPlane(roomSize * 0.015);
-        camera()->setFarPlane(roomSize * 50);
+        camera()->setNearPlane(roomLength / 2 * 0.015);
+        camera()->setFarPlane(roomLength / 2 * 50);
         camera()->setUpVector(QVector3D(0, 1, 0));
         paintHud();
         update();

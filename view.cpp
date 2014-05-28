@@ -8,7 +8,7 @@
 #include <QtCore/QVariantAnimation>
 #include <QtCore/QDebug>
 
-const QVector3D View::defaultCenter(0, eyeHeight, -roomSize);
+const QVector3D View::defaultCenter(0, eyeHeight, -roomLength / 2);
 const QVector3D View::defaultEye(0, eyeHeight, 0);
 
 View::View(int width, int height) :
@@ -29,8 +29,8 @@ View::View(int width, int height) :
 
     camera()->setCenter(defaultCenter);
     camera()->setEye(defaultEye);
-    camera()->setNearPlane(roomSize * 0.015);
-    camera()->setFarPlane(roomSize * 50);
+    camera()->setNearPlane(roomLength / 2 * 0.015);
+    camera()->setFarPlane(roomWidth * 50);
 
     //slotCnt = 0;
     loadModels();
@@ -64,10 +64,10 @@ View::~View() {
 void View::setupObjects() {
     /* picture */
     picture = new ImageObject(30, 20, this, ImageObject::Normal);
-    picture->setPosition(QVector3D(-50, 50, 1 - roomSize));
+    picture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
 
     backPicture = new ImageObject(30, 20, this, ImageObject::Background);
-    backPicture->setPosition(QVector3D(-50, 50, 1 - roomSize));
+    backPicture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
 
     /* HUD */
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
@@ -132,7 +132,7 @@ void View::startAnimation(AnimStage stage) {
 
         case Leaving1:
             tmp1 = rotateCcw(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
-            tmp2 = rotateCcw(0, 0, -roomSize, leavingDoor->rotationAngle());
+            tmp2 = rotateCcw(0, 0, -roomLength / 2, leavingDoor->rotationAngle());
             endCenter = leavingDoor->position() + defaultEye - tmp1 + tmp2;
             endEye = leavingDoor->position() + defaultEye - tmp1;
             deltaUp = QVector3D(0, 0, 0);
@@ -140,7 +140,7 @@ void View::startAnimation(AnimStage stage) {
 
         case Leaving2:
             endEye = (defaultEye - rotateCcw(curRoom->cdUpPosition, leavingDoor->rotationAngle() - curRoom->cdUpDirection)) / boxScale;
-            endCenter = endEye + rotateCcw(0, 0, -roomSize, leavingDoor->rotationAngle()) / boxScale;
+            endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, leavingDoor->rotationAngle()) / boxScale;
             deltaUp = QVector3D(0, 0, 0);
             break;
 

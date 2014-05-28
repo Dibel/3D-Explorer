@@ -4,10 +4,11 @@
 #include <QtGui/QVector3D>
 #include <QtGui/QQuaternion>
 
-const int roomSize = 80;
+const int roomLength = 160;
+const int roomWidth = 240;
 const int roomHeight = 120;
 const int eyeHeight = 50;
-const qreal boxScale = 0.05;
+const qreal boxScale = 0.025;
 
 const int MaxBoxId = 100;
 const int StartImageId = 200;

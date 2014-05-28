@@ -44,8 +44,10 @@ void View::paintGL(QGLPainter *painter) {
     else
         t = 1;
 
-    if (enteringDir) enteringDir->setPickType(MeshObject::Anchor);
-    curRoom->paintCurRoom(painter, leavingDoor, t);
+    if (enteringDir)
+        curRoom->paintCurRoom(painter, enteringDir, t);
+    else
+        curRoom->paintCurRoom(painter, leavingDoor, t);
 
     picture->draw(painter);
 
@@ -74,33 +76,10 @@ void View::paintGL(QGLPainter *painter) {
 
         int tmpLightId = painter->addLight(light);
 
-        //paintRoom(painter, curRoom, 1, NULL, 0);
+        curRoom->paintNextRoom(painter, animStage);
 
-        //if (enteringDir) {
-        //    floor->setPosition(floor->position() + QVector3D(0, 0.001, 0));
-        //    floor->draw(painter);
-        //    floor->setPosition(floor->position() - QVector3D(0, 0.001, 0));
-        //} else {
-        //    floor->draw(painter);
-        //    ceil->draw(painter);
-        //}
-
-        //if (!enteringDir) ceil->draw(painter);
-
-        int stage;
-        if (enteringDir)
-            stage = 0;
-        else if (animStage == Leaving1)
-            stage = 1;
-        else
-            stage = 2;
-
-        curRoom->paintNextRoom(painter, stage);
-
-        if (animStage != Leaving1) {
-            //for (auto obj : curRoom->backEntry) obj->draw(painter);
+        if (animStage != Leaving1)
             backPicture->draw(painter);
-        }
 
         painter->modelViewMatrix().pop();
 

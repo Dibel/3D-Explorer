@@ -6,6 +6,7 @@
 #include <QtCore/QVector>
 #include <QtGui/QVector3D>
 
+class QGLAbstractScene;
 class QGLMaterial;
 class QGLPainter;
 class QGLSceneNode;
@@ -30,6 +31,7 @@ public:
     QGLView *view;
 
     QGLSceneNode *dirModel;
+    QGLSceneNode *dirTopModel;
     QGLSceneNode *fileModel;
 
     void paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg);
@@ -41,6 +43,7 @@ private:
     void loadDefaultModels();
     void loadModel(QTextStream &value);
     void loadWall(QTextStream &value);
+    void loadContainer(const QString &name, MeshObject *mesh);
 };
 
 #endif

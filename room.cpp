@@ -35,15 +35,21 @@ void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg
     ceil->draw(painter);
 
     for (MeshObject *obj : entry)
-        if (obj->pickType() != MeshObject::Picked)
+        if (obj->pickType() != MeshObject::Picked) {
             obj->draw(painter);
+            if (obj->model() == dirModel && obj != animObj) {
+                obj->setModel(dirTopModel);
+                obj->draw(painter);
+                obj->setModel(dirModel);
+            }
+        }
 }
 
 void Room::paintNextRoom(QGLPainter *painter, int stage) {
     for (MeshObject *obj : solid)
         obj->draw(painter);
 
-    if (stage == 0) {
+    if (stage == Entering1 || stage == Entering2) {
         floor->setPosition(floor->position() + QVector3D(0, 0.001, 0));
         floor->draw(painter);
         floor->setPosition(floor->position() - QVector3D(0, 0.001, 0));
@@ -51,14 +57,22 @@ void Room::paintNextRoom(QGLPainter *painter, int stage) {
         floor->draw(painter);
         ceil->draw(painter);
     }
-
-    if (stage != 1)
-        for (MeshObject *obj : backEntry)
+    
+    if (stage != Leaving1 && stage != Leaving2)
+        for (MeshObject *obj : backEntry) {
             obj->draw(painter);
+            if (obj->model() == dirModel) {
+                obj->setModel(dirTopModel);
+                obj->draw(painter);
+                obj->setModel(dirModel);
+            }
+        }
 }
 
 
-Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette, QGLView *view) : slotNum(0), palette(palette), view(view) {
+Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette, QGLView *view)
+    : slotNum(0), palette(palette), view(view)
+{
     loadDefaultModels();
 
     QFile file(":/config/" + fileName);
@@ -129,27 +143,7 @@ void Room::loadModel(QTextStream &value) {
 
     switch (type) {
         case 1:
-            file2.setFileName(":/config/" + name + ".conf");
-            file2.open(QFile::ReadOnly);
-            stream2.setDevice(&file2);
-
-            stream2 >> tmp >> mat;
-            slotNum += tmp;
-            for (int i = 0; i < tmp; ++i) {
-                stream2 >> x >> y >> z;
-                MeshObject *box = new MeshObject(dirModel, view, entry.size());
-                box->setMaterial(palette[mat]);
-                box->setPosition(QVector3D(x, y, z) + mesh->position());
-                entry.push_back(box);
-
-                box = new MeshObject(dirModel, view, -2);
-                box->setMaterial(palette[mat]);
-                box->setPosition(QVector3D(x, y, z) + mesh->position());
-                backEntry.push_back(box);
-            }
-
-            stream2.setDevice(NULL);
-            file2.close();
+            loadContainer(name, mesh);
             break;
 
         case 3:
@@ -167,6 +161,31 @@ void Room::loadModel(QTextStream &value) {
     solid << mesh;
 }
 
+void Room::loadContainer(const QString &name, MeshObject *mesh) {
+    QFile file(":/config/" + name + ".conf");
+    file.open(QIODevice::ReadOnly);
+    QTextStream stream(&file);
+
+    int n;
+    QString model;
+    stream >> n >> model;
+    slotNum += n;
+
+    for (int i = 0; i < n; ++i) {
+        qreal x, y, z;
+        stream >> x >> y >> z;
+        MeshObject *obj = new MeshObject(dirModel, view, entry.size());
+        obj->setPosition(QVector3D(x, y, z) + mesh->position());
+        entry.push_back(obj);
+
+        obj = new MeshObject(dirModel, view, -2);
+        obj->setPosition(QVector3D(x, y, z) + mesh->position());
+        backEntry.push_back(obj);
+    }
+
+    file.close();
+}
+
 void Room::loadWall(QTextStream &value) {
     int side;
     qreal l, r, h;
@@ -174,10 +193,12 @@ void Room::loadWall(QTextStream &value) {
     value >> side >> l >> r >> h >> mat;
 
     MeshObject *mesh;
+    qreal w = side & 1 ? roomLength : roomWidth;
+    qDebug() << side << w;
     if (l == -1) {
         QGLBuilder roomBuilder;
         roomBuilder.newSection(QGL::Faceted);
-        roomBuilder.addPane(QSizeF(roomSize * 2, roomHeight));
+        roomBuilder.addPane(QSizeF(w, roomHeight));
         QGLSceneNode *pane = roomBuilder.finalizedSceneNode();
         pane->setMaterial(palette[mat]);
         pane->setPosition(QVector3D(0, roomHeight * 0.5, 0));
@@ -185,28 +206,34 @@ void Room::loadWall(QTextStream &value) {
         mesh = new MeshObject(pane, view, -1);
     } else {
         /* room, a cube that inside-out */
-        QVector3DArray wallVertices;
-        wallVertices.append(-roomSize, 0, 0);
-        wallVertices.append(l, 0, 0);
-        wallVertices.append(-roomSize, roomHeight, 0);
-        wallVertices.append(l, h, 0);
-        wallVertices.append(roomSize, roomHeight, 0);
-        wallVertices.append(r, h, 0);
-        wallVertices.append(roomSize, 0, 0);
-        wallVertices.append(r, 0, 0);
+        QVector3DArray vertices;
+        vertices.append(-w / 2, 0, 0);
+        vertices.append(l, 0, 0);
+        vertices.append(-w / 2, roomHeight, 0);
+        vertices.append(l, h, 0);
+        vertices.append(w / 2, roomHeight, 0);
+        vertices.append(r, h, 0);
+        vertices.append(w / 2, 0, 0);
+        vertices.append(r, 0, 0);
 
-        QGeometryData wallStrip;
-        wallStrip.appendVertexArray(wallVertices);
-        QGLBuilder wallBuilder;
-        wallBuilder.newSection(QGL::Faceted);
-        wallBuilder.addTriangleStrip(wallStrip);
-        QGLSceneNode *wall = wallBuilder.finalizedSceneNode();
+        //QVector3DArray normals;
+        //for (int i = 0; i < 8; ++i)
+        //    normals.append(0, 0, 1);
+
+        QGeometryData strip;
+        strip.appendVertexArray(vertices);
+        //wallStrip.appendNormalArray(normals);
+
+        QGLBuilder builder;
+        builder.newSection(QGL::Faceted);
+        builder.addTriangleStrip(strip);
+        QGLSceneNode *wall = builder.finalizedSceneNode();
         wall->setMaterial(palette[mat]);
 
         mesh = new MeshObject(wall, view, -1);
     }
 
-    mesh->setPosition(rotateCcw(0, 0, -roomSize, side * 90));
+    mesh->setPosition(rotateCcw(0, 0, -(side & 1 ? roomWidth : roomLength) / 2, side * 90));
     mesh->setRotationVector(QVector3D(0, 1, 0));
     mesh->setRotationAngle(side * 90);
 
@@ -214,15 +241,11 @@ void Room::loadWall(QTextStream &value) {
 }
 
 void Room::loadDefaultModels() {
-    QMatrix4x4 dirTrans;
-    dirTrans.scale(QVector3D(roomSize * boxScale * 2, roomHeight * boxScale, roomSize * boxScale * 2));
-    dirTrans.translate(QVector3D(0, 0.5, 0));
-    QGLBuilder dirBuilder;
-    dirBuilder.newSection(QGL::Faceted);
-    dirBuilder << QGLCube(1);
-    dirBuilder.currentNode()->setLocalTransform(dirTrans);
-    dirModel = dirBuilder.finalizedSceneNode();
+    dirModel = QGLAbstractScene::loadScene(":/model/chestbase.obj")->mainNode();
     dirModel->setParent(view);
+
+    dirTopModel = QGLAbstractScene::loadScene(":/model/chesttop.obj")->mainNode();
+    dirTopModel->setParent(view);
 
     QMatrix4x4 trans;
     trans.scale(QVector3D(0.5, 1, 1));
@@ -238,7 +261,7 @@ void Room::loadDefaultModels() {
     floorTrans.rotate(90, -1, 0, 0);
     QGLBuilder floorBuilder;
     floorBuilder.newSection(QGL::Faceted);
-    floorBuilder.addPane(roomSize * 2);
+    floorBuilder.addPane(QSizeF(roomWidth, roomLength));
     floorBuilder.currentNode()->setLocalTransform(floorTrans);
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
 
@@ -250,7 +273,7 @@ void Room::loadDefaultModels() {
     ceilTrans.translate(0, 0, -roomHeight);
     QGLBuilder ceilBuilder;
     ceilBuilder.newSection(QGL::Faceted);
-    ceilBuilder.addPane(roomSize * 2);
+    ceilBuilder.addPane(QSizeF(roomWidth, roomLength));
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
 
