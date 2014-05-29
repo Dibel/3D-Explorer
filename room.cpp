@@ -38,9 +38,21 @@ void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg
         if (obj->pickType() != MeshObject::Picked) {
             obj->draw(painter);
             if (obj->model() == dirModel && obj != animObj) {
-                obj->setModel(dirTopModel);
+                obj->setModel(dirLidModel);
+                obj->setPosition(obj->position() + QVector3D(0, 3, -2.2));
                 obj->draw(painter);
                 obj->setModel(dirModel);
+                obj->setPosition(obj->position() - QVector3D(0, 3, -2.2));
+            } else if (obj == animObj) {
+                obj->setModel(dirLidModel);
+                obj->setRotationVector(QVector3D(-1, 0, 0));
+                obj->setRotationAngle(90.0 * animProg);
+                //obj->setRotationCenter(QVector3D(0, 3, -2));
+                obj->setPosition(obj->position() + QVector3D(0, 3, -2.2));
+                obj->draw(painter);
+                obj->setModel(dirModel);
+                obj->setRotationAngle(0);
+                obj->setPosition(obj->position() - QVector3D(0, 3, -2.2));
             }
         }
 }
@@ -62,7 +74,7 @@ void Room::paintNextRoom(QGLPainter *painter, int stage) {
         for (MeshObject *obj : backEntry) {
             obj->draw(painter);
             if (obj->model() == dirModel) {
-                obj->setModel(dirTopModel);
+                obj->setModel(dirLidModel);
                 obj->draw(painter);
                 obj->setModel(dirModel);
             }
@@ -149,6 +161,7 @@ void Room::loadModel(QTextStream &value) {
         case 3:
             value >> extra;
             tmp = extra.toInt();
+            //mesh->setRotationCenter(rotateCcw(tmp, 0, 0, angle));
             model->mainNode()->setX(-tmp);
             mesh->setPosition(QVector3D(x, y, z) + rotateCcw(tmp, 0, 0, angle));
             mesh->setInfo(extra);
@@ -244,8 +257,9 @@ void Room::loadDefaultModels() {
     dirModel = QGLAbstractScene::loadScene(":/model/chestbase.obj")->mainNode();
     dirModel->setParent(view);
 
-    dirTopModel = QGLAbstractScene::loadScene(":/model/chesttop.obj")->mainNode();
-    dirTopModel->setParent(view);
+    dirLidModel = QGLAbstractScene::loadScene(":/model/chestlid.obj")->mainNode();
+    dirLidModel->setPosition(QVector3D(0, -3, 2.2));
+    dirLidModel->setParent(view);
 
     QMatrix4x4 trans;
     trans.scale(QVector3D(0.5, 1, 1));

@@ -80,6 +80,9 @@ public:
     QVector3D rotationVector() const { return m_rotationVector; }
     void setRotationVector(const QVector3D& value) { m_rotationVector = value; }
 
+    QVector3D rotationCenter() const { return m_rotationCenter; }
+    void setRotationCenter(const QVector3D &value) { m_rotationCenter = value; }
+
     QGLMaterial *material() const { return m_material; }
     void setMaterial(QGLMaterial *value)
         { m_material = value; m_hoverMaterial = value; }
@@ -119,6 +122,7 @@ private:
     float m_scaleZ;
     float m_rotationAngle;
     QVector3D m_rotationVector;
+    QVector3D m_rotationCenter;
     QGLMaterial *m_material;
     QGLMaterial *m_hoverMaterial;
     QGLAbstractEffect *m_effect;

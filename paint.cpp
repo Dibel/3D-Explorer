@@ -45,6 +45,9 @@ void View::paintGL(QGLPainter *painter) {
         t = 1;
 
     if (enteringDir)
+        t = animStage == Entering1 ? animProg : 1;
+
+    if (enteringDir)
         curRoom->paintCurRoom(painter, enteringDir, t);
     else
         curRoom->paintCurRoom(painter, leavingDoor, t);

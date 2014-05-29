@@ -94,8 +94,13 @@ void MeshObject::draw(QGLPainter *painter)
     } else if(m_scaleX != 1.0f || m_scaleY != 1.0f || m_scaleZ != 1.0f) {
         painter->modelViewMatrix().scale(m_scaleX,m_scaleY,m_scaleZ);
     }
+
+    if (!m_rotationCenter.isNull())
+        painter->modelViewMatrix().translate(-m_rotationCenter);
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
+    if (!m_rotationCenter.isNull())
+        painter->modelViewMatrix().translate(m_rotationCenter);
 
     // Apply the material and effect to the painter.
     if (m_material) {

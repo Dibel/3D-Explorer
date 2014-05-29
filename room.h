@@ -31,7 +31,7 @@ public:
     QGLView *view;
 
     QGLSceneNode *dirModel;
-    QGLSceneNode *dirTopModel;
+    QGLSceneNode *dirLidModel;
     QGLSceneNode *fileModel;
 
     void paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg);
