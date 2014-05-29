@@ -44,6 +44,13 @@
 
 #include <QtCore/QDebug>
 
+MeshObject::MeshObject(MeshObject *other, QGLView *view, int id) :
+    PickObject(view, id), m_solidMesh(other->solidMesh()), m_animMesh(other->animMesh()),
+    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f), m_rotationAngle(0.0f),
+    m_animAngle(other->animAngle()), m_animVector(other->animVector()), m_animCenter(other->animCenter()),
+    m_type(Normal)
+{ }
+
 MeshObject::MeshObject(QGLSceneNode *meshObject, QGLView *view, int id) :
     PickObject(view, id), m_solidMesh(meshObject), m_animMesh(NULL),
     m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f),

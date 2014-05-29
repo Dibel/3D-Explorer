@@ -16,6 +16,8 @@ View::View(int width, int height) :
     pickedObject(NULL), enteredObject(NULL), fbo(NULL), surface(NULL),
     isShowingFileName(false)//, palette(new QGLMaterialCollection())
 {
+   
+
     phongEffect = new QGLShaderProgramEffect();
     phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
     phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");

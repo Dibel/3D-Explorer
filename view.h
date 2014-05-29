@@ -41,10 +41,18 @@ protected:
     void wheelEvent(QWheelEvent *);
 
 private:
+    QGLSceneNode *lid;
+    QGLSceneNode *sides;
+    MeshObject *lidMesh;
+    MeshObject *sidesMesh;
+    QList<QGLTexture2D*> loadedTextures;
 
     static const QVector3D defaultCenter;
     static const QVector3D defaultEye;
 
+    void loadConfig(const QString &fileName);
+    void loadProperty(const QString &property, QTextStream &value);
+    //void loadModel(QTextStream &value);
 
     void loadModels();
     void setupObjects();
@@ -84,6 +92,8 @@ private:
     /* FIXME: unable to use QGLMaterialCollection */
     //QSharedPointer<QGLMaterialCollection> palette;
     QHash<QString, QGLMaterial*> palette;
+
+    QHash<QString, MeshObject*> models;
 
     ImageObject *picture;
     ImageObject *backPicture;

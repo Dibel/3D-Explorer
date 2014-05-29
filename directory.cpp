@@ -105,12 +105,12 @@ void Directory::prevPage() {
 }
 
 QString Directory::getImage() {
-    return imageList.isEmpty() ? ":/model/photo.png"
+    return imageList.isEmpty() ? ":/data/default.png"
         : absoluteFilePath(imageList[imageIndex]);
 }
 
 QString Directory::getNextImage() {
-    if (imageList.isEmpty()) return ":/model/photo.png";
+    if (imageList.isEmpty()) return ":/data/default.png";
     if (++imageIndex >= imageList.size())
         imageIndex -= imageList.size();
     return absoluteFilePath(imageList[imageIndex]);

@@ -59,6 +59,7 @@ class MeshObject : public PickObject
 public:
     enum PickType { Normal, Anchor, Picked };
 
+    explicit MeshObject(MeshObject *other, QGLView *view = NULL, int id = -1);
     explicit MeshObject(QGLSceneNode *solidMesh, QGLView *view = NULL, int id = -1);
     explicit MeshObject(QGLSceneNode *solidMesh, QGLSceneNode *animMesh, QGLView *view = NULL, int id = -1);
     virtual ~MeshObject();
@@ -66,9 +67,17 @@ public:
     QGLSceneNode *mesh() const { return m_solidMesh; }
     QGLSceneNode *solidMesh() const { return m_solidMesh; }
     QGLSceneNode *animMesh() const { return m_animMesh; }
+
     void setMesh(QGLSceneNode *solidMesh, QGLSceneNode *animMesh = NULL) {
-        m_solidMesh = solidMesh; m_animMesh = animMesh;
+        m_solidMesh = solidMesh;
+        m_animMesh = animMesh;
     }
+
+    void setMesh(MeshObject *other) {
+        m_solidMesh = other->m_solidMesh;
+        m_animMesh = other->m_animMesh;
+    }
+
     void setAnimMesh(QGLSceneNode *animMesh) { m_animMesh = animMesh; }
 
     QVector3D position() const { return m_position; }

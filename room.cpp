@@ -8,16 +8,15 @@
 #include <Qt3D/QGLView>
 #include <QtCore/QFile>
 
-static int id[4] = { -1, -1, TrashBin, Door };
-
-static void FixNodesRecursive(int matIndex, QGLSceneNode* pNode)
+static void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
 {
-    pNode->setMaterialIndex(matIndex);
-    pNode->setEffect(QGL::LitModulateTexture2D);
-    for (auto node : pNode->allChildren()) {
-        node->setMaterialIndex(matIndex);
-        node->setEffect(QGL::LitModulateTexture2D);
-    };
+    int index = node->palette()->addMaterial(mat);
+    node->setMaterialIndex(index);
+    node->setEffect(QGL::LitModulateTexture2D);
+    for (QGLSceneNode *child : node->allChildren()) {
+        child->setMaterialIndex(index);
+        child->setEffect(QGL::LitModulateTexture2D);
+    }
 }
 
 void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg) {
@@ -68,7 +67,7 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
 {
     loadDefaultModels();
 
-    QFile file(":/config/" + fileName);
+    QFile file(configDir + fileName);
     file.open(QIODevice::ReadOnly);
     QString line, property;
     QTextStream stream;
@@ -116,13 +115,12 @@ void Room::loadModel(QTextStream &value) {
     int type, recursive;
     value >> name >> type >> x >> y >> z >> w >> angle >> mat >> recursive;
 
-    QGLAbstractScene *model = QGLAbstractScene::loadScene(":/model/" + name + ".obj");
+    QGLAbstractScene *model = QGLAbstractScene::loadScene(dataDir + name + ".obj");
     model->setParent(view);
 
-    if (recursive) {
-        int matIndex = model->mainNode()->palette()->addMaterial(palette[mat]);
-        FixNodesRecursive(matIndex, model->mainNode());
-    } else
+    if (recursive)
+        setAllMaterial(model->mainNode(), palette[mat]);
+    else
         model->mainNode()->setMaterial(palette[mat]);
 
     MeshObject *mesh = new MeshObject(model->mainNode(), view, id[type]);
@@ -141,8 +139,9 @@ void Room::loadModel(QTextStream &value) {
 
         case 3:
             value >> tmp;
-            model = QGLAbstractScene::loadScene(":/model/" + name + "_anim.obj");
+            model = QGLAbstractScene::loadScene(dataDir + name + "_anim.obj");
             model->setParent(view);
+            setAllMaterial(model->mainNode(), palette[mat]);
             mesh->setAnimVector(0, -1, 0);
             mesh->setAnimCenter(tmp, 0, 0);
             mesh->setAnimMesh(model->mainNode());
@@ -156,14 +155,22 @@ void Room::loadModel(QTextStream &value) {
 }
 
 void Room::loadContainer(const QString &name, MeshObject *mesh) {
-    QFile file(":/config/" + name + ".conf");
+    QFile file(configDir + name + ".conf");
     file.open(QIODevice::ReadOnly);
     QTextStream stream(&file);
 
     int n;
-    QString model;
-    stream >> n >> model;
+    QString modelName;
+    stream >> n >> modelName;
     slotNum += n;
+
+    QGLAbstractScene *scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
+    scene->setParent(view);
+    dirSolidModel = scene->mainNode();
+
+    scene = QGLAbstractScene::loadScene(dataDir + modelName + "_anim.obj");
+    scene->setParent(view);
+    dirAnimModel = scene->mainNode();
 
     for (int i = 0; i < n; ++i) {
         qreal x, y, z;
@@ -231,14 +238,6 @@ void Room::loadWall(QTextStream &value) {
 }
 
 void Room::loadDefaultModels() {
-    QGLAbstractScene *scene = QGLAbstractScene::loadScene(":/model/chestbase.obj");
-    scene->setParent(view);
-    dirSolidModel = scene->mainNode();
-
-    scene = QGLAbstractScene::loadScene(":/model/chestlid.obj");
-    scene->setParent(view);
-    dirAnimModel = scene->mainNode();
-
     QMatrix4x4 trans;
     trans.scale(QVector3D(0.5, 1, 1));
     QGLBuilder fileBuilder;
@@ -256,7 +255,6 @@ void Room::loadDefaultModels() {
     floorBuilder.addPane(QSizeF(roomWidth, roomLength));
     floorBuilder.currentNode()->setLocalTransform(floorTrans);
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
-
     floorNode->setEffect(QGL::LitModulateTexture2D);
     floor = new MeshObject(floorNode, view, -1);
 

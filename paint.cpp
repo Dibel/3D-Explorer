@@ -13,7 +13,7 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 void View::paintGL(QGLPainter *painter) {
     Q_ASSERT(picture != NULL);
     Q_ASSERT(hudObject != NULL);
-
+    
     mvp = calcMvp(camera(), size());
 
     painter->removeLight(0);
@@ -53,6 +53,13 @@ void View::paintGL(QGLPainter *painter) {
         curRoom->paintCurRoom(painter, leavingDoor, t);
 
     picture->draw(painter);
+
+    //painter->modelViewMatrix().translate(0.0f, -1.0f, 0.0f);
+    //painter->modelViewMatrix().rotate(-75.0f, 1.0f, 0.0f, 0.0f);
+    //lidMesh->setPosition(0, 50, -40);
+    //sidesMesh->setPosition(0, 50, -40);
+    //lidMesh->draw(painter);
+    //sidesMesh->draw(painter);
 
     if (animStage > NoAnim && animStage < Leaving3 && !painter->isPicking()) {
         painter->removeLight(lightId);
@@ -100,6 +107,7 @@ void View::paintGL(QGLPainter *painter) {
     if (enteredObject && enteredObject->pickType() == MeshObject::Normal) outline->draw(painter);
     glClear(GL_DEPTH_BUFFER_BIT);
     if (!(enteringDir || leavingDoor)) hudObject->draw(painter);
+
 }
 
 void View::paintHud(qreal x, qreal y, QString text) {

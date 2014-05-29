@@ -4,17 +4,19 @@
 #include <QtGui/QVector3D>
 #include <QtGui/QQuaternion>
 
-const int roomLength = 160;
-const int roomWidth = 240;
-const int roomHeight = 120;
-const int eyeHeight = 50;
-const qreal boxScale = 0.025;
+const char configDir[] = "./config/";
+const char dataDir[] = "./data/";
+
+extern int roomWidth, roomLength, roomHeight, eyeHeight;
+extern qreal boxScale;
 
 const int MaxBoxId = 100;
 const int StartImageId = 200;
 
 enum AnimStage : int { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
 enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
+
+static const int id[4] = { -1, -1, TrashBin, Door };
 
 inline QVector3D rotateCcw(QVector3D vec, qreal angle) {
     return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);
