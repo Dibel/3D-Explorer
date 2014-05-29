@@ -160,11 +160,13 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
     QTextStream stream(&file);
 
     int n;
+    qreal x, y, z;
     QString modelName;
-    stream >> n >> modelName;
-    slotNum += n;
+    QGLAbstractScene *scene;
 
-    QGLAbstractScene *scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
+    stream >> modelName;
+
+    scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
     scene->setParent(view);
     dirSolidModel = scene->mainNode();
 
@@ -172,12 +174,26 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
     scene->setParent(view);
     dirAnimModel = scene->mainNode();
 
+
+    stream >> x >> y >> z; QVector3D animVector(x, y, z);
+    stream >> x >> y >> z; QVector3D animCenter(x, y, z);
+
+    stream >> modelName;
+
+    scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
+    qDebug() << dataDir + modelName + ".obj";
+    scene->setParent(view);
+    fileModel = scene->mainNode();
+
+    stream >> n;
+    slotNum += n;
+
     for (int i = 0; i < n; ++i) {
         qreal x, y, z;
         stream >> x >> y >> z;
         MeshObject *obj = new MeshObject(dirSolidModel, view, entry.size());
-        obj->setAnimVector(-1, 0, 0);
-        obj->setAnimCenter(0, 3, -2.2);
+        obj->setAnimVector(animVector);
+        obj->setAnimCenter(animCenter);
         obj->setPosition(QVector3D(x, y, z) + mesh->position());
         entry.push_back(obj);
 
@@ -238,15 +254,15 @@ void Room::loadWall(QTextStream &value) {
 }
 
 void Room::loadDefaultModels() {
-    QMatrix4x4 trans;
-    trans.scale(QVector3D(0.5, 1, 1));
-    QGLBuilder fileBuilder;
-    fileBuilder.newSection(QGL::Faceted);
-    fileBuilder << QGLCube(6);
-    fileBuilder.currentNode()->setY(3);
-    fileBuilder.currentNode()->setLocalTransform(trans);
-    fileModel = fileBuilder.finalizedSceneNode();
-    fileModel->setParent(view);
+    //QMatrix4x4 trans;
+    //trans.scale(QVector3D(0.5, 1, 1));
+    //QGLBuilder fileBuilder;
+    //fileBuilder.newSection(QGL::Faceted);
+    //fileBuilder << QGLCube(6);
+    //fileBuilder.currentNode()->setY(3);
+    //fileBuilder.currentNode()->setLocalTransform(trans);
+    //fileModel = fileBuilder.finalizedSceneNode();
+    //fileModel->setParent(view);
 
     QMatrix4x4 floorTrans;
     floorTrans.rotate(90, -1, 0, 0);
