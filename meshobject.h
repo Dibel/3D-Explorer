@@ -59,16 +59,21 @@ class MeshObject : public PickObject
 public:
     enum PickType { Normal, Anchor, Picked };
 
-    explicit MeshObject(QGLSceneNode *meshObject, QGLView *view = NULL, int id = -1);
-    explicit MeshObject(QGLAbstractScene *scene, QGLView *view = NULL, int id = -1);
+    explicit MeshObject(QGLSceneNode *solidMesh, QGLView *view = NULL, int id = -1);
+    explicit MeshObject(QGLSceneNode *solidMesh, QGLSceneNode *animMesh, QGLView *view = NULL, int id = -1);
     virtual ~MeshObject();
 
-    QGLSceneNode *model() const { return m_meshObject; }
-    void setModel(QGLSceneNode *mesh) { m_meshObject = mesh; }
-    void setModel(QGLAbstractScene *scene) { m_meshObject = scene->mainNode(); }
+    QGLSceneNode *mesh() const { return m_solidMesh; }
+    QGLSceneNode *solidMesh() const { return m_solidMesh; }
+    QGLSceneNode *animMesh() const { return m_animMesh; }
+    void setMesh(QGLSceneNode *solidMesh, QGLSceneNode *animMesh = NULL) {
+        m_solidMesh = solidMesh; m_animMesh = animMesh;
+    }
+    void setAnimMesh(QGLSceneNode *animMesh) { m_animMesh = animMesh; }
 
     QVector3D position() const { return m_position; }
-    void setPosition(const QVector3D& value) { m_position = value; }
+    void setPosition(const QVector3D &value) { m_position = value; }
+    void setPosition(float x, float y, float z) { m_position = QVector3D(x, y, z); }
 
     float scale() const { return m_scale; }
     void setScale(float value) { m_scale = value; }
@@ -80,41 +85,25 @@ public:
     QVector3D rotationVector() const { return m_rotationVector; }
     void setRotationVector(const QVector3D& value) { m_rotationVector = value; }
 
-    QVector3D rotationCenter() const { return m_rotationCenter; }
-    void setRotationCenter(const QVector3D &value) { m_rotationCenter = value; }
+    float animAngle() const { return m_animAngle; }
+    void setAnimAngle(float value) { m_animAngle = value; }
 
-    QGLMaterial *material() const { return m_material; }
-    void setMaterial(QGLMaterial *value)
-        { m_material = value; m_hoverMaterial = value; }
+    QVector3D animVector() const { return m_animVector; }
+    void setAnimVector(const QVector3D &value) { m_animVector = value; }
+    void setAnimVector(float x, float y, float z) { m_animVector = QVector3D(x, y, z); }
 
-    QGLMaterial *hoverMaterial() const { return m_hoverMaterial; }
-    void setHoverMaterial(QGLMaterial *value) { m_hoverMaterial = value; }
-
-    QGLAbstractEffect *effect() const { return m_effect; }
-    void setEffect(QGLAbstractEffect *value) { m_effect = value; }
+    QVector3D animCenter() const { return m_animCenter; }
+    void setAnimCenter(const QVector3D &value) { m_animCenter = value; }
+    void setAnimCenter(float x, float y, float z) { m_animCenter = QVector3D(x, y, z); }
 
     PickType pickType() const { return m_type; }
     void setPickType(PickType value) { m_type = value; }
 
-    QString info() const { return m_info; }
-    void setInfo(const QString &value) { m_info = value; }
-
-    //void initialize(QGLView *view, QGLPainter *painter);
     void draw(QGLPainter *painter);
 
-signals:
-    void pressed();
-    void released();
-    void clicked();
-    void doubleClicked();
-    void hoverChanged(bool hovering);
-
-protected:
-    //bool event(QEvent *e);
-
 private:
-    QGLSceneNode *m_meshObject;
-    QGLAbstractScene *m_scene;
+    QGLSceneNode *m_solidMesh;
+    QGLSceneNode *m_animMesh;
     QVector3D m_position;
     float m_scale;
     float m_scaleX;
@@ -122,13 +111,10 @@ private:
     float m_scaleZ;
     float m_rotationAngle;
     QVector3D m_rotationVector;
-    QVector3D m_rotationCenter;
-    QGLMaterial *m_material;
-    QGLMaterial *m_hoverMaterial;
-    QGLAbstractEffect *m_effect;
-    bool m_hovering;
+    float m_animAngle;
+    QVector3D m_animVector;
+    QVector3D m_animCenter;
     PickType m_type;
-    QString m_info;
 };
 
 #endif

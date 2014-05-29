@@ -95,12 +95,14 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
     for (int i = 0; i < dir->count(); ++i) {
         boxes[i]->setPickType(MeshObject::Normal);
         boxes[i]->setObjectName(dir->entry(i));
-        boxes[i]->setModel(i < dir->countDir() ? curRoom->dirModel : curRoom->fileModel);
+        boxes[i]->setMesh(i < dir->countDir() ? curRoom->dirSolidModel : curRoom->fileModel, i < dir->countDir() ? curRoom->dirAnimModel : NULL);
+        //boxes[i]->setAnimModel(i < dir->countDir() ? curRoom->dirLidModel : NULL);
     }
     for (int i = dir->count(); i < curRoom->slotNum; ++i) {
         boxes[i]->setPickType(MeshObject::Anchor);
         boxes[i]->setObjectName(QString());
-        boxes[i]->setModel(curRoom->dirModel);
+        boxes[i]->setMesh(curRoom->dirSolidModel, curRoom->dirAnimModel);
+        //boxes[i]->setAnimModel(curRoom->dirLidModel);
     }
 
 
@@ -131,10 +133,10 @@ void View::startAnimation(AnimStage stage) {
             break;
 
         case Leaving1:
-            tmp1 = rotateCcw(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
+            //tmp1 = rotateCcw(leavingDoor->info().toInt(), 0, 0, leavingDoor->rotationAngle());
             tmp2 = rotateCcw(0, 0, -roomLength / 2, leavingDoor->rotationAngle());
-            endCenter = leavingDoor->position() + defaultEye - tmp1 + tmp2;
-            endEye = leavingDoor->position() + defaultEye - tmp1;
+            endCenter = leavingDoor->position() + defaultEye + tmp2;
+            endEye = leavingDoor->position() + defaultEye;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -181,7 +183,8 @@ void View::finishAnimation() {
             for (int i = 0; i < curRoom->entry.size(); ++i) {
                 curRoom->entry[i]->setPickType(curRoom->backEntry[i]->pickType());
                 curRoom->entry[i]->setObjectName(curRoom->backEntry[i]->objectName());
-                curRoom->entry[i]->setModel(curRoom->backEntry[i]->model());
+                curRoom->entry[i]->setMesh(curRoom->backEntry[i]->mesh(), curRoom->backEntry[i]->animMesh());
+                //curRoom->entry[i]->setAnimModel(curRoom->backEntry[i]->animModel());
             }
             picture->setImage(backPicture->getImage());
 
@@ -208,7 +211,8 @@ void View::finishAnimation() {
     for (int i = 0; i < curRoom->entry.size(); ++i) {
         curRoom->entry[i]->setPickType(curRoom->backEntry[i]->pickType());
         curRoom->entry[i]->setObjectName(curRoom->backEntry[i]->objectName());
-        curRoom->entry[i]->setModel(curRoom->backEntry[i]->model());
+        curRoom->entry[i]->setMesh(curRoom->backEntry[i]->mesh(), curRoom->backEntry[i]->animMesh());
+        //curRoom->entry[i]->setAnimModel(curRoom->backEntry[i]->animModel());
     }
     picture->setImage(backPicture->getImage());
 

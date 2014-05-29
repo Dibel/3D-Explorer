@@ -11,6 +11,7 @@ public:
     PickObject(QGLView *view, int id);
     ~PickObject();
     int objectId() const;
+    void setObjectId(int id);
 
     void ignoreMuting(bool ignore);
     static void muteObjectId(bool mute);

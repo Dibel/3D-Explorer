@@ -30,8 +30,8 @@ public:
     const QHash<QString, QGLMaterial*> &palette;
     QGLView *view;
 
-    QGLSceneNode *dirModel;
-    QGLSceneNode *dirLidModel;
+    QGLSceneNode *dirSolidModel;
+    QGLSceneNode *dirAnimModel;
     QGLSceneNode *fileModel;
 
     void paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg);

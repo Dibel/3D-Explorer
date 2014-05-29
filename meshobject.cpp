@@ -44,42 +44,19 @@
 
 #include <QtCore/QDebug>
 
-MeshObject::MeshObject(QGLSceneNode *meshObject, QGLView *view, int id)
-    : PickObject(view, id)
-{
-    m_meshObject = meshObject;
-    m_scale = 1.0f;
-    m_scaleX = 1.0f;
-    m_scaleY = 1.0f;
-    m_scaleZ = 1.0f;
-    m_rotationAngle = 0.0f;
-    m_effect = 0;
-    m_hovering = false;
-    m_material = 0;
-    m_hoverMaterial = 0;
-    m_type = Normal;
-}
+MeshObject::MeshObject(QGLSceneNode *meshObject, QGLView *view, int id) :
+    PickObject(view, id), m_solidMesh(meshObject), m_animMesh(NULL),
+    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f),
+    m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
+{ }
 
-MeshObject::MeshObject(QGLAbstractScene *scene, QGLView *view, int id)
-    : PickObject(view, id)
-{
-    scene->setParent(this);
-    m_meshObject = scene->mainNode();
-    m_scale = 1.0f;
-    m_scaleX = 1.0f;
-    m_scaleY = 1.0f;
-    m_scaleZ = 1.0f;
-    m_rotationAngle = 0.0f;
-    m_effect = 0;
-    m_hovering = false;
-    m_material = 0;
-    m_hoverMaterial = 0;
-    m_type = Normal;
-}
+MeshObject::MeshObject(QGLSceneNode *scene, QGLSceneNode *anim, QGLView *view, int id) :
+    PickObject(view, id), m_solidMesh(scene), m_animMesh(anim),
+    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f),
+    m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
+{ }
 
 MeshObject::~MeshObject() { }
-
-//void MeshObject::initialize(QGLView *view, QGLPainter *painter) { }
 
 void MeshObject::draw(QGLPainter *painter)
 {
@@ -88,6 +65,7 @@ void MeshObject::draw(QGLPainter *painter)
 
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
+
     painter->modelViewMatrix().translate(m_position);
     if (m_scale != 1.0f) {
         painter->modelViewMatrix().scale(m_scale);
@@ -95,41 +73,27 @@ void MeshObject::draw(QGLPainter *painter)
         painter->modelViewMatrix().scale(m_scaleX,m_scaleY,m_scaleZ);
     }
 
-    if (!m_rotationCenter.isNull())
-        painter->modelViewMatrix().translate(-m_rotationCenter);
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);
-    if (!m_rotationCenter.isNull())
-        painter->modelViewMatrix().translate(m_rotationCenter);
 
-    // Apply the material and effect to the painter.
-    if (m_material) {
-        QGLMaterial *material;
-        if (m_hovering)
-            material = m_hoverMaterial;
-        else
-            material = m_material;
-        painter->setColor(material->diffuseColor());
-        painter->setFaceMaterial(QGL::AllFaces, material);
-    }
-
-    if (m_effect)
-        painter->setUserEffect(m_effect);
-    else
-        painter->setStandardEffect(QGL::LitMaterial);
+    painter->setStandardEffect(QGL::LitMaterial);
 
     // Mark the object for object picking purposes.
     int prevObjectId = painter->objectPickId();
     if (objectId() != -1)
         painter->setObjectPickId(objectId());
 
-    // Draw the geometry mesh.
-    if (m_meshObject)
-        m_meshObject->draw(painter);
+    if (m_solidMesh)
+        m_solidMesh->draw(painter);
 
-    // Turn off the user effect, if present.
-    if (m_effect)
-        painter->setStandardEffect(QGL::LitMaterial);
+    if (m_animMesh) {
+        if (m_animAngle != 0.0f) {
+            painter->modelViewMatrix().translate(m_animCenter);
+            painter->modelViewMatrix().rotate(m_animAngle, m_animVector);
+            painter->modelViewMatrix().translate(-m_animCenter);
+        }
+        m_animMesh->draw(painter);
+    }
 
     // Revert to the previous object identifier.
     painter->setObjectPickId(prevObjectId);
@@ -137,31 +101,3 @@ void MeshObject::draw(QGLPainter *painter)
     // Restore the modelview matrix.
     painter->modelViewMatrix().pop();
 }
-
-//bool MeshObject::event(QEvent *e)
-//{
-//    if (m_type != Normal) return QObject::event(e);
-//
-//    // Convert the raw event into a signal representing the user's action.
-//    if (e->type() == QEvent::MouseButtonPress) {
-//        QMouseEvent *me = (QMouseEvent *)e;
-//        if (me->button() == Qt::LeftButton)
-//            emit pressed();
-//    } else if (e->type() == QEvent::MouseButtonRelease) {
-//        QMouseEvent *me = (QMouseEvent *)e;
-//        if (me->button() == Qt::LeftButton) {
-//            emit released();
-//            if (me->x() >= 0)   // Positive: inside object, Negative: outside.
-//                emit clicked();
-//        }
-//    } else if (e->type() == QEvent::MouseButtonDblClick) {
-//        emit doubleClicked();
-//    } else if (e->type() == QEvent::Enter) {
-//        m_hovering = true;
-//        emit hoverChanged(true);
-//    } else if (e->type() == QEvent::Leave) {
-//        m_hovering = false;
-//        emit hoverChanged(false);
-//    }
-//    return QObject::event(e);
-//}

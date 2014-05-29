@@ -23,10 +23,9 @@ static void FixNodesRecursive(int matIndex, QGLSceneNode* pNode)
 void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg) {
     for (MeshObject *obj : solid) {
         if (obj == animObj) {
-            qreal old = obj->rotationAngle();
-            obj->setRotationAngle(old - 90.0 * animProg);
+            obj->setAnimAngle(90.0 * animProg);
             obj->draw(painter);
-            obj->setRotationAngle(old);
+            obj->setAnimAngle(0);
         } else
             obj->draw(painter);
     }
@@ -36,24 +35,12 @@ void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg
 
     for (MeshObject *obj : entry)
         if (obj->pickType() != MeshObject::Picked) {
-            obj->draw(painter);
-            if (obj->model() == dirModel && obj != animObj) {
-                obj->setModel(dirLidModel);
-                obj->setPosition(obj->position() + QVector3D(0, 3, -2.2));
+            if (obj == animObj) {
+                obj->setAnimAngle(90.0 * animProg);
                 obj->draw(painter);
-                obj->setModel(dirModel);
-                obj->setPosition(obj->position() - QVector3D(0, 3, -2.2));
-            } else if (obj == animObj) {
-                obj->setModel(dirLidModel);
-                obj->setRotationVector(QVector3D(-1, 0, 0));
-                obj->setRotationAngle(90.0 * animProg);
-                //obj->setRotationCenter(QVector3D(0, 3, -2));
-                obj->setPosition(obj->position() + QVector3D(0, 3, -2.2));
+                obj->setAnimAngle(0);
+            } else
                 obj->draw(painter);
-                obj->setModel(dirModel);
-                obj->setRotationAngle(0);
-                obj->setPosition(obj->position() - QVector3D(0, 3, -2.2));
-            }
         }
 }
 
@@ -71,14 +58,8 @@ void Room::paintNextRoom(QGLPainter *painter, int stage) {
     }
     
     if (stage != Leaving1 && stage != Leaving2)
-        for (MeshObject *obj : backEntry) {
+        for (MeshObject *obj : backEntry)
             obj->draw(painter);
-            if (obj->model() == dirModel) {
-                obj->setModel(dirLidModel);
-                obj->draw(painter);
-                obj->setModel(dirModel);
-            }
-        }
 }
 
 
@@ -123,16 +104,16 @@ void Room::loadProperty(const QString &property, QTextStream &value) {
     } else if (property == "material") {
         QString floorMat, ceilMat;
         value >> floorMat >> ceilMat;
-        floor->model()->setMaterial(palette[floorMat]);
-        ceil->model()->setMaterial(palette[ceilMat]);
+        floor->mesh()->setMaterial(palette[floorMat]);
+        ceil->mesh()->setMaterial(palette[ceilMat]);
 
     }
 }
 
 void Room::loadModel(QTextStream &value) {
     QString name, mat, extra;
-    qreal x, y, z, w, angle;
-    int type, recursive, tmp;
+    qreal x, y, z, w, angle, tmp;
+    int type, recursive;
     value >> name >> type >> x >> y >> z >> w >> angle >> mat >> recursive;
 
     QGLAbstractScene *model = QGLAbstractScene::loadScene(":/model/" + name + ".obj");
@@ -144,7 +125,7 @@ void Room::loadModel(QTextStream &value) {
     } else
         model->mainNode()->setMaterial(palette[mat]);
 
-    MeshObject *mesh = new MeshObject(model, view, id[type]);
+    MeshObject *mesh = new MeshObject(model->mainNode(), view, id[type]);
     mesh->setPosition(QVector3D(x, y, z));
     mesh->setScale(w);
     mesh->setRotationVector(QVector3D(0, 1, 0));
@@ -159,12 +140,12 @@ void Room::loadModel(QTextStream &value) {
             break;
 
         case 3:
-            value >> extra;
-            tmp = extra.toInt();
-            //mesh->setRotationCenter(rotateCcw(tmp, 0, 0, angle));
-            model->mainNode()->setX(-tmp);
-            mesh->setPosition(QVector3D(x, y, z) + rotateCcw(tmp, 0, 0, angle));
-            mesh->setInfo(extra);
+            value >> tmp;
+            model = QGLAbstractScene::loadScene(":/model/" + name + "_anim.obj");
+            model->setParent(view);
+            mesh->setAnimVector(0, -1, 0);
+            mesh->setAnimCenter(tmp, 0, 0);
+            mesh->setAnimMesh(model->mainNode());
             break;
 
         default:
@@ -187,11 +168,13 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
     for (int i = 0; i < n; ++i) {
         qreal x, y, z;
         stream >> x >> y >> z;
-        MeshObject *obj = new MeshObject(dirModel, view, entry.size());
+        MeshObject *obj = new MeshObject(dirSolidModel, view, entry.size());
+        obj->setAnimVector(-1, 0, 0);
+        obj->setAnimCenter(0, 3, -2.2);
         obj->setPosition(QVector3D(x, y, z) + mesh->position());
         entry.push_back(obj);
 
-        obj = new MeshObject(dirModel, view, -2);
+        obj = new MeshObject(dirSolidModel, view, -2);
         obj->setPosition(QVector3D(x, y, z) + mesh->position());
         backEntry.push_back(obj);
     }
@@ -229,14 +212,8 @@ void Room::loadWall(QTextStream &value) {
         vertices.append(w / 2, 0, 0);
         vertices.append(r, 0, 0);
 
-        //QVector3DArray normals;
-        //for (int i = 0; i < 8; ++i)
-        //    normals.append(0, 0, 1);
-
         QGeometryData strip;
         strip.appendVertexArray(vertices);
-        //wallStrip.appendNormalArray(normals);
-
         QGLBuilder builder;
         builder.newSection(QGL::Faceted);
         builder.addTriangleStrip(strip);
@@ -254,12 +231,13 @@ void Room::loadWall(QTextStream &value) {
 }
 
 void Room::loadDefaultModels() {
-    dirModel = QGLAbstractScene::loadScene(":/model/chestbase.obj")->mainNode();
-    dirModel->setParent(view);
+    QGLAbstractScene *scene = QGLAbstractScene::loadScene(":/model/chestbase.obj");
+    scene->setParent(view);
+    dirSolidModel = scene->mainNode();
 
-    dirLidModel = QGLAbstractScene::loadScene(":/model/chestlid.obj")->mainNode();
-    dirLidModel->setPosition(QVector3D(0, -3, 2.2));
-    dirLidModel->setParent(view);
+    scene = QGLAbstractScene::loadScene(":/model/chestlid.obj");
+    scene->setParent(view);
+    dirAnimModel = scene->mainNode();
 
     QMatrix4x4 trans;
     trans.scale(QVector3D(0.5, 1, 1));

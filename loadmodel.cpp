@@ -72,7 +72,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/leftarrow.obj");
     model->setParent(this);
     model->mainNode()->setMaterial(palette["tmp2"]);
-    mesh = new MeshObject(model, this, LeftArrow);
+    mesh = new MeshObject(model->mainNode(), this, LeftArrow);
     mesh->setScale(0.4);
     mesh->setPosition(QVector3D(-50, 90, -roomLength / 2));
     curRoom->solid << mesh;
@@ -80,7 +80,7 @@ void View::loadModels() {
     model = QGLAbstractScene::loadScene(":/model/rightarrow.obj");
     model->setParent(this);
     model->mainNode()->setMaterial(palette["tmp2"]);
-    mesh = new MeshObject(model, this, RightArrow);
+    mesh = new MeshObject(model->mainNode(), this, RightArrow);
     mesh->setScale(0.4);
     mesh->setPosition(QVector3D(50, 90, -roomLength / 2));
     curRoom->solid << mesh;
