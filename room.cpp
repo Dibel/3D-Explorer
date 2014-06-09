@@ -118,10 +118,12 @@ void Room::loadModel(QTextStream &value) {
     QGLAbstractScene *model = QGLAbstractScene::loadScene(dataDir + name + ".obj");
     model->setParent(view);
 
-    if (recursive)
-        setAllMaterial(model->mainNode(), palette[mat]);
-    else
-        model->mainNode()->setMaterial(palette[mat]);
+    if (mat != "-") {
+        if (recursive)
+            setAllMaterial(model->mainNode(), palette[mat]);
+        else
+            model->mainNode()->setMaterial(palette[mat]);
+    }
 
     MeshObject *mesh = new MeshObject(model->mainNode(), view, id[type]);
     mesh->setPosition(QVector3D(x, y, z));
@@ -166,14 +168,20 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
 
     stream >> modelName;
 
+    qreal scale;
+    stream >> scale;
+    QMatrix4x4 trans;
+    trans.scale(scale);
+
     scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
     scene->setParent(view);
     dirSolidModel = scene->mainNode();
+    dirSolidModel->setLocalTransform(trans);
 
     scene = QGLAbstractScene::loadScene(dataDir + modelName + "_anim.obj");
     scene->setParent(view);
     dirAnimModel = scene->mainNode();
-
+    dirAnimModel->setLocalTransform(trans);
 
     stream >> x >> y >> z; QVector3D animVector(x, y, z);
     stream >> x >> y >> z; QVector3D animCenter(x, y, z);
@@ -254,16 +262,6 @@ void Room::loadWall(QTextStream &value) {
 }
 
 void Room::loadDefaultModels() {
-    //QMatrix4x4 trans;
-    //trans.scale(QVector3D(0.5, 1, 1));
-    //QGLBuilder fileBuilder;
-    //fileBuilder.newSection(QGL::Faceted);
-    //fileBuilder << QGLCube(6);
-    //fileBuilder.currentNode()->setY(3);
-    //fileBuilder.currentNode()->setLocalTransform(trans);
-    //fileModel = fileBuilder.finalizedSceneNode();
-    //fileModel->setParent(view);
-
     QMatrix4x4 floorTrans;
     floorTrans.rotate(90, -1, 0, 0);
     QGLBuilder floorBuilder;
