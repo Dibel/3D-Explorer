@@ -90,6 +90,26 @@ void View::hoverLeave() {
     update();
 }
 
+static QString getFileType(const QString &fileName) {
+    int p = fileName.lastIndexOf(".");
+    if (p == -1) return "default";
+    QString ext = fileName.mid(p + 1);
+
+    if (ext == "flac" || ext == "mp3")
+        return "music";
+
+    if (ext == "mp4" || ext == "flv")
+        return "video";
+
+    if (ext == "pdf")
+        return "pdf";
+
+    if (ext == "txt" || ext == "h" || ext == "cpp")
+        return "text";
+
+    return "default";
+}
+
 void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
     picture->setImage(dir->getImage());
 
@@ -97,7 +117,7 @@ void View::loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture) {
     for (int i = 0; i < dir->count(); ++i) {
         boxes[i]->setPickType(MeshObject::Normal);
         boxes[i]->setObjectName(dir->entry(i));
-        boxes[i]->setMesh(i < dir->countDir() ? curRoom->dirSolidModel : curRoom->fileModel, i < dir->countDir() ? curRoom->dirAnimModel : NULL);
+        boxes[i]->setMesh(i < dir->countDir() ? curRoom->dirSolidModel : curRoom->fileModel[getFileType(dir->entry(i))], i < dir->countDir() ? curRoom->dirAnimModel : NULL);
         //boxes[i]->setAnimModel(i < dir->countDir() ? curRoom->dirLidModel : NULL);
     }
     for (int i = dir->count(); i < curRoom->slotNum; ++i) {

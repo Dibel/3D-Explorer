@@ -7,7 +7,7 @@ Directory::Directory() : QDir(), pageIndex(0) {
     isThisPC = false;
 #endif
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-    setSorting(QDir::DirsFirst | QDir::IgnoreCase);
+    setSorting(QDir::DirsFirst | QDir::IgnoreCase | QDir::Type);
 }
 
 void Directory::setPageSize(int size) {
@@ -93,7 +93,8 @@ void Directory::nextPage() {
     if (isThisPC) return;
 #endif
     if (++pageIndex * pageSize >= (int)QDir::count()) --pageIndex;
-    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
+    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
 
 void Directory::prevPage() {
@@ -101,7 +102,8 @@ void Directory::prevPage() {
     if (isThisPC) return;
 #endif
     if (pageIndex > 0) --pageIndex;
-    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
+    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
 }
 
 QString Directory::getImage() {
@@ -128,7 +130,27 @@ void Directory::update() {
         return;
     }
 #endif
-    page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+    //setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
+    //setSorting(QDir::DirsFirst | QDir::IgnoreCase | QDir::Type);
+    static const QStringList textFilter = { "*.txt", "*.cpp", "*.h", "*.c" };
+    static const QStringList musicFilter = { "*.mp3", "*.flac" };
+    static const QStringList videoFilter = { "*.mp4", "*.flv" };
+    static const QStringList pdfFilter = { "*.pdf" };
+
+    fullEntryList.clear();
+    fullEntryList << QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::IgnoreCase);
+
+    fullEntryList << QDir::entryList(textFilter, QDir::Files, QDir::IgnoreCase);
+    fullEntryList << QDir::entryList(pdfFilter, QDir::Files, QDir::IgnoreCase);
+    fullEntryList << QDir::entryList(musicFilter, QDir::Files, QDir::IgnoreCase);
+    fullEntryList << QDir::entryList(videoFilter, QDir::Files, QDir::IgnoreCase);
+
+    fullEntryList << QDir::entryList(QDir::Files, QDir::IgnoreCase);
+    fullEntryList.removeDuplicates();
+
+    //fullEntryList = QDir::entryList();
+    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
+    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
     static const QStringList imageFilter = {
         "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
     imageList = QDir::entryList(imageFilter, QDir::Files);

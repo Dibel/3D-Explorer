@@ -4,8 +4,11 @@
 #include <QtGui/QVector3D>
 #include <QtGui/QQuaternion>
 
-const char configDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\config\\";
-const char dataDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\data\\";
+//const char configDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\config\\";
+//const char dataDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\data\\";
+
+const char configDir[] = "config/";
+const char dataDir[] = "data/";
 
 extern int roomWidth, roomLength, roomHeight, eyeHeight;
 extern qreal boxScale;

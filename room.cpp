@@ -188,10 +188,30 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
 
     stream >> modelName;
 
+    stream >> scale;
+    trans.setToIdentity();
+    trans.scale(scale);
+
     scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
     qDebug() << dataDir + modelName + ".obj";
     scene->setParent(view);
-    fileModel = scene->mainNode();
+    fileModel.insert("default", scene->mainNode());
+
+    scene = QGLAbstractScene::loadScene(dataDir + QString("file-music.obj"));
+    scene->setParent(view);
+    fileModel.insert("music", scene->mainNode());
+
+    scene = QGLAbstractScene::loadScene(dataDir + QString("file-video.obj"));
+    scene->setParent(view);
+    fileModel.insert("video", scene->mainNode());
+
+    scene = QGLAbstractScene::loadScene(dataDir + QString("file-pdf.obj"));
+    scene->setParent(view);
+    fileModel.insert("pdf", scene->mainNode());
+
+    scene = QGLAbstractScene::loadScene(dataDir + QString("file-text.obj"));
+    scene->setParent(view);
+    fileModel.insert("text", scene->mainNode());
 
     stream >> n;
     slotNum += n;

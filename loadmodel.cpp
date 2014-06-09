@@ -89,7 +89,7 @@ void View::loadModels() {
 
     /* arrows */
     model = QGLAbstractScene::loadScene(dataDir + QString("leftarrow.obj"));
-    model->setParent(this);
+    //model->setParent(this);
     model->mainNode()->setMaterial(palette["tmp2"]);
     mesh = new MeshObject(model->mainNode(), this, LeftArrow);
     mesh->setScale(0.4);
@@ -97,7 +97,7 @@ void View::loadModels() {
     curRoom->solid << mesh;
 
     model = QGLAbstractScene::loadScene(dataDir + QString("rightarrow.obj"));
-    model->setParent(this);
+    //model->setParent(this);
     model->mainNode()->setMaterial(palette["tmp2"]);
     mesh = new MeshObject(model->mainNode(), this, RightArrow);
     mesh->setScale(0.4);

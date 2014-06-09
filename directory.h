@@ -38,7 +38,7 @@ private:
     int pageSize;
     QStringList page;
     int pageIndex;
-
+    QStringList fullEntryList;
     QStringList imageList;
     int imageIndex;
 };

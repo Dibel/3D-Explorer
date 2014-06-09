@@ -32,7 +32,7 @@ public:
 
     QGLSceneNode *dirSolidModel;
     QGLSceneNode *dirAnimModel;
-    QGLSceneNode *fileModel;
+    QHash <QString, QGLSceneNode*> fileModel;
 
     void paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg);
     void paintNextRoom(QGLPainter *painter, int stage);
