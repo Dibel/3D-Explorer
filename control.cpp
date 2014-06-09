@@ -174,6 +174,14 @@ void View::keyPressEvent(QKeyEvent *event) {
         hoverLeave();
         dir->cdUp();
         loadDir(curRoom->entry, picture);
+    } else if(event->key() == Qt::Key_Up) {
+        hoverLeave();
+        dir->prevPage();
+        loadDir(curRoom->entry, picture);
+    } else if (event->key() == Qt::Key_Down) {
+        hoverLeave();
+        dir->nextPage();
+        loadDir(curRoom->entry, picture);
     }
     //QGLView::keyPressEvent(event);
 }

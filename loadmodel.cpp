@@ -32,7 +32,7 @@ void View::loadConfig(const QString &fileName) {
 
     while (!file.atEnd()) {
         line = file.readLine();
-        if (line.isEmpty() || line[0] == '#' || line[0] == '\n') continue;
+        if (line.isEmpty() || line[0] == '#' || line[0] == '\n' || (line[0] == '\r' && line[1] == '\n')) continue;
         if (line[0] == '[') {
             property = line.mid(1, line.indexOf(']') - 1);
         } else {

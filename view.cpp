@@ -39,7 +39,7 @@ View::View(int width, int height) :
     setupObjects();
 
     light = new QGLLightParameters(this);
-    light->setPosition(QVector3D(0, roomHeight * 0.8, 0));
+    light->setPosition(QVector3D(0, roomHeight * 0.5, 0));
     light->setAmbientColor(QColor(120, 120, 120));
 
     animStage = NoAnim;
