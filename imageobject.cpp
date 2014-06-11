@@ -4,9 +4,10 @@
 #include <Qt3D/QGLPainter>
 #include <Qt3D/QGLShaderProgramEffect>
 #include <Qt3D/QGLTexture2D>
-#include <Qt3D/QGLView>
+#include "lib/glview.h"
+//#include <Qt3D/QGLView>
 
-ImageObject::ImageObject(int width, int height, QGLView *view, Type type)
+ImageObject::ImageObject(int width, int height, GLView *view, Type type)
     : PickObject(view, type == Normal ? StartImageId : -2), type(type)
 {
     QGLBuilder builder;

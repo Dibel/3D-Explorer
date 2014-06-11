@@ -1,9 +1,10 @@
 #include "pickobject.h"
-#include <Qt3D/QGLView>
+#include "lib/glview.h"
+//#include <Qt3D/QGLView>
 
 bool PickObject::idMuted = false;
 
-PickObject::PickObject(QGLView *view, int id) :
+PickObject::PickObject(GLView *view, int id) :
     QObject(view), view(view), id(id), ignoringMuting(false)
 {
     if (view && id != -2) view->registerObject(id, this);

@@ -3,12 +3,12 @@
 
 #include <QtCore/QObject>
 
-class QGLView;
+class GLView;
 
 class PickObject : public QObject {
     Q_OBJECT
 public:
-    PickObject(QGLView *view, int id);
+    PickObject(GLView *view, int id);
     ~PickObject();
     int objectId() const;
     void setObjectId(int id);
@@ -17,7 +17,7 @@ public:
     static void muteObjectId(bool mute);
 
 private:
-    QGLView *view;
+    GLView *view;
     int id;
 
     bool ignoringMuting;

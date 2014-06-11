@@ -1,11 +1,12 @@
 #include "room.h"
 #include "meshobject.h"
 #include "common.h"
+#include "directory.h"
+#include "lib/glview.h"
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLCube>
 #include <Qt3D/QGLMaterial>
-#include <Qt3D/QGLView>
 #include <QtCore/QFile>
 
 static void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
@@ -19,7 +20,7 @@ static void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
     }
 }
 
-void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg) {
+void Room::paintFront(QGLPainter *painter, MeshObject *animObj, qreal animProg) {
     for (MeshObject *obj : solid) {
         if (obj == animObj) {
             obj->setAnimAngle(90.0 * animProg);
@@ -43,7 +44,7 @@ void Room::paintCurRoom(QGLPainter *painter, MeshObject *animObj, qreal animProg
         }
 }
 
-void Room::paintNextRoom(QGLPainter *painter, int stage) {
+void Room::paintBack(QGLPainter *painter, int stage) {
     for (MeshObject *obj : solid)
         obj->draw(painter);
 
@@ -62,12 +63,12 @@ void Room::paintNextRoom(QGLPainter *painter, int stage) {
 }
 
 
-Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette, QGLView *view)
-    : slotNum(0), palette(palette), view(view)
+Room::Room(const QString &name, GLView *, void *)
+    : slotNum(0)
 {
-    loadDefaultModels();
+    setFloorAndCeil();
 
-    QFile file(configDir + fileName);
+    QFile file(configDir + name + ".conf");
     file.open(QIODevice::ReadOnly);
     QString line, property;
     QTextStream stream;
@@ -85,6 +86,24 @@ Room::Room(const QString &fileName, const QHash<QString, QGLMaterial*> &palette,
     }
 
     file.close();
+
+    /* arrows */
+    QGLAbstractScene *model;
+    MeshObject *mesh;
+
+    model = QGLAbstractScene::loadScene(dataDir + QString("leftarrow.obj"));
+    model->mainNode()->setMaterial(palette["tmp2"]);
+    mesh = new MeshObject(model->mainNode(), view, LeftArrow);
+    mesh->setScale(0.4);
+    mesh->setPosition(QVector3D(-50, 90, -roomLength / 2));
+    solid << mesh;
+
+    model = QGLAbstractScene::loadScene(dataDir + QString("rightarrow.obj"));
+    model->mainNode()->setMaterial(palette["tmp2"]);
+    mesh = new MeshObject(model->mainNode(), view, RightArrow);
+    mesh->setScale(0.4);
+    mesh->setPosition(QVector3D(50, 90, -roomLength / 2));
+    solid << mesh;
 }
 
 void Room::loadProperty(const QString &property, QTextStream &value) {
@@ -94,8 +113,8 @@ void Room::loadProperty(const QString &property, QTextStream &value) {
     } else if (property == "cdup") {
         qreal x, y, z, angle;
         value >> x >> y >> z >> angle;
-        cdUpPosition = QVector3D(x, y, z);
-        cdUpDirection = angle;
+        outPos = QVector3D(x, y, z);
+        outAngle = angle;
 
     } else if (property == "wall") {
         loadWall(value);
@@ -281,7 +300,7 @@ void Room::loadWall(QTextStream &value) {
     solid << mesh;
 }
 
-void Room::loadDefaultModels() {
+void Room::setFloorAndCeil() {
     QMatrix4x4 floorTrans;
     floorTrans.rotate(90, -1, 0, 0);
     QGLBuilder floorBuilder;
@@ -300,6 +319,54 @@ void Room::loadDefaultModels() {
     ceilBuilder.addPane(QSizeF(roomWidth, roomLength));
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
-
     ceil = new MeshObject(ceilNode, view, -1);
+}
+
+static QString getFileType(const QString &fileName) {
+    int p = fileName.lastIndexOf(".");
+    if (p == -1) return "default";
+    QString ext = fileName.mid(p + 1);
+
+    if (ext == "flac" || ext == "mp3")
+        return "music";
+
+    if (ext == "mp4" || ext == "flv")
+        return "video";
+
+    if (ext == "pdf")
+        return "pdf";
+
+    if (ext == "txt" || ext == "h" || ext == "cpp")
+        return "text";
+
+    return "default";
+}
+
+void Room::loadDir(Directory *dir, bool back) {
+    QVector<MeshObject*> &boxes = back ? backEntry : entry;
+
+    for (int i = 0; i < dir->count(); ++i) {
+        boxes[i]->setPickType(MeshObject::Normal);
+        boxes[i]->setObjectName(dir->entry(i));
+        boxes[i]->setMesh(i < dir->countDir() ? dirSolidModel : fileModel[getFileType(dir->entry(i))], i < dir->countDir() ? dirAnimModel : NULL);
+    }
+
+    for (int i = dir->count(); i < slotNum; ++i) {
+        boxes[i]->setPickType(MeshObject::Anchor);
+        boxes[i]->setObjectName(QString());
+        boxes[i]->setMesh(dirSolidModel, dirAnimModel);
+    }
+}
+
+void Room::pushToFront() {
+    for (int i = 0; i < entry.size(); ++i) {
+        entry[i]->setPickType(backEntry[i]->pickType());
+        entry[i]->setObjectName(backEntry[i]->objectName());
+        entry[i]->setMesh(backEntry[i]->mesh(), backEntry[i]->animMesh());
+    }
+}
+
+void Room::clearBack() {
+    for (MeshObject *obj : backEntry)
+        obj->setPickType(MeshObject::Anchor);
 }

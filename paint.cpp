@@ -3,6 +3,7 @@
 #include "imageobject.h"
 #include "directory.h"
 #include "common.h"
+#include "room.h"
 #include <QtGui/QOpenGLShaderProgram>
 #include <Qt3D/QGLFramebufferObjectSurface>
 #include <Qt3D/QGLShaderProgramEffect>
@@ -26,10 +27,10 @@ void View::paintGL(QGLPainter *painter) {
 
     if (animStage == Leaving3) {
         qreal t;
-        if (curRoom->cdUpDirection > 180)
-            t = curRoom->cdUpDirection + (360 - curRoom->cdUpDirection) * animProg;
+        if (curRoom->getOutAngle() > 180)
+            t = curRoom->getOutAngle() + (360 - curRoom->getOutAngle()) * animProg;
         else
-            t = curRoom->cdUpDirection * (1 - animProg);
+            t = curRoom->getOutAngle() * (1 - animProg);
         camera()->setCenter(rotateCcw(defaultCenter, t));
 
     } else if (animStage == TurningLeft) {
@@ -48,18 +49,11 @@ void View::paintGL(QGLPainter *painter) {
         t = animStage == Entering1 ? animProg : 1;
 
     if (enteringDir)
-        curRoom->paintCurRoom(painter, enteringDir, t);
+        curRoom->paintFront(painter, enteringDir, t);
     else
-        curRoom->paintCurRoom(painter, leavingDoor, t);
+        curRoom->paintFront(painter, leavingDoor, t);
 
     picture->draw(painter);
-
-    //painter->modelViewMatrix().translate(0.0f, -1.0f, 0.0f);
-    //painter->modelViewMatrix().rotate(-75.0f, 1.0f, 0.0f, 0.0f);
-    //lidMesh->setPosition(0, 50, -40);
-    //sidesMesh->setPosition(0, 50, -40);
-    //lidMesh->draw(painter);
-    //sidesMesh->draw(painter);
 
     if (animStage > NoAnim && animStage < Leaving3 && !painter->isPicking()) {
         painter->removeLight(lightId);
@@ -79,14 +73,14 @@ void View::paintGL(QGLPainter *painter) {
             painter->modelViewMatrix().translate(enteringDir->position());
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
-            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - curRoom->cdUpDirection));
+            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - curRoom->getOutAngle()));
             painter->modelViewMatrix().scale(1.0 / boxScale);
-            painter->modelViewMatrix().translate(-curRoom->cdUpPosition - QVector3D(0, 0.1, 0));
+            painter->modelViewMatrix().translate(-curRoom->getOutPos() - QVector3D(0, 0.1, 0));
         }
 
         int tmpLightId = painter->addLight(light);
 
-        curRoom->paintNextRoom(painter, animStage);
+        curRoom->paintBack(painter, animStage);
 
         if (animStage != Leaving1)
             backPicture->draw(painter);
@@ -104,7 +98,7 @@ void View::paintGL(QGLPainter *painter) {
         pickedObject->draw(painter);
     }
 
-    if (enteredObject && enteredObject->pickType() == MeshObject::Normal) outline->draw(painter);
+    if (hoveringObject && hoveringObject->pickType() == MeshObject::Normal) outline->draw(painter);
     glClear(GL_DEPTH_BUFFER_BIT);
     if (!(enteringDir || leavingDoor)) hudObject->draw(painter);
 
@@ -128,21 +122,21 @@ void View::paintHud(qreal x, qreal y, QString text) {
     painter.setPen(QColor(Qt::black));
     painter.drawPath(path);
 
-    if (text.isEmpty() && isShowingFileName)
-        for (int i = 0; i < dir->count(); ++i) {
-            QVector3D pos = mvp * curRoom->entry[i]->position();
-            QRect rect(pos.x() - 30, pos.y(), 60, 30);
-            QString text = curRoom->entry[i]->objectName();
-            painter.drawText(rect, Qt::AlignHCenter | Qt::TextWrapAnywhere,
-                    curRoom->entry[i]->objectName());
-        }
+    //if (text.isEmpty() && isShowingFileName)
+    //    for (int i = 0; i < dir->count(); ++i) {
+    //        QVector3D pos = mvp * curRoom->entry[i]->position();
+    //        QRect rect(pos.x() - 30, pos.y(), 60, 30);
+    //        QString text = curRoom->entry[i]->objectName();
+    //        painter.drawText(rect, Qt::AlignHCenter | Qt::TextWrapAnywhere,
+    //                curRoom->entry[i]->objectName());
+    //    }
     
     hudObject->setImage(image);
 }
 
 class Surface : public QGLAbstractSurface {
 public:
-    Surface(QGLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
+    Surface(GLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
         QGLAbstractSurface(504), m_view(view), m_fbo(fbo),
         m_viewportGL(QPoint(0, 0), areaSize) { }
 
@@ -151,7 +145,7 @@ public:
     void deactivate(QGLAbstractSurface *) { if (m_fbo) m_fbo->release(); }
     QRect viewportGL() const { return m_viewportGL; }
 private:
-    QGLView *m_view;
+    GLView *m_view;
     QOpenGLFramebufferObject *m_fbo;
     QRect m_viewportGL;
 };
@@ -172,12 +166,12 @@ void View::paintOutline(MeshObject *obj) {
     painter.setEye(QGL::NoEye);
     painter.setCamera(camera());
 
-    enteredObject->ignoreMuting(true);
+    hoveringObject->ignoreMuting(true);
     PickObject::muteObjectId(true);
 
     paintGL(&painter);
 
-    enteredObject->ignoreMuting(false);
+    hoveringObject->ignoreMuting(false);
     PickObject::muteObjectId(false);
 
     painter.setPicking(false);
@@ -185,6 +179,21 @@ void View::paintOutline(MeshObject *obj) {
 
     /* FIXME: use texture id */
     outline->setImage(fbo->toImage());
+}
+
+void View::setupLight()
+{
+    phongEffect = new QGLShaderProgramEffect();
+    phongEffect->setVertexShaderFromFile(":/shader/phong.vsh");
+    phongEffect->setFragmentShaderFromFile(":/shader/phong.fsh");
+
+    boxEffect = new QGLShaderProgramEffect();
+    boxEffect->setVertexShaderFromFile(":/shader/box.vsh");
+    boxEffect->setFragmentShaderFromFile(":/shader/box.fsh");
+
+    light = new QGLLightParameters(this);
+    light->setPosition(QVector3D(0, roomHeight * 0.5, 0));
+    light->setAmbientColor(QColor(120, 120, 120));
 }
 
 static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size) {

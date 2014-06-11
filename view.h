@@ -1,33 +1,30 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <Qt3D/QGLView>
-#include <QtGui/QImage>
-#include <QtCore/QHash>
-#include "pickobject.h"
+//#include <Qt3D/QGLView>
+#include "lib/glview.h"
 
-#include "room.h"
-
+//class Config;
+class Directory;
 class ImageObject;
 class MeshObject;
-class Directory;
+class PickObject;
+class Room;
 class Surface;
-class QGLFramebufferObjectSurface;
-class QPaintDevice;
-class QGLAbstractScene;
-class QGLMaterial;
-class QGLMaterialCollection;
-class QGLSceneNode;
-class QGLShaderProgramEffect;
-class QGLTexture2D;
-class QVariantAnimation;
+
 enum AnimStage : int;
 
-class View : public QGLView {
+class QGLShaderProgramEffect;
+class QVariantAnimation;
+
+
+class View : public GLView {
     Q_OBJECT
 public:
     View(int width = 800, int height = 600);
     ~View();
+
+    void load();
 
 protected:
     void initializeGL(QGLPainter *painter);
@@ -36,80 +33,36 @@ protected:
     void mousePressEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
+
     void keyPressEvent(QKeyEvent *event);
     void resizeEvent(QResizeEvent *);
     void wheelEvent(QWheelEvent *);
 
 private:
-    QGLSceneNode *lid;
-    QGLSceneNode *sides;
-    MeshObject *lidMesh;
-    MeshObject *sidesMesh;
-    QList<QGLTexture2D*> loadedTextures;
+    void loadDir(bool back = false);
 
-    static const QVector3D defaultCenter;
-    static const QVector3D defaultEye;
-
-    void loadConfig(const QString &fileName);
-    void loadProperty(const QString &property, QTextStream &value);
-    //void loadModel(QTextStream &value);
-
-    void loadModels();
-    void setupObjects();
-    void loadDir(const QVector<MeshObject*> &boxes, ImageObject *picture);
-    void hoverEnter(MeshObject *object);
-    void hoverLeave();
-    void startAnimation(AnimStage stage);
-    void finishAnimation();
-    void debugFunc();
-
-    void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
-    void paintOutline(MeshObject *obj);
-
-    void startRotate(QPoint pos);
-    void invokeObject(PickObject *obj);
-    void openEntry(MeshObject *obj);
-
+    //Config *config;
+    Directory *dir;
     Room *curRoom;
-
-    MeshObject *enteringDir;
-    MeshObject *leavingDoor;
-    qreal animProg;
-    QVariantAnimation *animation;
-    AnimStage animStage;
-
-    QVector3D startCenter;
-    QVector3D startEye;
-    QVector3D startUp;
-    QVector3D deltaCenter;
-    QVector3D deltaEye;
-    QVector3D deltaUp;
-
-    /* temporary materials for debug purpose */
-    QGLMaterial *mat1;
-    QGLMaterial *mat2;
-
-    /* FIXME: unable to use QGLMaterialCollection */
-    //QSharedPointer<QGLMaterialCollection> palette;
-    QHash<QString, QGLMaterial*> palette;
-
-    QHash<QString, MeshObject*> models;
 
     ImageObject *picture;
     ImageObject *backPicture;
-    ImageObject *hudObject;
-    ImageObject *outline;
 
-    bool isRotating;
-    QPoint pressPos;
-    QVector3D oldCameraCenter;
+    QVector3D defaultCenter;
+    QVector3D defaultEye;
 
-    QGLLightParameters *light;
-    int lightId;
+    // constructor helper
+    void setupAnimation();
+    void setupLight();
+    void setupObjects();
 
-    Directory *dir;
 
-    QMatrix4x4 mvp;
+    // object control
+
+    /* handle clicked object */
+    void invokeObject(PickObject *obj);
+    /* open file or directory */
+    void openEntry(MeshObject *obj);
 
     MeshObject *pickedObject;
     /* original position of picked object */
@@ -118,14 +71,75 @@ private:
     QVector3D pickedModelPos;
     /* picked object's depth in projected coordinate */
     qreal pickedDepth;
+    /* whether the movement is by accident */
     bool isNear;
 
-    MeshObject *enteredObject;
+
+    // hover object
+
+    void hoverEnter(MeshObject *object);
+    void hoverLeave();
+
+    void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
+    void paintOutline(MeshObject *obj);
+
+    MeshObject *hoveringObject;
+
+    /* show file name and path info on HUD */
+    ImageObject *hudObject;
+    /* outline hovering object */
+    ImageObject *outline;
+
+    /* buffer for painting outline */
     QOpenGLFramebufferObject *fbo;
     Surface *surface;
 
+
+    // roaming
+
+    void startRoaming(QPoint pos);
+
+    bool isRoaming;
+    /* starting position of roaming */
+    QPoint roamStartPos;
+    /* camera center when roaming start */
+    QVector3D roamStartCenter;
+
+
+    // animation
+
+    void startAnimation(AnimStage stage);
+    void finishAnimation();
+
+    QVariantAnimation *animation;
+    AnimStage animStage;
+    qreal animProg;
+
+    MeshObject *enteringDir;
+    MeshObject *leavingDoor;
+
+    QVector3D startCenter;
+    QVector3D startEye;
+    QVector3D startUp;
+
+    QVector3D deltaCenter;
+    QVector3D deltaEye;
+    QVector3D deltaUp;
+
+
+    // light
+
+    QGLLightParameters *light;
+    int lightId;
+
     QGLShaderProgramEffect *phongEffect;
     QGLShaderProgramEffect *boxEffect;
+
+
+    // misc
+
+    void debugFunc();
+    QMatrix4x4 mvp;
     bool isShowingFileName;
 };
 

@@ -49,7 +49,7 @@
 #include "qglabstractscene.h"
 
 QT_BEGIN_NAMESPACE
-class QGLView;
+class GLView;
 class QGLSceneNode;
 QT_END_NAMESPACE
 
@@ -59,9 +59,9 @@ class MeshObject : public PickObject
 public:
     enum PickType { Normal, Anchor, Picked };
 
-    explicit MeshObject(MeshObject *other, QGLView *view = NULL, int id = -1);
-    explicit MeshObject(QGLSceneNode *solidMesh, QGLView *view = NULL, int id = -1);
-    explicit MeshObject(QGLSceneNode *solidMesh, QGLSceneNode *animMesh, QGLView *view = NULL, int id = -1);
+    explicit MeshObject(MeshObject *other, GLView *view = NULL, int id = -1);
+    explicit MeshObject(QGLSceneNode *solidMesh, GLView *view = NULL, int id = -1);
+    explicit MeshObject(QGLSceneNode *solidMesh, QGLSceneNode *animMesh, GLView *view = NULL, int id = -1);
     virtual ~MeshObject();
 
     QGLSceneNode *mesh() const { return m_solidMesh; }

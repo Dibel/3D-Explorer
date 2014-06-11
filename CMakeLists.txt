@@ -11,8 +11,11 @@ set(SOURCE
     view.cpp
     paint.cpp
     control.cpp
-    loadmodel.cpp
     directory.cpp
+    animation.cpp
+    lib/glview.cpp
+    lib/qgldrawbuffersurface.cpp
+    lib/qglmaskedsurface.cpp
 )
 
 set(HEADER
@@ -23,6 +26,9 @@ set(HEADER
     room.h
     view.h
     directory.h
+    lib/glview.h
+    lib/qgldrawbuffersurface_p.h
+    lib/qglmaskedsurface_p.h
 )
 
 set(RESOURCE
