@@ -9,7 +9,7 @@
 #include <Qt3D/QGLMaterial>
 #include <QtCore/QFile>
 
-static void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
+inline void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
 {
     int index = node->palette()->addMaterial(mat);
     node->setMaterialIndex(index);
@@ -216,21 +216,11 @@ void Room::loadContainer(const QString &name, MeshObject *mesh) {
     scene->setParent(view);
     fileModel.insert("default", scene->mainNode());
 
-    scene = QGLAbstractScene::loadScene(dataDir + QString("file-music.obj"));
-    scene->setParent(view);
-    fileModel.insert("music", scene->mainNode());
-
-    scene = QGLAbstractScene::loadScene(dataDir + QString("file-video.obj"));
-    scene->setParent(view);
-    fileModel.insert("video", scene->mainNode());
-
-    scene = QGLAbstractScene::loadScene(dataDir + QString("file-pdf.obj"));
-    scene->setParent(view);
-    fileModel.insert("pdf", scene->mainNode());
-
-    scene = QGLAbstractScene::loadScene(dataDir + QString("file-text.obj"));
-    scene->setParent(view);
-    fileModel.insert("text", scene->mainNode());
+    for (const QString &type : typeList) {
+        scene = QGLAbstractScene::loadScene(dataDir + modelName + '_' + type + ".obj");
+        scene->setParent(view);
+        fileModel.insert(type, scene->mainNode());
+    }
 
     stream >> n;
     slotNum += n;
@@ -322,24 +312,16 @@ void Room::setFloorAndCeil() {
     ceil = new MeshObject(ceilNode, view, -1);
 }
 
-static QString getFileType(const QString &fileName) {
+inline QString getFileType(const QString &fileName) {
     int p = fileName.lastIndexOf(".");
     if (p == -1) return "default";
     QString ext = fileName.mid(p + 1);
 
-    if (ext == "flac" || ext == "mp3")
-        return "music";
-
-    if (ext == "mp4" || ext == "flv")
-        return "video";
-
-    if (ext == "pdf")
-        return "pdf";
-
-    if (ext == "txt" || ext == "h" || ext == "cpp")
-        return "text";
-
-    return "default";
+    auto iter = fileType.find(ext);
+    if (iter != fileType.end())
+        return iter.value();
+    else
+        return "default";
 }
 
 void Room::loadDir(Directory *dir, bool back) {

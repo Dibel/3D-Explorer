@@ -1,4 +1,5 @@
 #include "directory.h"
+#include "common.h"
 #include <QtCore/QDebug>
 #include <QtWidgets/QMessageBox>
 
@@ -130,29 +131,16 @@ void Directory::update() {
         return;
     }
 #endif
-    //setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-    //setSorting(QDir::DirsFirst | QDir::IgnoreCase | QDir::Type);
-    static const QStringList textFilter = { "*.txt", "*.cpp", "*.h", "*.c" };
-    static const QStringList musicFilter = { "*.mp3", "*.flac" };
-    static const QStringList videoFilter = { "*.mp4", "*.flv" };
-    static const QStringList pdfFilter = { "*.pdf" };
 
     fullEntryList.clear();
     fullEntryList << QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::IgnoreCase);
-
-    fullEntryList << QDir::entryList(textFilter, QDir::Files, QDir::IgnoreCase);
-    fullEntryList << QDir::entryList(pdfFilter, QDir::Files, QDir::IgnoreCase);
-    fullEntryList << QDir::entryList(musicFilter, QDir::Files, QDir::IgnoreCase);
-    fullEntryList << QDir::entryList(videoFilter, QDir::Files, QDir::IgnoreCase);
-
+    for (const QStringList &filter : typeFilters)
+        fullEntryList << QDir::entryList(filter, QDir::Files, QDir::IgnoreCase);
     fullEntryList << QDir::entryList(QDir::Files, QDir::IgnoreCase);
     fullEntryList.removeDuplicates();
 
-    //fullEntryList = QDir::entryList();
     page = fullEntryList.mid(pageIndex * pageSize, pageSize);
-    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
-    static const QStringList imageFilter = {
-        "*.bmp", "*.jpg", "*.jpeg", "*.gif", "*.png" };
-    imageList = QDir::entryList(imageFilter, QDir::Files);
+
+    imageList = QDir::entryList(typeFilters[0], QDir::Files);
     imageIndex = 0;
 }

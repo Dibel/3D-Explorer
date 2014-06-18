@@ -27,9 +27,13 @@ enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = Start
 
 extern int roomWidth, roomLength, roomHeight, eyeHeight;
 extern qreal boxScale;
+
 extern QHash<QString, QGLMaterial*> palette;
-extern QHash<QString, QSet<QString>> typeFilter;
 extern QHash<QString, Room*> rooms;
+
+extern QList<QStringList> typeFilters;
+extern QHash<QString, QString> fileType;
+extern QStringList typeList;
 
 extern GLView *view;
 

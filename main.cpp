@@ -5,13 +5,18 @@
 #include <QtCore/QFile>
 #include <Qt3D/QGLTexture2D>
 
+#include <QtCore/QDebug>
+
 GLView *view;
 
 int roomWidth, roomLength, roomHeight, eyeHeight;
 qreal boxScale;
+
 QHash<QString, QGLMaterial*> palette;
-QHash<QString, QSet<QString>> typeFilter;
 QHash<QString, Room*> rooms;
+QList<QStringList> typeFilters;
+QHash<QString, QString> fileType;
+QStringList typeList;
 
 void loadConfig(const QString &fileName);
 void loadProperty(const QString &property, QTextStream &value);
@@ -82,16 +87,18 @@ void loadProperty(const QString &property, QTextStream &value) {
         //loadModel(value);
 
     } else if (property == "filetype") {
-        QString name, tmp;
-        QSet<QString> filter;
+        QString type, ext;
+        QStringList filter;
 
-        value >> name >> tmp;
-        while (!tmp.isEmpty()) {
-            filter.insert("*." + tmp);
-            value >> tmp;
+        value >> type >> ext;
+        while (!ext.isEmpty()) {
+            filter.append("*." + ext);
+            fileType[ext] = type;
+            value >> ext;
         }
 
-        typeFilter.insert(name, filter);
+        typeFilters.append(filter);
+        typeList.append(type);
 
     } else
         qDebug() << "Unknown property" << property;
