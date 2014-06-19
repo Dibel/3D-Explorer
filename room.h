@@ -20,8 +20,9 @@ class Room {
 public:
     Room(const QString &name, GLView *view, void *config);
 
-    void paintFront(QGLPainter *painter, MeshObject *animObj, qreal animProg);
+    void paintFront(QGLPainter *painter, int animObj, qreal animProg);
     void paintBack(QGLPainter *painter, int stage);
+    void paintPickedEntry(QGLPainter *painter, const QVector3D &deltaPos);
 
     void loadDir(Directory *dir, bool back = false);
     void pushToFront();
@@ -30,6 +31,12 @@ public:
     inline int getSlotNum() const { return slotNum; }
     inline QVector3D getOutPos() const { return outPos; }
     inline qreal getOutAngle() const { return outAngle; }
+
+    QVector3D getEntryPos(int i) const;
+    QVector3D getDoorPos() const;
+    qreal getDoorAngle() const;
+
+    inline void pickEntry(int index) { pickedEntry = index; }
 
 private:
     void loadProperty(const QString &property, QTextStream &value);
@@ -45,11 +52,17 @@ private:
     MeshObject *floor;
     MeshObject *ceil;
 
+    MeshObject *door;
+
     QGLSceneNode *dirSolidModel;
     QGLSceneNode *dirAnimModel;
     QHash<QString, QGLSceneNode*> fileModel;
 
     int slotNum;
+    int entryNum;
+    int backEntryNum;
+
+    int pickedEntry = -1;
 
     QVector3D outPos;
     qreal outAngle;

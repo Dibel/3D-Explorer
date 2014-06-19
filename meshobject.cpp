@@ -46,39 +46,35 @@
 
 MeshObject::MeshObject(MeshObject *other, GLView *view, int id) :
     PickObject(view, id), m_solidMesh(other->solidMesh()), m_animMesh(other->animMesh()),
-    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f), m_rotationAngle(0.0f),
+    m_scale(1.0f), m_rotationAngle(0.0f),
     m_animAngle(other->animAngle()), m_animVector(other->animVector()), m_animCenter(other->animCenter()),
     m_type(Normal)
 { }
 
 MeshObject::MeshObject(QGLSceneNode *meshObject, GLView *view, int id) :
     PickObject(view, id), m_solidMesh(meshObject), m_animMesh(NULL),
-    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f),
-    m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
+    m_scale(1.0f), m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
 { }
 
 MeshObject::MeshObject(QGLSceneNode *scene, QGLSceneNode *anim, GLView *view, int id) :
     PickObject(view, id), m_solidMesh(scene), m_animMesh(anim),
-    m_scale(1.0f), m_scaleX(1.0f), m_scaleY(1.0f), m_scaleZ(1.0f),
-    m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
+    m_scale(1.0f), m_rotationAngle(0.0f), m_animAngle(0.0f), m_type(Normal)
 { }
 
 MeshObject::~MeshObject() { }
 
 void MeshObject::draw(QGLPainter *painter)
 {
-    if (m_type == Anchor && !painter->isPicking()) return;
-    if (m_type == Picked && painter->isPicking()) return;
+    //if (m_type == Anchor && !painter->isPicking()) return;
+    //if (m_type == Picked && painter->isPicking()) return;
 
     // Position the model at its designated position, scale, and orientation.
     painter->modelViewMatrix().push();
 
     painter->modelViewMatrix().translate(m_position);
-    if (m_scale != 1.0f) {
+
+    if (m_scale != 1.0f)
         painter->modelViewMatrix().scale(m_scale);
-    } else if(m_scaleX != 1.0f || m_scaleY != 1.0f || m_scaleZ != 1.0f) {
-        painter->modelViewMatrix().scale(m_scaleX,m_scaleY,m_scaleZ);
-    }
 
     if (m_rotationAngle != 0.0f)
         painter->modelViewMatrix().rotate(m_rotationAngle, m_rotationVector);

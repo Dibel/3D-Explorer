@@ -36,6 +36,11 @@ bool Directory::cd(const QString &dirName) {
     return success;
 }
 
+bool Directory::cd(int index)
+{
+    return cd(page.at(index));
+}
+
 bool Directory::cdUp() {
 #ifdef Q_OS_WIN
     if (isThisPC) return false;

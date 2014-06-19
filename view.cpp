@@ -6,10 +6,10 @@
 #include "room.h"
 
 View::View(int width, int height) :
-    pickedObject(NULL), hoveringObject(NULL),
+    pickedObject(-1), hoveringObject(-1),
     fbo(NULL), surface(NULL),
     isRoaming(false),
-    enteringDir(NULL), leavingDoor(NULL),
+    enteringDir(-1), leavingDoor(-1),
     isShowingFileName(false)
 {
     resize(width, height);
@@ -58,19 +58,6 @@ void View::setupObjects()
 
     /* outline */
     outline = new ImageObject(2, 2, this, ImageObject::Outline);
-}
-
-void View::hoverEnter(MeshObject *obj) {
-    hoveringObject = obj;
-    if (hoveringObject->pickType() != MeshObject::Normal) return;
-    paintOutline(obj);
-    update();
-}
-
-void View::hoverLeave() {
-    hoveringObject = NULL;
-    paintHud();
-    update();
 }
 
 void View::loadDir(bool back) {

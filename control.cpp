@@ -7,71 +7,78 @@
 #include <QtCore/QVariantAnimation>
 #include <QtGui/QDesktopServices>
 
-static QVector3D extendTo3D(const QPoint &pos, qreal depth) {
+inline QVector3D extendTo3D(const QPoint &pos, qreal depth)
+{
     return QVector3D(pos.x(), pos.y(), depth);
 }
 
-void View::invokeObject(PickObject *obj) {
-    Q_ASSERT(obj && obj->objectId() != -1);
+void View::invokeObject(int id)
+{
+    if (pickedObject != -1) {
+        if (id == TrashBin && dir->remove(pickedObject))
+            loadDir();
 
-    switch (obj->objectId()) {
-        case TrashBin:
-            if (pickedObject && dir->remove(pickedObject->objectId()))
-                loadDir();
-            break;
-
+    } else {
+        switch (id) {
         case Picture:
-            if (!pickedObject)
-                picture->setImage(dir->getNextImage());
+            picture->setImage(dir->getNextImage());
             break;
 
         case Door:
-            if (!pickedObject) {
-                hoveringObject = NULL;
-                leavingDoor = qobject_cast<MeshObject*>(obj);
-                dir->cdUp();
-                curRoom->clearBack();
-                startAnimation(Leaving1);
-            } else {
-                /* TODO: move file to parent directory */
-            }
+            hoveringObject = -1;
+            leavingDoor = id;
+            dir->cdUp();
+            curRoom->clearBack();
+            startAnimation(Leaving1);
             break;
 
         case LeftArrow:
-            if (!pickedObject) {
-                dir->prevPage();
-                loadDir();
-            }
+            dir->prevPage();
+            loadDir();
             break;
 
         case RightArrow:
-            if (!pickedObject) {
-                dir->nextPage();
-                loadDir();
-            }
+            dir->nextPage();
+            loadDir();
             break;
 
         default:
             qDebug() << "Nothing happended";
+        }
+    }
+}
+
+void View::openEntry(int index)
+{
+    if (index < dir->countDir()) {
+        hoverLeave();
+        dir->cd(index);
+        loadDir(true);
+        enteringDir = index;
+        startAnimation(Entering1);
+    } else {
+        QString path = dir->absoluteFilePath(dir->entry(index));
+        if (!QDesktopServices::openUrl("file:///" + path))
+            qDebug() << "Open File Failed";
     }
 }
 
 void View::mousePressEvent(QMouseEvent *event) {
     if (animStage != NoAnim || event->button() != Qt::LeftButton) return;
-    PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
-    roamStartPos = event->pos();
+    int obj = objectIdForPoint(event->pos());
 
-    if (obj && obj->objectId() >= 0 && obj->objectId() < dir->count()) {
-        pickedObject = qobject_cast<MeshObject*>(obj);
-        pickedObject->setPickType(MeshObject::Picked);
-        pickedPos = pickedObject->position();
+    if (obj >= 0 && obj < dir->count()) {
+        pickedObject = obj;
+        curRoom->pickEntry(obj);
+        pickedPos = curRoom->getEntryPos(pickedObject);
         pickedDepth = (mvp * pickedPos).z();
         pickedModelPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
         isNear = true;
         update();
 
-    } else if (!obj || obj->objectId() <= MaxBoxId) {
+    } else if (obj == -1) {
         roamStartCenter = camera()->center();
+        roamStartPos = event->pos();
         isRoaming = true;
     }
 }
@@ -84,20 +91,17 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         return;
     }
 
-    if (pickedObject) {
-        pickedObject->setPickType(MeshObject::Normal);
-        pickedObject->setPosition(pickedPos);
+    if (isNear)
+        openEntry(pickedObject);
+    else {
+        int id = objectIdForPoint(event->pos());
+        if (id > dir->count())
+            invokeObject(id);
     }
 
-    PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
-    if (obj && obj->objectId() != -1) {
-        if (obj->objectId() < dir->count() && event->pos() == roamStartPos)
-            openEntry(qobject_cast<MeshObject*>(obj));
-        else
-            invokeObject(obj);
-    }
-
-    pickedObject = NULL;
+    curRoom->pickEntry(-1);
+    pickedObject = -1;
+    deltaPos = QVector3D(0, 0, 0);
     update();
 }
 
@@ -113,21 +117,33 @@ void View::mouseMoveEvent(QMouseEvent *event) {
         return;
     }
 
-    PickObject *obj = qobject_cast<PickObject*>(objectForPoint(event->pos()));
+    int obj = objectIdForPoint(event->pos());
     if (obj != hoveringObject) {
         hoverLeave();
-        if (obj && obj->objectId() != -1 && obj->objectId() < StartImageId)
-            hoverEnter(qobject_cast<MeshObject*>(obj));
+        if (obj >= 0 && obj < StartImageId)
+            hoverEnter(obj);
     }
 
-    if (pickedObject) {
+    if (pickedObject != -1) {
         /* move picked object */
-        pickedObject->setPosition(mvp.inverted() *
-                extendTo3D(event->pos(), pickedDepth) -
-                pickedModelPos);
+        deltaPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedModelPos - pickedPos;
         update();
         return;
     }
+}
+
+void View::hoverEnter(int obj) {
+    if (obj == -1) return;
+    hoveringObject = obj;
+    //if (obj->pickType() != MeshObject::Normal) return;
+    paintOutline(obj);
+    update();
+}
+
+void View::hoverLeave() {
+    hoveringObject = -1;
+    paintHud();
+    update();
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
@@ -187,19 +203,3 @@ void View::keyPressEvent(QKeyEvent *event) {
 }
 
 void View::wheelEvent(QWheelEvent *) { }
-
-void View::openEntry(MeshObject *obj) {
-    Q_ASSERT(obj && obj->objectId() != -1);
-    if (obj->objectId() < dir->countDir()) {
-        hoverLeave();
-        dir->cd(obj->objectName());
-        loadDir(true);
-
-        enteringDir = obj;
-        startAnimation(Entering1);
-    } else {
-        QString path = dir->absoluteFilePath(obj->objectName());
-        if (!QDesktopServices::openUrl("file:///" + path))
-            qDebug() << "Open File Failed";
-    }
-}

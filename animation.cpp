@@ -36,26 +36,26 @@ void View::startAnimation(AnimStage stage)
 
     switch (stage) {
         case Entering1:
-            endCenter = enteringDir->position();
-            endEye = enteringDir->position() + QVector3D(0, roomHeight * boxScale * 2, 0);
+            endCenter = curRoom->getEntryPos(enteringDir);
+            endEye = curRoom->getEntryPos(enteringDir) + QVector3D(0, roomHeight * boxScale * 2, 0);
             deltaUp = QVector3D(0, -1, -1);
             break;
 
         case Entering2:
-            endCenter = defaultCenter * boxScale + enteringDir->position();
-            endEye = defaultEye * boxScale + enteringDir->position();
+            endCenter = defaultCenter * boxScale + curRoom->getEntryPos(enteringDir);
+            endEye = defaultEye * boxScale + curRoom->getEntryPos(enteringDir);
             deltaUp = QVector3D(0, 1, 1);
             break;
 
         case Leaving1:
-            endCenter = leavingDoor->position() + defaultEye + rotateCcw(0, 0, -roomLength / 2, leavingDoor->rotationAngle());
-            endEye = leavingDoor->position() + defaultEye;
+            endCenter = curRoom->getDoorPos() + defaultEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle());
+            endEye = curRoom->getDoorPos() + defaultEye;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
         case Leaving2:
-            endEye = (defaultEye - rotateCcw(curRoom->getOutPos(), leavingDoor->rotationAngle() - curRoom->getOutAngle())) / boxScale;
-            endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, leavingDoor->rotationAngle()) / boxScale;
+            endEye = (defaultEye - rotateCcw(curRoom->getOutPos(), curRoom->getDoorAngle() - curRoom->getOutAngle())) / boxScale;
+            endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle()) / boxScale;
             deltaUp = QVector3D(0, 0, 0);
             break;
 
@@ -92,13 +92,13 @@ void View::finishAnimation()
             picture->setImage(backPicture->getImage());
         
             animStage = NoAnim;
-            enteringDir = NULL;
+            enteringDir = -1;
             break;
 
         case Leaving2:
             camera()->setEye(defaultEye);
             camera()->setCenter(rotateCcw(defaultCenter, curRoom->getOutAngle()));
-            leavingDoor = NULL;
+            leavingDoor = -1;
 
             curRoom->pushToFront();
             picture->setImage(backPicture->getImage());

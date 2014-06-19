@@ -13,15 +13,13 @@ public:
     int objectId() const;
     void setObjectId(int id);
 
-    void ignoreMuting(bool ignore);
-    static void muteObjectId(bool mute);
+    static void paintOutline(int id);
 
 private:
     GLView *view;
     int id;
 
-    bool ignoringMuting;
-    static bool idMuted;
+    static int outlineId;
 };
 
 #endif

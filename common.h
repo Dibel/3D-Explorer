@@ -6,6 +6,7 @@
 #include <QtGui/QQuaternion>
 
 class QGLMaterial;
+class QGLSceneNode;
 class QTextStream;
 class GLView;
 class Room;
@@ -29,6 +30,7 @@ extern int roomWidth, roomLength, roomHeight, eyeHeight;
 extern qreal boxScale;
 
 extern QHash<QString, QGLMaterial*> palette;
+extern QHash<QString, QGLSceneNode*> models;
 extern QHash<QString, Room*> rooms;
 
 extern QList<QStringList> typeFilters;

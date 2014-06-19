@@ -2,10 +2,10 @@
 #include "lib/glview.h"
 //#include <Qt3D/QGLView>
 
-bool PickObject::idMuted = false;
+int PickObject::outlineId = -1;
 
 PickObject::PickObject(GLView *view, int id) :
-    QObject(view), view(view), id(id), ignoringMuting(false)
+    QObject(view), view(view), id(id)
 {
     if (view && id != -2) view->registerObject(id, this);
 }
@@ -15,10 +15,8 @@ PickObject::~PickObject() {
 }
 
 //int PickObject::objectId() const { return id; }
-int PickObject::objectId() const { return idMuted && !ignoringMuting ? -1 : id; }
+int PickObject::objectId() const { return outlineId == -1 || outlineId == id ? id : -1; }
 
 void PickObject::setObjectId(int newId) { id = newId; }
 
-void PickObject::ignoreMuting(bool ignore) { ignoringMuting = ignore; }
-
-void PickObject::muteObjectId(bool mute) { idMuted = mute; }
+void PickObject::paintOutline(int id) { outlineId = id; }

@@ -1357,6 +1357,11 @@ QRect GLViewPickSurface::viewportGL() const
 */
 QObject *GLView::objectForPoint(const QPoint &point)
 {
+    return d->objects.value(objectIdForPoint(point), 0);
+}
+
+int GLView::objectIdForPoint(const QPoint &point)
+{
     QPoint pt(point);
 
     // What is the size of the drawing area after correcting for stereo?
@@ -1441,13 +1446,13 @@ QObject *GLView::objectForPoint(const QPoint &point)
     if (d->fbo)
         d->fbo->bind();
     int objectId = painter.pickObject(pt.x(), areaSize.height() - 1 - pt.y());
-    QObject *object = d->objects.value(objectId, 0);
+    //QObject *object = d->objects.value(objectId, 0);
     if (d->fbo)
         d->fbo->release();
 
     // Release the framebuffer object and return.
     painter.end();
-    return object;
+    return objectId;
 }
 
 void GLView::sendEnterEvent(QObject *object)

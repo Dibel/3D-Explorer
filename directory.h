@@ -14,6 +14,7 @@ public:
 #endif
 
     bool cd(const QString &dirName);
+    bool cd(int index);
     bool cdUp();
     int count() const;
     int countDir() const;

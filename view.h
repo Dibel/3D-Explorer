@@ -60,11 +60,12 @@ private:
     // object control
 
     /* handle clicked object */
-    void invokeObject(PickObject *obj);
+    void invokeObject(int id);
     /* open file or directory */
-    void openEntry(MeshObject *obj);
+    void openEntry(int index);
 
-    MeshObject *pickedObject;
+    int pickedObject;
+    QVector3D deltaPos;
     /* original position of picked object */
     QVector3D pickedPos;
     /* clicked position in picked object's local coordinate */
@@ -77,13 +78,13 @@ private:
 
     // hover object
 
-    void hoverEnter(MeshObject *object);
+    void hoverEnter(int obj);
     void hoverLeave();
 
     void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
-    void paintOutline(MeshObject *obj);
+    void paintOutline(int obj);
 
-    MeshObject *hoveringObject;
+    int hoveringObject;
 
     /* show file name and path info on HUD */
     ImageObject *hudObject;
@@ -115,8 +116,8 @@ private:
     AnimStage animStage;
     qreal animProg;
 
-    MeshObject *enteringDir;
-    MeshObject *leavingDoor;
+    int enteringDir;
+    int leavingDoor;
 
     QVector3D startCenter;
     QVector3D startEye;

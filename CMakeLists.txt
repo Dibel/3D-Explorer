@@ -13,6 +13,7 @@ set(SOURCE
     control.cpp
     directory.cpp
     animation.cpp
+    config.cpp
     lib/glview.cpp
     lib/qgldrawbuffersurface.cpp
     lib/qglmaskedsurface.cpp

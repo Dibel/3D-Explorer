@@ -45,10 +45,10 @@ void View::paintGL(QGLPainter *painter) {
     else
         t = 1;
 
-    if (enteringDir)
+    if (enteringDir != -1)
         t = animStage == Entering1 ? animProg : 1;
 
-    if (enteringDir)
+    if (enteringDir != -1)
         curRoom->paintFront(painter, enteringDir, t);
     else
         curRoom->paintFront(painter, leavingDoor, t);
@@ -69,11 +69,11 @@ void View::paintGL(QGLPainter *painter) {
         camera()->setUpVector(startUp + t * deltaUp);
 
         painter->modelViewMatrix().push();
-        if (enteringDir) {
-            painter->modelViewMatrix().translate(enteringDir->position());
+        if (enteringDir != -1) {
+            painter->modelViewMatrix().translate(curRoom->getEntryPos(enteringDir));
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
-            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, leavingDoor->rotationAngle() - curRoom->getOutAngle()));
+            painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, curRoom->getDoorAngle() - curRoom->getOutAngle()));
             painter->modelViewMatrix().scale(1.0 / boxScale);
             painter->modelViewMatrix().translate(-curRoom->getOutPos() - QVector3D(0, 0.1, 0));
         }
@@ -91,17 +91,16 @@ void View::paintGL(QGLPainter *painter) {
         lightId = painter->addLight(light);
     }
 
-    if (pickedObject) {
-        QVector3D delta = pickedObject->position() - pickedPos;
-        if (delta.length() > 1) isNear = false;
+    if (pickedObject != -1 && !painter->isPicking()) {
+        if (deltaPos.length() > 1) isNear = false;
         if (!isNear) glClear(GL_DEPTH_BUFFER_BIT);
-        pickedObject->draw(painter);
+        curRoom->paintPickedEntry(painter, deltaPos);
     }
 
-    if (hoveringObject && hoveringObject->pickType() == MeshObject::Normal) outline->draw(painter);
+    if (hoveringObject != -1)
+        outline->draw(painter);
     glClear(GL_DEPTH_BUFFER_BIT);
-    if (!(enteringDir || leavingDoor)) hudObject->draw(painter);
-
+    if (!(enteringDir != -1 || leavingDoor != -1)) hudObject->draw(painter);
 }
 
 void View::paintHud(qreal x, qreal y, QString text) {
@@ -109,7 +108,6 @@ void View::paintHud(qreal x, qreal y, QString text) {
     image.fill(Qt::transparent);
     QPainter painter(&image);
     painter.setRenderHint(QPainter::Antialiasing);
-
 
     QFont font = painter.font();
     font.setPointSize(18);
@@ -150,9 +148,11 @@ private:
     QRect m_viewportGL;
 };
 
-void View::paintOutline(MeshObject *obj) {
-    QVector3D pos = mvp * obj->position();
-    paintHud(pos.x(), pos.y(), obj->objectName());
+void View::paintOutline(int obj) {
+    if (obj >= 0 && obj < dir->count()) {
+        QVector3D pos = mvp * curRoom->getEntryPos(obj);
+        paintHud(pos.x(), pos.y(), dir->entry(obj));
+    }
 
     if (!fbo)
         fbo = new QOpenGLFramebufferObject(size(), QOpenGLFramebufferObject::CombinedDepthStencil);
@@ -166,13 +166,11 @@ void View::paintOutline(MeshObject *obj) {
     painter.setEye(QGL::NoEye);
     painter.setCamera(camera());
 
-    hoveringObject->ignoreMuting(true);
-    PickObject::muteObjectId(true);
+    PickObject::paintOutline(hoveringObject);
 
     paintGL(&painter);
 
-    hoveringObject->ignoreMuting(false);
-    PickObject::muteObjectId(false);
+    PickObject::paintOutline(-1);
 
     painter.setPicking(false);
     painter.popSurface();
