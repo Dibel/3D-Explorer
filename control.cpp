@@ -102,6 +102,7 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
     curRoom->pickEntry(-1);
     pickedObject = -1;
     deltaPos = QVector3D(0, 0, 0);
+    isNear = false;
     update();
 }
 

@@ -73,7 +73,7 @@ private:
     /* picked object's depth in projected coordinate */
     qreal pickedDepth;
     /* whether the movement is by accident */
-    bool isNear;
+    bool isNear = false;
 
 
     // hover object
