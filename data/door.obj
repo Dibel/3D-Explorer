@@ -1,6 +1,6 @@
 # Blender v2.70 (sub 0) OBJ File: ''
 # www.blender.org
-mtllib doorframe.mtl
+mtllib door.mtl
 o doorframe
 v -29 100 3
 v 29 100 3
@@ -62,7 +62,7 @@ v 23 0 -2
 v 23 -0 2
 v 22 0 -2
 v 22 -0 2
-usemtl (null).221
+usemtl door
 s off
 f 1 2 3 4
 f 1 5 6 2

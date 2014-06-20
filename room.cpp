@@ -58,7 +58,7 @@ void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) {
     //        obj->draw(painter);
     //}
 
-    for (const MeshInfo &obj : solid_)
+    for (const MeshInfo &obj : solid)
         obj.draw(painter, animObj != -1 && obj.id == animObj ? animProg : 0.0);
 
     floor->draw(painter);
@@ -79,7 +79,7 @@ void Room::paintBack(QGLPainter *painter, int stage) {
     //for (MeshObject *obj : solid)
     //    obj->draw(painter);
 
-    for (const MeshInfo &obj : solid_)
+    for (const MeshInfo &obj : solid)
         obj.draw(painter);
 
     if (stage == Entering1 || stage == Entering2) {
@@ -140,7 +140,7 @@ Room::Room(const QString &name, GLView *, void *)
     trans.translate(-50, 90, -roomLength / 2);
     trans.scale(0.4);
 
-    solid_.append(MeshInfo{model->mainNode(), trans, LeftArrow, NULL});
+    solid.append(MeshInfo{model->mainNode(), trans, LeftArrow, NULL});
 
     //mesh = new MeshObject(model->mainNode(), view, LeftArrow);
     //mesh->setScale(0.4);
@@ -154,7 +154,7 @@ Room::Room(const QString &name, GLView *, void *)
     trans.translate(50, 90, -roomLength / 2);
     trans.scale(0.4);
 
-    solid_.append(MeshInfo{model->mainNode(), trans, RightArrow, NULL});
+    solid.append(MeshInfo{model->mainNode(), trans, RightArrow, NULL});
     //mesh = new MeshObject(model->mainNode(), view, RightArrow);
     //mesh->setScale(0.4);
     //mesh->setPosition(QVector3D(50, 90, -roomLength / 2));
@@ -178,7 +178,7 @@ void Room::loadModel(QTextStream &value)
     trans.scale(w);
     trans.rotate(angle, 0, 1, 0);
 
-    solid_.append(MeshInfo{models[name], trans, id[type], NULL});
+    solid.append(MeshInfo{models[name], trans, id[type], NULL});
 
     if (anim != "-") {
         AnimInfo *animInfo = new AnimInfo;
@@ -188,7 +188,7 @@ void Room::loadModel(QTextStream &value)
         value >> x >> y >> z;
         animInfo->axis = QVector3D(x, y, z);
         value >> animInfo->maxAngle;
-        solid_.last().anim = animInfo;
+        solid.last().anim = animInfo;
     }
 
     if (type == 1)
@@ -348,7 +348,7 @@ void Room::loadWall(QTextStream &value) {
     trans.translate(rotateCcw(0, 0, -(side & 1 ? roomWidth : roomLength) / 2, side * 90));
     trans.rotate(side * 90, 0, 1, 0);
 
-    solid_.append(MeshInfo{mesh, trans, -1, NULL});
+    solid.append(MeshInfo{mesh, trans, -1, NULL});
 
     //mesh->setPosition(rotateCcw(0, 0, -(side & 1 ? roomWidth : roomLength) / 2, side * 90));
     //mesh->setRotationVector(QVector3D(0, 1, 0));

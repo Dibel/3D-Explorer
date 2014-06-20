@@ -52,7 +52,8 @@ private:
         QGLSceneNode *mesh; QMatrix4x4 transform; int id; AnimInfo *anim;
         void draw(QGLPainter *painter, qreal animProg = 0.0) const;
     };
-    QVector<MeshInfo> solid_;
+    QVector<MeshInfo> solid;
+
     QVector<MeshObject*> entry;
     QVector<MeshObject*> backEntry;
     MeshObject *floor;
