@@ -166,11 +166,13 @@ void View::paintOutline(int obj) {
     painter.setEye(QGL::NoEye);
     painter.setCamera(camera());
 
+    paintingOutline = hoveringObject;
     PickObject::paintOutline(hoveringObject);
 
     paintGL(&painter);
 
     PickObject::paintOutline(-1);
+    paintingOutline = -1;
 
     painter.setPicking(false);
     painter.popSurface();

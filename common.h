@@ -41,6 +41,8 @@ extern GLView *view;
 
 static const int id[4] = { -1, -1, TrashBin, Door };
 
+extern int paintingOutline;
+
 inline QVector3D rotateCcw(QVector3D vec, qreal angle) {
     return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);
 }

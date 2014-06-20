@@ -5,6 +5,7 @@
 #include <QtCore/QString>
 #include <QtCore/QVector>
 #include <QtGui/QVector3D>
+#include <QtGui/QMatrix4x4>
 
 class QGLAbstractScene;
 class QGLMaterial;
@@ -31,10 +32,10 @@ public:
     inline int getSlotNum() const { return slotNum; }
     inline QVector3D getOutPos() const { return outPos; }
     inline qreal getOutAngle() const { return outAngle; }
+    inline QVector3D getDoorPos() const { return doorPos; }
+    inline qreal getDoorAngle() const { return doorAngle; }
 
     QVector3D getEntryPos(int i) const;
-    QVector3D getDoorPos() const;
-    qreal getDoorAngle() const;
 
     inline void pickEntry(int index) { pickedEntry = index; }
 
@@ -44,28 +45,31 @@ private:
     void setFloorAndCeil();
     void loadModel(QTextStream &value);
     void loadWall(QTextStream &value);
-    void loadContainer(const QString &name, MeshObject *mesh);
+    void loadContainer(const QString &name, const QVector3D &basePos);
 
-    QVector<MeshObject*> solid;
+    struct AnimInfo { QGLSceneNode *mesh; QVector3D center, axis; qreal maxAngle; };
+    struct MeshInfo {
+        QGLSceneNode *mesh; QMatrix4x4 transform; int id; AnimInfo *anim;
+        void draw(QGLPainter *painter, qreal animProg = 0.0) const;
+    };
+    QVector<MeshInfo> solid_;
     QVector<MeshObject*> entry;
     QVector<MeshObject*> backEntry;
     MeshObject *floor;
     MeshObject *ceil;
 
-    MeshObject *door;
-
     QGLSceneNode *dirSolidModel;
     QGLSceneNode *dirAnimModel;
     QHash<QString, QGLSceneNode*> fileModel;
 
-    int slotNum;
+    int slotNum = 0;
     int entryNum;
     int backEntryNum;
 
     int pickedEntry = -1;
 
-    QVector3D outPos;
-    qreal outAngle;
+    QVector3D outPos, doorPos;
+    qreal outAngle, doorAngle;
 
     //QGLView *view;
     //Config *config;
