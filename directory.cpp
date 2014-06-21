@@ -13,6 +13,8 @@ Directory::Directory() : QDir(), pageIndex(0) {
 
 void Directory::setPageSize(int size) {
     pageSize = size;
+    typePage.clear();
+    for (int i = 0; i < size; ++i) typePage.append(QString());
     update();
 }
 
@@ -68,6 +70,10 @@ QStringList Directory::entryList() const { return page; }
 
 QString Directory::entry(int index) const { return page[index]; }
 
+QStringList Directory::entryTypeList() const { return typePage; }
+
+QString Directory::entryType(int index) const { return typePage.at(index); }
+
 void Directory::refresh() {
     int pageIndexBackup = pageIndex;
     QDir::refresh();
@@ -100,7 +106,7 @@ void Directory::nextPage() {
 #endif
     if (++pageIndex * pageSize >= (int)QDir::count()) --pageIndex;
     page = fullEntryList.mid(pageIndex * pageSize, pageSize);
-    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+    reloadType();
 }
 
 void Directory::prevPage() {
@@ -109,7 +115,7 @@ void Directory::prevPage() {
 #endif
     if (pageIndex > 0) --pageIndex;
     page = fullEntryList.mid(pageIndex * pageSize, pageSize);
-    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+    reloadType();
 }
 
 QString Directory::getImage() {
@@ -145,7 +151,31 @@ void Directory::update() {
     fullEntryList.removeDuplicates();
 
     page = fullEntryList.mid(pageIndex * pageSize, pageSize);
+    reloadType();
 
     imageList = QDir::entryList(typeFilters[0], QDir::Files);
     imageIndex = 0;
+}
+
+void Directory::reloadType()
+{
+    int dirCnt = countDir();
+    if (dirCnt > page.size()) dirCnt = page.size();
+    for (int i = 0; i < dirCnt; ++i) typePage[i] = "dir";
+    for (int i = dirCnt; i < page.size(); ++i) {
+        int p = page[i].lastIndexOf(".");
+        if (p == -1)
+            typePage[i] = "default";
+        else {
+            QString ext = page[i].mid(p + 1);
+            auto iter = fileType.find(ext);
+            if (iter != fileType.end())
+                typePage[i] = iter.value();
+            else
+                typePage[i] = "default";
+        }
+    }
+
+    //for (int i = 0; i < page.size(); ++i)
+    //    qDebug() << page[i] << typePage[i];
 }

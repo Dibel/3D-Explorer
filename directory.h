@@ -20,6 +20,8 @@ public:
     int countDir() const;
     QStringList entryList() const;
     QString entry(int index) const;
+    QStringList entryTypeList() const;
+    QString entryType(int index) const;
     void refresh();
     bool remove(int index);
 
@@ -32,6 +34,8 @@ public:
 private:
     void update();
 
+    void reloadType();
+
 #ifdef Q_OS_WIN
     bool isThisPC;
 #endif
@@ -42,6 +46,8 @@ private:
     QStringList fullEntryList;
     QStringList imageList;
     int imageIndex;
+
+    QStringList typePage;
 };
 
 #endif

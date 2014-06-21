@@ -2,7 +2,6 @@
 #include "common.h"
 #include "directory.h"
 #include "imageobject.h"
-#include "meshobject.h"
 #include "room.h"
 
 View::View(int width, int height) :
@@ -18,9 +17,10 @@ View::View(int width, int height) :
 void View::load()
 {
     curRoom = rooms["room1"];
-
     dir = new Directory;
+
     dir->setPageSize(curRoom->getSlotNum());
+    curRoom->setDir(dir);
 
     defaultCenter = QVector3D(0, eyeHeight, -roomLength / 2);
     defaultEye = QVector3D(0, eyeHeight, 0);

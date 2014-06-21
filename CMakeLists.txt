@@ -5,7 +5,6 @@ set(PROJECTNAME 3dexplorer)
 set(SOURCE
     main.cpp
     pickobject.cpp
-    meshobject.cpp
     imageobject.cpp
     room.cpp
     view.cpp
@@ -22,7 +21,6 @@ set(SOURCE
 set(HEADER
     common.h
     pickobject.h
-    meshobject.h
     imageobject.h
     room.h
     view.h
