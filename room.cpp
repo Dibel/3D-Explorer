@@ -68,9 +68,10 @@ void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) {
             if (paintingOutline == -1 || i == paintingOutline)
                 painter->setObjectPickId(i);
 
-            fileModel[frontPage[i]]->draw(painter);
+            fileModel_[frontPage[i]]->draw(painter);
 
-            if (frontPage[i] == "dir")
+            if (frontPage[i] == 0)
+            //if (frontPage[i] == "dir")
                 dirAnim.draw(painter, i == animObj ? animProg : 0.0);
 
             painter->modelViewMatrix().pop();
@@ -102,9 +103,10 @@ void Room::paintBack(QGLPainter *painter, int stage) {
             painter->modelViewMatrix().translate(slotPos.at(i));
             painter->setObjectPickId(-1);
 
-            fileModel[backPage[i]]->draw(painter);
+            fileModel_[backPage[i]]->draw(painter);
 
-            if (backPage[i] == "dir")
+            if (backPage[i] == 0)
+            //if (backPage[i] == "dir")
                 dirAnim.draw(painter);
 
             painter->modelViewMatrix().pop();
@@ -118,8 +120,8 @@ void Room::paintPickedEntry(QGLPainter *painter, const QVector3D &delta)
     painter->modelViewMatrix().translate(delta);
     painter->modelViewMatrix().translate(slotPos.at(pickedEntry));
 
-    fileModel[frontPage[pickedEntry]]->draw(painter);
-    if (frontPage[pickedEntry] == "dir")
+    fileModel_[frontPage[pickedEntry]]->draw(painter);
+    if (frontPage[pickedEntry] == 0)
         dirAnim.draw(painter);
 
     painter->modelViewMatrix().pop();
@@ -255,6 +257,8 @@ void Room::loadContainer(const QString &name, const QVector3D &basePos) {
     dirAnimModel = scene->mainNode();
     dirAnimModel->setLocalTransform(trans);
 
+    fileModel_.append(dirSolidModel);
+
     stream >> x >> y >> z; QVector3D animVector(x, y, z);
     stream >> x >> y >> z; QVector3D animCenter(x, y, z);
 
@@ -272,15 +276,19 @@ void Room::loadContainer(const QString &name, const QVector3D &basePos) {
     scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
     qDebug() << dataDir + modelName + ".obj";
     scene->setParent(view);
-    fileModel.insert("default", scene->mainNode());
+    //fileModel.insert("default", scene->mainNode());
+
+    fileModel_.append(scene->mainNode());
 
     for (const QString &type : typeList) {
         scene = QGLAbstractScene::loadScene(dataDir + modelName + '_' + type + ".obj");
         scene->setParent(view);
-        fileModel.insert(type, scene->mainNode());
+        //fileModel.insert(type, scene->mainNode());
+
+        fileModel_.append(scene->mainNode());
     }
 
-    fileModel.insert("dir", dirSolidModel);
+    //fileModel.insert("dir", dirSolidModel);
 
     stream >> n;
     slotNum += n;

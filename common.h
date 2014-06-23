@@ -37,6 +37,8 @@ extern QList<QStringList> typeFilters;
 extern QHash<QString, QString> fileType;
 extern QStringList typeList;
 
+extern QHash<QString, int> extToIndex;
+
 extern GLView *view;
 
 static const int id[4] = { -1, -1, TrashBin, Door };

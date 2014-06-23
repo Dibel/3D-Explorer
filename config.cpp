@@ -21,6 +21,7 @@ QHash<QString, Room*> rooms;
 QList<QStringList> typeFilters;
 QHash<QString, QString> fileType;
 QStringList typeList;
+QHash<QString, int> extToIndex;
 
 void loadConfig(const QString &fileName);
 void loadProperty(const QString &property, QTextStream &value);
@@ -104,6 +105,7 @@ void loadProperty(const QString &property, QTextStream &value) {
         while (!ext.isEmpty()) {
             filter.append("*." + ext);
             fileType[ext] = type;
+            extToIndex[ext] = typeList.size() + 2;
             value >> ext;
         }
 

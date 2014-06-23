@@ -60,14 +60,15 @@ private:
     QVector<MeshInfo> solid;
 
     QVector<QVector3D> slotPos;
-    QStringList frontPage, backPage;
+    QVector<int> frontPage, backPage;
 
     QGLSceneNode *floor, *ceil;
 
     QGLSceneNode *dirSolidModel;
     QGLSceneNode *dirAnimModel;
     AnimInfo dirAnim;
-    QHash<QString, QGLSceneNode*> fileModel;
+    //QHash<QString, QGLSceneNode*> fileModel;
+    QVector<QGLSceneNode*> fileModel_;
 
     int slotNum = 0;
     int entryNum;
