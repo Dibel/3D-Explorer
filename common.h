@@ -26,7 +26,7 @@ const int MaxBoxId = 100;
 const int StartImageId = 200;
 
 enum AnimStage : int { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
-enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Picture = StartImageId };
+enum { MaxBox = MaxBoxId, TrashBin, Door, LeftArrow, RightArrow, Image, ImagePrevBtn, ImageNextBtn };
 
 extern int roomWidth, roomLength, roomHeight, eyeHeight;
 extern qreal boxScale;

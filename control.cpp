@@ -1,5 +1,6 @@
 #include "view.h"
 #include "imageobject.h"
+#include "imageviewer.h"
 #include "directory.h"
 #include "common.h"
 #include "room.h"
@@ -13,18 +14,27 @@ inline QVector3D extendTo3D(const QPoint &pos, qreal depth)
     return QVector3D(pos.x(), pos.y(), depth);
 }
 
+inline void openFile(const QString &path)
+{
+    if (!QDesktopServices::openUrl("file:///" + path))
+        qDebug() << "Open File Failed";
+}
+
 void View::invokeObject(int id)
 {
     if (pickedObject != -1) {
-        if (id == TrashBin && dir->remove(pickedObject))
-            loadDir();
-
-    } else {
         switch (id) {
-        case Picture:
-            picture->setImage(dir->getNextImage());
+        case TrashBin:
+            if (dir->remove(pickedObject))
+                loadDir();
             break;
 
+        case Image:
+            picture->setImage(dir->playFile(pickedObject, "image"));
+            break;
+        }
+    } else {
+        switch (id) {
         case Door:
             hoveringObject = -1;
             leavingDoor = id;
@@ -43,6 +53,18 @@ void View::invokeObject(int id)
             loadDir();
             break;
 
+        case Image:
+            openFile(dir->getPlayingFile("image"));
+            break;
+
+        case ImagePrevBtn:
+            picture->setImage(dir->playPrev("image"));
+            break;
+
+        case ImageNextBtn:
+            picture->setImage(dir->playNext("image"));
+            break;
+
         default:
             qDebug() << "Nothing happended";
         }
@@ -57,11 +79,8 @@ void View::openEntry(int index)
         loadDir(true);
         enteringDir = index;
         startAnimation(Entering1);
-    } else {
-        QString path = dir->absoluteFilePath(dir->entry(index));
-        if (!QDesktopServices::openUrl("file:///" + path))
-            qDebug() << "Open File Failed";
-    }
+    } else
+        openFile(dir->absoluteFilePath(index));
 }
 
 void View::mousePressEvent(QMouseEvent *event) {
@@ -123,7 +142,7 @@ void View::mouseMoveEvent(QMouseEvent *event) {
     int obj = objectIdForPoint(event->pos());
     if (obj != hoveringObject) {
         hoverLeave();
-        if (obj >= 0 && obj < StartImageId)
+        if (obj >= 0)
             hoverEnter(obj);
     }
 

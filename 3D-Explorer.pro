@@ -9,6 +9,7 @@ RESOURCES += \
 HEADERS += \
     view.h \
     imageobject.h \
+    imageviewer.h \
     directory.h \
     pickobject.h \
     room.h \
@@ -21,6 +22,7 @@ SOURCES += \
     main.cpp \
     view.cpp \
     imageobject.cpp \
+    imageviewer.cpp \
     directory.cpp \
     pickobject.cpp \
     paint.cpp \

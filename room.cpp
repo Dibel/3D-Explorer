@@ -153,12 +153,19 @@ void Room::loadProperty(const QString &property, QTextStream &value)
 }
 
 void Room::loadModel(QTextStream &value) {
-    QString name, anim;
-    int type;
+    QString name, type, anim;
     qreal x, y, z, w, angle;
     value >> name >> type >> x >> y >> z >> w >> angle >> anim;
 
-    if (type == 3) {
+    int id;
+    if (type == "-")
+        id = -1;
+    else if (type == "TrashBin")
+        id = TrashBin;
+    else if (type == "Image")
+        id = Image;
+    else if (type == "Door") {
+        id = Door;
         doorPos = QVector3D(x, y, z);
         doorAngle = angle;
     }
@@ -168,7 +175,7 @@ void Room::loadModel(QTextStream &value) {
     trans.scale(w);
     trans.rotate(angle, 0, 1, 0);
 
-    solid.append(MeshInfo{models[name], trans, id[type], NULL});
+    solid.append(MeshInfo{models[name], trans, id, NULL});
 
     if (anim != "-") {
         AnimInfo *animInfo = new AnimInfo;

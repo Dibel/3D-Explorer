@@ -6,6 +6,7 @@ set(SOURCE
     main.cpp
     pickobject.cpp
     imageobject.cpp
+    imageviewer.cpp
     room.cpp
     view.cpp
     paint.cpp
@@ -22,6 +23,7 @@ set(HEADER
     common.h
     pickobject.h
     imageobject.h
+    imageviewer.h
     room.h
     view.h
     directory.h

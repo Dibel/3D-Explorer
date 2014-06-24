@@ -2,6 +2,7 @@
 #include "common.h"
 #include "directory.h"
 #include "imageobject.h"
+#include "imageviewer.h"
 #include "room.h"
 
 View::View(int width, int height) :
@@ -47,10 +48,10 @@ View::~View() {
 void View::setupObjects()
 {
     /* picture */
-    picture = new ImageObject(30, 20, this, ImageObject::Normal);
+    picture = new ImageViewer(30, 20);
     picture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
 
-    backPicture = new ImageObject(30, 20, this, ImageObject::Background);
+    backPicture = new ImageViewer(30, 20);
     backPicture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
 
     /* HUD */
@@ -62,10 +63,10 @@ void View::setupObjects()
 
 void View::loadDir(bool back) {
     if (back) {
-        backPicture->setImage(dir->getImage());
+        backPicture->setImage(dir->getPlayingFile("image"));
         curRoom->loadBack(dir);
     } else {
-        picture->setImage(dir->getImage());
+        picture->setImage(dir->getPlayingFile("image"));
         curRoom->loadFront(dir);
     }
 

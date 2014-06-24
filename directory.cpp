@@ -2,7 +2,9 @@
 #include "common.h"
 #include <QtWidgets/QMessageBox>
 
-Directory::Directory() : QDir()
+#include <QtCore/QDebug>
+
+Directory::Directory() : QDir(), playingFiles(::typeList.size())
 {
 #ifdef Q_OS_WIN
     isThisPC = false;
@@ -99,16 +101,51 @@ void Directory::prevPage()
         offset -= pageSize;
 }
 
-QString Directory::getImage() {
-    return imageList.isEmpty() ? ":/data/default.png"
-        : absoluteFilePath(imageList[imageIndex]);
+QString Directory::playFile(int index, const QString &assumedType)
+{
+    index += offset;
+    if (typeList.at(index) < 2)
+        return QString();
+    if (::typeList[typeList.at(index) - 2] != assumedType)
+        return QString();
+
+    playingFiles[typeList.at(index) - 2] = index;
+    return absoluteFilePath(index);
 }
 
-QString Directory::getNextImage() {
-    if (imageList.isEmpty()) return ":/data/default.png";
-    if (++imageIndex >= imageList.size())
-        imageIndex -= imageList.size();
-    return absoluteFilePath(imageList[imageIndex]);
+QString Directory::playNext(const QString &typeName)
+{
+    int type = ::typeList.indexOf(typeName);
+    Q_ASSERT(type != -1);
+
+    int index = typeList.indexOf(type + 2, playingFiles.at(type) + 1);
+    if (index == -1)
+        index = typeList.indexOf(type + 2);
+    if (index == -1)
+        return QString();
+
+    playingFiles[type] = index;
+    return absoluteFilePath(index);
+}
+
+QString Directory::playPrev(const QString &typeName)
+{
+    int type = ::typeList.indexOf(typeName);
+    Q_ASSERT(type != -1);
+
+    int index = typeList.lastIndexOf(type + 2, playingFiles.at(type) - 1);
+    if (index == -1)
+        index = typeList.lastIndexOf(type + 2);
+    if (index == -1)
+        return QString();
+
+    playingFiles[type] = index;
+    return absoluteFilePath(index);
+}
+
+QString Directory::getPlayingFile(const QString &type)
+{
+    return absoluteFilePath(playingFiles.at(::typeList.indexOf(type)));
 }
 
 void Directory::update()
@@ -120,8 +157,7 @@ void Directory::update()
         entryList.clear();
         for (auto drive : QDir::drives())
             entryList << drive.filePath();
-        imageList.clear();
-        imageIndex = 0;
+        playingFiles.fill(-1);
         return;
     }
 #endif
@@ -141,16 +177,18 @@ void Directory::update()
         entryList << QDir::entryList(typeFilters.at(i), QDir::Files);
 
         end = entryList.size();
-        for (int j = begin; j < end; ++j)
-            typeList[j] = i + 2;
-        begin = end;
+
+        if (begin != end) {
+            playingFiles[i] = begin;
+            for (int j = begin; j < end; ++j)
+                typeList[j] = i + 2;
+            begin = end;
+        } else
+            playingFiles[i] = -1;
     }
 
     entryList << QDir::entryList(QDir::Files);
     entryList.removeDuplicates();
     for (int i = begin; i < entryList.size(); ++i)
         typeList[i] = 1;
-
-    imageList = QDir::entryList(typeFilters[0], QDir::Files);
-    imageIndex = 0;
 }

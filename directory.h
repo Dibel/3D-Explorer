@@ -34,17 +34,34 @@ public:
         return entryList.at(offset + index);
     }
 
+    inline int entryType(int index) const
+    {
+        return typeList.at(offset + index);
+    }
+
     inline QVector<int> entryTypeList() const
     {
         return typeList.mid(offset, pageSize);
     }
 
+    inline QString absoluteFilePath(const QString &fileName) const
+    {
+        return QDir::absoluteFilePath(fileName);
+    }
+
+    inline QString absoluteFilePath(int index) const
+    {
+        return absoluteFilePath(entry(index));
+    }
+
+    QString playFile(int index, const QString &assumedType);
+    QString playNext(const QString &type);
+    QString playPrev(const QString &type);
+    QString getPlayingFile(const QString &type);
+
 #ifdef Q_OS_WIN
     QString absolutePath() const;
 #endif
-
-    QString getImage();
-    QString getNextImage();
 
 private:
     void update();
@@ -60,8 +77,7 @@ private:
     QStringList entryList;
     QVector<int> typeList;
 
-    QStringList imageList;
-    int imageIndex;
+    QVector<int> playingFiles;
 };
 
 #endif

@@ -8,6 +8,7 @@
 class Directory;
 class ImageObject;
 class PickObject;
+class ImageViewer;
 class Room;
 class Surface;
 
@@ -44,8 +45,8 @@ private:
     Directory *dir;
     Room *curRoom;
 
-    ImageObject *picture;
-    ImageObject *backPicture;
+    ImageViewer *picture;
+    ImageViewer *backPicture;
 
     QVector3D defaultCenter;
     QVector3D defaultEye;

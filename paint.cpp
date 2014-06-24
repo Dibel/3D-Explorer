@@ -1,5 +1,6 @@
 #include "view.h"
 #include "imageobject.h"
+#include "imageviewer.h"
 #include "directory.h"
 #include "common.h"
 #include "room.h"
@@ -52,7 +53,7 @@ void View::paintGL(QGLPainter *painter) {
     else
         curRoom->paintFront(painter, leavingDoor, t);
 
-    picture->draw(painter);
+    picture->draw(painter, hoveringObject >= Image && pickedObject == -1);
 
     if (animStage > NoAnim && animStage < Leaving3 && !painter->isPicking()) {
         painter->removeLight(lightId);
