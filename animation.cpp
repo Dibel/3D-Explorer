@@ -33,16 +33,25 @@ void View::startAnimation(AnimStage stage)
     startEye = camera()->eye();
     startUp = camera()->upVector();
 
+    QVector3D pos;
+    if (stage == Entering1 || stage == Entering2)
+        pos = curRoom->getEntryMat(enteringDir) * QVector3D(0, 0, 0);
+    //qDebug() << pos << getEntryPos(enteringDir);
+
     switch (stage) {
         case Entering1:
-            endCenter = curRoom->getEntryPos(enteringDir);
-            endEye = curRoom->getEntryPos(enteringDir) + QVector3D(0, roomHeight * boxScale * 2, 0);
+            endCenter = pos;
+            endEye = pos + QVector3D(0, roomHeight * boxScale * 2, 0);
+            //endCenter = curRoom->getEntryPos(enteringDir);
+            //endEye = curRoom->getEntryPos(enteringDir) + QVector3D(0, roomHeight * boxScale * 2, 0);
             deltaUp = QVector3D(0, -1, -1);
             break;
 
         case Entering2:
-            endCenter = defaultCenter * boxScale + curRoom->getEntryPos(enteringDir);
-            endEye = defaultEye * boxScale + curRoom->getEntryPos(enteringDir);
+            endCenter = defaultCenter * boxScale + pos;
+            endEye = defaultEye * boxScale + pos;
+            //endCenter = defaultCenter * boxScale + curRoom->getEntryPos(enteringDir);
+            //endEye = defaultEye * boxScale + curRoom->getEntryPos(enteringDir);
             deltaUp = QVector3D(0, 1, 1);
             break;
 
@@ -87,7 +96,7 @@ void View::finishAnimation()
             camera()->setCenter(defaultCenter);
             camera()->setEye(defaultEye);
 
-            curRoom->pushToFront();
+            curRoom->switchBackAndFront();
             picture->setImage(backPicture->getImage());
         
             animStage = NoAnim;
@@ -99,7 +108,7 @@ void View::finishAnimation()
             camera()->setCenter(rotateCcw(defaultCenter, curRoom->getOutAngle()));
             leavingDoor = -1;
 
-            curRoom->pushToFront();
+            curRoom->switchBackAndFront();
             picture->setImage(backPicture->getImage());
 
             animStage = Leaving3;

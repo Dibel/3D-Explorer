@@ -1,135 +1,16 @@
 #include "room.h"
 #include "common.h"
 #include "directory.h"
-#include "lib/glview.h"
+#include <Qt3D/QGLPainter>
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
-#include <Qt3D/QGLCube>
-#include <Qt3D/QGLMaterial>
-#include <QtCore/QFile>
 
-QVector3D Room::getEntryPos(int i) const
-{
-    return slotPos.at(i);
-}
-
-inline void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
-{
-    int index = node->palette()->addMaterial(mat);
-    node->setMaterialIndex(index);
-    node->setEffect(QGL::LitModulateTexture2D);
-    for (QGLSceneNode *child : node->allChildren()) {
-        child->setMaterialIndex(index);
-        child->setEffect(QGL::LitModulateTexture2D);
-    }
-}
-
-void Room::MeshInfo::draw(QGLPainter *painter, qreal animProg) const
-{
-    painter->modelViewMatrix().push();
-    int prevId = painter->objectPickId();
-
-    painter->modelViewMatrix() *= transform;
-    if (paintingOutline == -1 || id == paintingOutline)
-        painter->setObjectPickId(id);
-    mesh->draw(painter);
-
-    if (anim) anim->draw(painter, animProg);
-
-    painter->setObjectPickId(prevId);
-    painter->modelViewMatrix().pop();
-}
-
-void Room::AnimInfo::draw(QGLPainter *painter, qreal animProg) const
-{
-    if (animProg != 0.0) {
-        painter->modelViewMatrix().translate(center);
-        painter->modelViewMatrix().rotate(maxAngle * animProg, axis);
-        painter->modelViewMatrix().translate(-center);
-    }
-    mesh->draw(painter);
-}
-
-void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) {
-    for (const MeshInfo &obj : solid)
-        obj.draw(painter, animObj != -1 && obj.id == animObj ? animProg : 0.0);
-
-    floor->draw(painter);
-    // walkaround for material issue
-    painter->setStandardEffect(QGL::LitMaterial);
-    ceil->draw(painter);
-
-    for (int i = 0; i < entryNum; ++i)
-        if (i != pickedEntry) {
-            painter->modelViewMatrix().push();
-            int prevObjectId = painter->objectPickId();
-
-            painter->modelViewMatrix().translate(slotPos.at(i));
-            if (paintingOutline == -1 || i == paintingOutline)
-                painter->setObjectPickId(i);
-
-            fileModel_[frontPage[i]]->draw(painter);
-
-            if (frontPage[i] == 0)
-            //if (frontPage[i] == "dir")
-                dirAnim.draw(painter, i == animObj ? animProg : 0.0);
-
-            painter->modelViewMatrix().pop();
-            painter->setObjectPickId(prevObjectId);
-        }
-}
-
-void Room::paintBack(QGLPainter *painter, int stage) {
-    for (const MeshInfo &obj : solid)
-        obj.draw(painter);
-
-    if (stage == Entering1 || stage == Entering2) {
-        painter->modelViewMatrix().push();
-        painter->modelViewMatrix().translate(0, 0.001, 0);
-        floor->draw(painter);
-        painter->modelViewMatrix().pop();
-    } else {
-        floor->draw(painter);
-        // walkaround for material issue
-        painter->setStandardEffect(QGL::LitMaterial);
-        ceil->draw(painter);
-    }
-
-    if (stage != Leaving1 && stage != Leaving2)
-        for (int i = 0; i < backEntryNum; ++i) {
-            painter->modelViewMatrix().push();
-            int prevObjectId = painter->objectPickId();
-
-            painter->modelViewMatrix().translate(slotPos.at(i));
-            painter->setObjectPickId(-1);
-
-            fileModel_[backPage[i]]->draw(painter);
-
-            if (backPage[i] == 0)
-            //if (backPage[i] == "dir")
-                dirAnim.draw(painter);
-
-            painter->modelViewMatrix().pop();
-            painter->setObjectPickId(prevObjectId);
-        }
-}
-
-void Room::paintPickedEntry(QGLPainter *painter, const QVector3D &delta)
-{
-    painter->modelViewMatrix().push();
-    painter->modelViewMatrix().translate(delta);
-    painter->modelViewMatrix().translate(slotPos.at(pickedEntry));
-
-    fileModel_[frontPage[pickedEntry]]->draw(painter);
-    if (frontPage[pickedEntry] == 0)
-        dirAnim.draw(painter);
-
-    painter->modelViewMatrix().pop();
-}
-
-Room::Room(const QString &name, GLView *, void *) : slotNum(0)
+Room::Room(const QString &name)
 {
     setFloorAndCeil();
+
+    /* TODO: set default models */
+    entryModel.resize(typeList.size() + 2);
 
     QFile file(configDir + name + ".conf");
     file.open(QIODevice::ReadOnly);
@@ -150,30 +31,128 @@ Room::Room(const QString &name, GLView *, void *) : slotNum(0)
 
     file.close();
 
-    /* arrows */
+    /* Arrows, temporary solution */
     QGLAbstractScene *model;
 
     model = QGLAbstractScene::loadScene(dataDir + QString("leftarrow.obj"));
     model->mainNode()->setMaterial(palette["tmp2"]);
-
     QMatrix4x4 trans;
     trans.translate(-50, 90, -roomLength / 2);
     trans.scale(0.4);
-
     solid.append(MeshInfo{model->mainNode(), trans, LeftArrow, NULL});
 
     model = QGLAbstractScene::loadScene(dataDir + QString("rightarrow.obj"));
     model->mainNode()->setMaterial(palette["tmp2"]);
-
     trans.setToIdentity();
     trans.translate(50, 90, -roomLength / 2);
     trans.scale(0.4);
-
     solid.append(MeshInfo{model->mainNode(), trans, RightArrow, NULL});
 }
 
-void Room::loadModel(QTextStream &value)
+void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) const
 {
+    for (const MeshInfo &obj : solid)
+        obj.draw(painter, animObj != -1 && obj.id == animObj ? animProg : 0.0);
+
+    floor->draw(painter);
+    // walkaround for material issue
+    painter->setStandardEffect(QGL::LitMaterial);
+    ceil->draw(painter);
+
+    for (int i = 0; i < frontPage.size(); ++i)
+        if (i != pickedEntry)
+            paintMesh(painter,
+                    entryModel[frontPage[i]], slot[i], i,
+                    frontPage[i] == 0 ? &dirAnim : NULL,
+                    i == animObj ? animProg : 0.0);
+}
+
+void Room::paintBack(QGLPainter *painter, AnimStage stage) const
+{
+    for (const MeshInfo &obj : solid)
+        obj.draw(painter);
+
+    if (stage == Entering1 || stage == Entering2) {
+        /* Move floor a little bit upper to cover outside items */
+        painter->modelViewMatrix().push();
+        painter->modelViewMatrix().translate(0, 0.001, 0);
+        floor->draw(painter);
+        painter->modelViewMatrix().pop();
+    } else {
+        floor->draw(painter);
+        // walkaround for material issue
+        painter->setStandardEffect(QGL::LitMaterial);
+        ceil->draw(painter);
+    }
+
+    if (stage != Leaving1 && stage != Leaving2)
+        for (int i = 0; i < backPage.size(); ++i)
+            paintMesh(painter,
+                    entryModel[backPage[i]], slot[i], i,
+                    backPage[i] == 0 ? &dirAnim : NULL);
+}
+
+void Room::loadFront(Directory *dir)
+{
+    frontPage = dir->entryTypeList();
+}
+
+void Room::loadBack(Directory *dir)
+{
+    backPage = dir->entryTypeList();
+}
+
+void Room::paintPickedEntry(QGLPainter *painter, const QVector3D &delta) const
+{
+    QMatrix4x4 trans;
+    trans.translate(delta);
+    trans *= slot[pickedEntry];
+    paintMesh(painter,
+            entryModel[frontPage[pickedEntry]], trans, -1,
+            frontPage[pickedEntry] == 0 ? &dirAnim : NULL);
+}
+
+void Room::loadProperty(const QString &property, QTextStream &value)
+{
+    static QMatrix4x4 slotBase;
+
+    if (property == "model") {
+        loadModel(value);
+
+    } else if (property == "cdup") {
+        qreal x, y, z, angle;
+        value >> x >> y >> z >> angle;
+        outPos = QVector3D(x, y, z);
+        outAngle = angle;
+
+    } else if (property == "wall") {
+        loadWall(value);
+
+    } else if (property == "material") {
+        QString floorMat, ceilMat;
+        value >> floorMat >> ceilMat;
+        floor->setMaterial(palette[floorMat]);
+        ceil->setMaterial(palette[ceilMat]);
+
+    } else if (property == "entryModel") {
+        loadEntryModel(value);
+
+    } else if (property == "slotGroup") {
+        qreal x, y, z, angle, scale;
+        value >> x >> y >> z >> angle >> scale;
+        slotBase.setToIdentity();
+        slotBase.translate(x, y, z);
+        slotBase.rotate(angle, 0, 1, 0);
+    
+    } else if (property == "slot") {
+        qreal x, y, z;
+        value >> x >> y >> z;
+        slot.append(slotBase);
+        slot.back().translate(x, y, z);
+    }
+}
+
+void Room::loadModel(QTextStream &value) {
     QString name, anim;
     int type;
     qreal x, y, z, w, angle;
@@ -201,105 +180,38 @@ void Room::loadModel(QTextStream &value)
         value >> animInfo->maxAngle;
         solid.last().anim = animInfo;
     }
-
-    if (type == 1)
-        loadContainer("shelf", QVector3D(0, 0, -80));
 }
 
-void Room::loadProperty(const QString &property, QTextStream &value) {
-    if (property == "model") {
-        loadModel(value);
+void Room::loadEntryModel(QTextStream &value)
+{
+    QString fileType, modelName;
 
-    } else if (property == "cdup") {
-        qreal x, y, z, angle;
-        value >> x >> y >> z >> angle;
-        outPos = QVector3D(x, y, z);
-        outAngle = angle;
+    value >> fileType >> modelName;
+    if (fileType == "DIR") {
+        /* FIXME: scale it in .obj file! */
+        QMatrix4x4 trans;
+        trans.scale(1.3);
 
-    } else if (property == "wall") {
-        loadWall(value);
-
-    } else if (property == "material") {
-        QString floorMat, ceilMat;
-        value >> floorMat >> ceilMat;
-        //floor->mesh()->setMaterial(palette[floorMat]);
-        //ceil->mesh()->setMaterial(palette[ceilMat]);
-        floor->setMaterial(palette[floorMat]);
-        ceil->setMaterial(palette[ceilMat]);
-
-    } else if (property == "slot") { }
-}
-
-void Room::loadContainer(const QString &name, const QVector3D &basePos) {
-    QFile file(configDir + name + ".conf");
-    file.open(QIODevice::ReadOnly);
-    QTextStream stream(&file);
-
-    int n;
-    qreal x, y, z;
-    QString modelName;
-    QGLAbstractScene *scene;
-
-    stream >> modelName;
-
-    qreal scale;
-    stream >> scale;
-    QMatrix4x4 trans;
-    trans.scale(scale);
-
-    scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
-    scene->setParent(view);
-    dirSolidModel = scene->mainNode();
-    dirSolidModel->setLocalTransform(trans);
-
-    scene = QGLAbstractScene::loadScene(dataDir + modelName + "_anim.obj");
-    scene->setParent(view);
-    dirAnimModel = scene->mainNode();
-    dirAnimModel->setLocalTransform(trans);
-
-    fileModel_.append(dirSolidModel);
-
-    stream >> x >> y >> z; QVector3D animVector(x, y, z);
-    stream >> x >> y >> z; QVector3D animCenter(x, y, z);
-
-    dirAnim.mesh = dirAnimModel;
-    dirAnim.center = animCenter;
-    dirAnim.axis = animVector;
-    dirAnim.maxAngle = 90.0;
-
-    stream >> modelName;
-
-    stream >> scale;
-    trans.setToIdentity();
-    trans.scale(scale);
-
-    scene = QGLAbstractScene::loadScene(dataDir + modelName + ".obj");
-    qDebug() << dataDir + modelName + ".obj";
-    scene->setParent(view);
-    //fileModel.insert("default", scene->mainNode());
-
-    fileModel_.append(scene->mainNode());
-
-    for (const QString &type : typeList) {
-        scene = QGLAbstractScene::loadScene(dataDir + modelName + '_' + type + ".obj");
-        scene->setParent(view);
-        //fileModel.insert(type, scene->mainNode());
-
-        fileModel_.append(scene->mainNode());
-    }
-
-    //fileModel.insert("dir", dirSolidModel);
-
-    stream >> n;
-    slotNum += n;
-
-    for (int i = 0; i < n; ++i) {
+        entryModel[0] = models[modelName];
+        models[modelName]->setLocalTransform(trans);
+        value >> modelName;
+        dirAnim.mesh = models[modelName];
+        models[modelName]->setLocalTransform(trans);
         qreal x, y, z;
-        stream >> x >> y >> z;
-        slotPos.append(QVector3D(x, y, z) + basePos);
-    }
+        value >> x >> y >> z;
+        dirAnim.center = QVector3D(x, y, z);
+        value >> x >> y >> z;
+        dirAnim.axis = QVector3D(x, y, z);
+        value >> dirAnim.maxAngle;
 
-    file.close();
+    } else if (fileType == "DEFAULT") {
+        entryModel[1] = models[modelName];
+
+    } else {
+        int idx = typeList.indexOf(fileType);
+        Q_ASSERT(idx != -1);
+        entryModel[idx + 2] = models[modelName];
+    }
 }
 
 /* FIXME: material is broken */
@@ -362,7 +274,6 @@ void Room::setFloorAndCeil() {
     QGLSceneNode *floorNode = floorBuilder.finalizedSceneNode();
     floorNode->setEffect(QGL::LitModulateTexture2D);
 
-    //floor = new MeshObject(floorNode, view, -1);
     floor = floorNode;
 
     QMatrix4x4 ceilTrans;
@@ -374,26 +285,40 @@ void Room::setFloorAndCeil() {
     ceilBuilder.currentNode()->setLocalTransform(ceilTrans);
     QGLSceneNode *ceilNode = ceilBuilder.finalizedSceneNode();
 
-    //ceil = new MeshObject(ceilNode, view, -1);
     ceil = ceilNode;
 }
 
-void Room::loadDir(Directory *, bool back) {
-    if (back) {
-        backEntryNum = dir->count();
-        backPage = dir->entryTypeList();
-    } else {
-        entryNum = dir->count();
-        frontPage = dir->entryTypeList();
-    }
-}
-
-void Room::pushToFront() {
-    entryNum = backEntryNum;
-    frontPage = backPage;
-}
-
-void Room::clearBack()
+void Room::AnimInfo::draw(QGLPainter *painter, qreal animProg) const
 {
-    backPage.clear();
+    if (animProg != 0.0) {
+        painter->modelViewMatrix().translate(center);
+        painter->modelViewMatrix().rotate(maxAngle * animProg, axis);
+        painter->modelViewMatrix().translate(-center);
+    }
+    mesh->draw(painter);
+}
+
+void Room::MeshInfo::draw(QGLPainter *painter, qreal animProg) const
+{
+    paintMesh(painter, mesh, transform, id, anim, animProg);
+}
+
+void Room::paintMesh(QGLPainter *painter,
+        QGLSceneNode *mesh, const QMatrix4x4 &trans, int id,
+        const AnimInfo *anim, qreal animProg)
+{
+    painter->modelViewMatrix().push();
+    painter->modelViewMatrix() *= trans;
+
+    int prevObjectId = painter->objectPickId();
+    if (paintingOutline == -1 || id == paintingOutline)
+        painter->setObjectPickId(id);
+
+    mesh->draw(painter);
+
+    if (anim)
+        anim->draw(painter, animProg);
+
+    painter->modelViewMatrix().pop();
+    painter->setObjectPickId(prevObjectId);
 }

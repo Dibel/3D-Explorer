@@ -85,7 +85,7 @@ void loadProperty(const QString &property, QTextStream &value) {
 
     } else if (property == "room") {
         QString name; value >> name;
-        rooms.insert(name, new Room(name, 0, 0));
+        rooms.insert(name, new Room(name));
 
     } else if (property == "model") {
         QString name, mat;

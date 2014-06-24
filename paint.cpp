@@ -69,7 +69,8 @@ void View::paintGL(QGLPainter *painter) {
 
         painter->modelViewMatrix().push();
         if (enteringDir != -1) {
-            painter->modelViewMatrix().translate(curRoom->getEntryPos(enteringDir));
+            painter->modelViewMatrix() *= curRoom->getEntryMat(enteringDir);
+            //painter->modelViewMatrix().translate(curRoom->getEntryPos(enteringDir));
             painter->modelViewMatrix().scale(boxScale * 0.999);
         } else {
             painter->modelViewMatrix().rotate(QQuaternion::fromAxisAndAngle(0, 1, 0, curRoom->getDoorAngle() - curRoom->getOutAngle()));
@@ -149,7 +150,8 @@ private:
 
 void View::paintOutline(int obj) {
     if (obj >= 0 && obj < dir->count()) {
-        QVector3D pos = mvp * curRoom->getEntryPos(obj);
+        QVector3D pos = mvp * (curRoom->getEntryMat(obj) * QVector3D(0, 0, 0));
+        //QVector3D pos = mvp * curRoom->getEntryPos(obj);
         paintHud(pos.x(), pos.y(), dir->entry(obj));
     }
 

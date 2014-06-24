@@ -1,51 +1,52 @@
 #ifndef ROOM_H
 #define ROOM_H
 
-#include <QtCore/QHash>
-#include <QtCore/QString>
-#include <QtCore/QVector>
-#include <QtGui/QVector3D>
 #include <QtGui/QMatrix4x4>
 
-class QGLAbstractScene;
-class QGLMaterial;
 class QGLPainter;
 class QGLSceneNode;
-class GLView;
 class QTextStream;
 class Directory;
+enum AnimStage : int;
 
 class Room {
 public:
-    Room(const QString &name, GLView *view, void *config);
+    Room(const QString &name);
 
-    void setDir(Directory *dir_) { dir = dir_; }
+    void paintFront(QGLPainter *painter, int animObj, qreal animProg) const;
+    void paintBack(QGLPainter *painter, AnimStage stage) const;
 
-    void paintFront(QGLPainter *painter, int animObj, qreal animProg);
-    void paintBack(QGLPainter *painter, int stage);
-    void paintPickedEntry(QGLPainter *painter, const QVector3D &deltaPos);
+    void loadFront(Directory *dir);
+    void loadBack(Directory *dir);
 
-    void loadDir(Directory *dir, bool back = false);
-    void pushToFront();
-    void clearBack();
+    inline void switchBackAndFront() { frontPage.swap(backPage); }
+    inline void clearBack() { backPage.clear(); }
 
-    inline int getSlotNum() const { return slotNum; }
+    void paintPickedEntry(QGLPainter *painter, const QVector3D &deltaPos) const;
+    inline void pickEntry(int index) { pickedEntry = index; }
+
+    inline int countSlot() const { return slot.size(); }
+
     inline QVector3D getOutPos() const { return outPos; }
     inline qreal getOutAngle() const { return outAngle; }
+
     inline QVector3D getDoorPos() const { return doorPos; }
     inline qreal getDoorAngle() const { return doorAngle; }
 
-    QVector3D getEntryPos(int i) const;
-
-    inline void pickEntry(int index) { pickedEntry = index; }
+    inline QMatrix4x4 getEntryMat(int idx) const { return slot.at(idx); }
 
 private:
     void loadProperty(const QString &property, QTextStream &value);
 
-    void setFloorAndCeil();
+    QVector<int> frontPage, backPage;
+    int pickedEntry = -1;
+
+    QVector3D outPos, doorPos;
+    qreal outAngle, doorAngle;
+
     void loadModel(QTextStream &value);
+    void loadEntryModel(QTextStream &value);
     void loadWall(QTextStream &value);
-    void loadContainer(const QString &name, const QVector3D &basePos);
 
     struct AnimInfo {
         QGLSceneNode *mesh; QVector3D center, axis; qreal maxAngle;
@@ -58,28 +59,17 @@ private:
     };
 
     QVector<MeshInfo> solid;
+    QVector<QMatrix4x4> slot;
 
-    QVector<QVector3D> slotPos;
-    QVector<int> frontPage, backPage;
-
+    void setFloorAndCeil();
     QGLSceneNode *floor, *ceil;
 
-    QGLSceneNode *dirSolidModel;
-    QGLSceneNode *dirAnimModel;
+    QVector<QGLSceneNode*> entryModel;
     AnimInfo dirAnim;
-    //QHash<QString, QGLSceneNode*> fileModel;
-    QVector<QGLSceneNode*> fileModel_;
 
-    int slotNum = 0;
-    int entryNum;
-    int backEntryNum;
-
-    int pickedEntry = -1;
-
-    QVector3D outPos, doorPos;
-    qreal outAngle, doorAngle;
-
-    Directory *dir;
+    static void paintMesh(QGLPainter *painter,
+            QGLSceneNode *mesh, const QMatrix4x4 &trans, int id,
+            const AnimInfo *anim = NULL, qreal animProg = 0.0);
 };
 
 #endif

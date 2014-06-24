@@ -1,6 +1,5 @@
 #include "directory.h"
 #include "common.h"
-#include <QtCore/QDebug>
 #include <QtWidgets/QMessageBox>
 
 Directory::Directory() : QDir()
@@ -8,6 +7,7 @@ Directory::Directory() : QDir()
 #ifdef Q_OS_WIN
     isThisPC = false;
 #endif
+    setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
     setSorting(QDir::IgnoreCase);
 }
 

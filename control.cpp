@@ -71,7 +71,8 @@ void View::mousePressEvent(QMouseEvent *event) {
     if (obj >= 0 && obj < dir->count()) {
         pickedObject = obj;
         curRoom->pickEntry(obj);
-        pickedPos = curRoom->getEntryPos(pickedObject);
+        pickedPos = curRoom->getEntryMat(pickedObject) * QVector3D(0, 0, 0);
+        //pickedPos = curRoom->getEntryPos(pickedObject);
         pickedDepth = (mvp * pickedPos).z();
         pickedModelPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
         isNear = true;

@@ -19,8 +19,8 @@ void View::load()
     curRoom = rooms["room1"];
     dir = new Directory;
 
-    dir->setPageSize(curRoom->getSlotNum());
-    curRoom->setDir(dir);
+    dir->setPageSize(curRoom->countSlot());
+    //curRoom->setDir(dir);
 
     defaultCenter = QVector3D(0, eyeHeight, -roomLength / 2);
     defaultEye = QVector3D(0, eyeHeight, 0);
@@ -61,12 +61,15 @@ void View::setupObjects()
 }
 
 void View::loadDir(bool back) {
-    if (back)
+    if (back) {
         backPicture->setImage(dir->getImage());
-    else
+        curRoom->loadBack(dir);
+    } else {
         picture->setImage(dir->getImage());
+        curRoom->loadFront(dir);
+    }
 
-    curRoom->loadDir(dir, back);
+    //curRoom->loadDir(dir, back);
 
     paintHud();
     update();

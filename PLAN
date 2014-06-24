@@ -1,6 +1,5 @@
 ## 重构
 * 合并图片和相框, 统一用 id 识别, 放弃 PickObject
-* 优化 Directory
 * 把动画和其他逻辑理清楚
 * 重写高亮, 直接用 GLView 的 buffer, 高斯模糊 alpha 通道
 * 清理全局变量, View/Room/Directory 之间的关系
