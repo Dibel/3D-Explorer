@@ -11,11 +11,13 @@ class QTextStream;
 class GLView;
 class Room;
 
-//const char configDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\config\\";
-//const char dataDir[] = "E:\\Program\\3D-Explorer\\3D-Explorer\\data\\";
-
+#ifdef Q_OS_WIN
+const char configDir[] = "./config/";
+const char dataDir[] = "./data/";
+#else
 const char configDir[] = "config/";
 const char dataDir[] = "data/";
+#endif
 
 const int defaultWindowWidth = 800;
 const int defaultWindowHeight = 600;

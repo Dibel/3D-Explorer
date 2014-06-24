@@ -117,6 +117,7 @@ void Directory::update()
 
 #ifdef Q_OS_WIN
     if (isThisPC) {
+        entryList.clear();
         for (auto drive : QDir::drives())
             entryList << drive.filePath();
         imageList.clear();
