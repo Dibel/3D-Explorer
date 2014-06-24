@@ -31,6 +31,7 @@ SOURCES += \
     animation.cpp \
     lib/glview.cpp \
     lib/qgldrawbuffersurface.cpp \
-    lib/qglmaskedsurface.cpp
+    lib/qglmaskedsurface.cpp \
+    config.cpp
 
 QMAKE_CXXFLAGS += -std=gnu++0x
