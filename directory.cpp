@@ -3,113 +3,100 @@
 #include <QtCore/QDebug>
 #include <QtWidgets/QMessageBox>
 
-Directory::Directory() : QDir(), pageIndex(0) {
+Directory::Directory() : QDir()
+{
 #ifdef Q_OS_WIN
     isThisPC = false;
 #endif
-    setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
-    setSorting(QDir::DirsFirst | QDir::IgnoreCase | QDir::Type);
+    setSorting(QDir::IgnoreCase);
 }
 
-void Directory::setPageSize(int size) {
+void Directory::setPageSize(int size)
+{
     pageSize = size;
     update();
 }
 
 #ifdef Q_OS_WIN
-QString Directory::absolutePath() const{
+QString Directory::absolutePath() const
+{
     return isThisPC ? "This PC" : QDir::absolutePath();
 }
 #endif
 
-bool Directory::cd(const QString &dirName) {
+bool Directory::cd(int index)
+{
 #ifdef Q_OS_WIN
     if (isThisPC) {
-        setPath(dirName);
+        setPath(entryList.at(offset + index));
         if (exists()) isThisPC = false;
         update();
         return !isThisPC;
     }
 #endif
-    bool success = QDir::cd(dirName);
+
+    bool success = QDir::cd(entryList.at(offset + index));
     if (success) update();
     return success;
 }
 
-bool Directory::cd(int index)
+bool Directory::cdUp()
 {
-    return cd(page.at(index));
-}
-
-bool Directory::cdUp() {
 #ifdef Q_OS_WIN
     if (isThisPC) return false;
     if (isRoot()) { isThisPC = true; update(); return true; }
 #endif
+
     bool success = QDir::cdUp();
     if (success) update();
     return success;
 }
 
-int Directory::count() const {
-#ifdef Q_OS_WIN
-    if (isThisPC) return QDir::drives().size();
-#endif
-    return page.size();
-}
-
-int Directory::countDir() const {
-    int cnt = QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot).size();
-    cnt -= pageSize * pageIndex;
-    return cnt < 0 ? 0 : cnt;
-}
-
-QStringList Directory::entryList() const { return page; }
-
-QString Directory::entry(int index) const { return page[index]; }
-
-void Directory::refresh() {
-    int pageIndexBackup = pageIndex;
+void Directory::refresh()
+{
+    int tmp = offset;
     QDir::refresh();
     update();
-    pageIndex = pageIndexBackup;
-    while (pageIndex * pageSize >= (int)QDir::count())
-        --pageIndex;
-    if (pageIndex < 0) pageIndex = 0;
+    offset = tmp;
+    while (offset >= (int)QDir::count())
+        offset -= pageSize;
+    if (offset < 0) offset = 0;
 }
 
-bool Directory::remove(int index) {
+bool Directory::remove(int index)
+{
 #ifdef Q_OS_WIN
     if (isThisPC) return false;
 #endif
-    //qDebug() << "try to remove file";
-    //return false;
 
-    if (QMessageBox::question(NULL, "Confirm", "Delete it?", QMessageBox::Yes|QMessageBox::No, QMessageBox::No) != QMessageBox::Yes)
+    if (QMessageBox::question(NULL, "Confirm", "Delete it?",
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No)
+            != QMessageBox::Yes)
         return false;
-    if (index < countDir() ? QDir(absoluteFilePath(page[index])).removeRecursively() : QDir::remove(page[index])) {
+
+    const QString &fileName = entryList.at(offset + index);
+    if (offset + index < dirCnt
+            ? QDir(absoluteFilePath(fileName)).removeRecursively()
+            : QDir::remove(fileName))
+    {
         refresh();
         return true;
     }
+
     return false;
 }
 
-void Directory::nextPage() {
-#ifdef Q_OS_WIN
-    if (isThisPC) return;
-#endif
-    if (++pageIndex * pageSize >= (int)QDir::count()) --pageIndex;
-    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
-    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+void Directory::nextPage()
+{
+    offset += pageSize;
+    if (offset >= (int)QDir::count())
+        offset -= pageSize;
 }
 
-void Directory::prevPage() {
-#ifdef Q_OS_WIN
-    if (isThisPC) return;
-#endif
-    if (pageIndex > 0) --pageIndex;
-    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
-    //page = QDir::entryList().mid(pageIndex * pageSize, pageSize);
+void Directory::prevPage()
+{
+    if (offset > 0)
+        offset -= pageSize;
 }
 
 QString Directory::getImage() {
@@ -124,27 +111,44 @@ QString Directory::getNextImage() {
     return absoluteFilePath(imageList[imageIndex]);
 }
 
-void Directory::update() {
-    pageIndex = 0;
+void Directory::update()
+{
+    offset = 0;
+
 #ifdef Q_OS_WIN
     if (isThisPC) {
-        page.clear();
-        for (auto drive : QDir::drives()) page << drive.filePath();
-        /* warning: assume drives are less than slots */
+        for (auto drive : QDir::drives())
+            entryList << drive.filePath();
         imageList.clear();
         imageIndex = 0;
         return;
     }
 #endif
 
-    fullEntryList.clear();
-    fullEntryList << QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot, QDir::IgnoreCase);
-    for (const QStringList &filter : typeFilters)
-        fullEntryList << QDir::entryList(filter, QDir::Files, QDir::IgnoreCase);
-    fullEntryList << QDir::entryList(QDir::Files, QDir::IgnoreCase);
-    fullEntryList.removeDuplicates();
+    entryList.clear();
+    typeList.resize(QDir::count());
 
-    page = fullEntryList.mid(pageIndex * pageSize, pageSize);
+    entryList << QDir::entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    dirCnt = entryList.size();
+    for (int i = 0; i < dirCnt; ++i)
+        typeList[i] = 0;
+
+    int begin = dirCnt;
+    int end;
+
+    for (int i = 0; i < typeFilters.size(); ++i) {
+        entryList << QDir::entryList(typeFilters.at(i), QDir::Files);
+
+        end = entryList.size();
+        for (int j = begin; j < end; ++j)
+            typeList[j] = i + 2;
+        begin = end;
+    }
+
+    entryList << QDir::entryList(QDir::Files);
+    entryList.removeDuplicates();
+    for (int i = begin; i < entryList.size(); ++i)
+        typeList[i] = 1;
 
     imageList = QDir::entryList(typeFilters[0], QDir::Files);
     imageIndex = 0;

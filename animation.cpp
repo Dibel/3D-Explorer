@@ -1,7 +1,6 @@
 #include "view.h"
 #include "common.h"
 #include "imageobject.h"
-#include "meshobject.h"
 #include "room.h"
 #include <QtCore/QVariantAnimation>
 

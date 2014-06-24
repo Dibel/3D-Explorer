@@ -7,7 +7,6 @@
 //class Config;
 class Directory;
 class ImageObject;
-class MeshObject;
 class PickObject;
 class Room;
 class Surface;

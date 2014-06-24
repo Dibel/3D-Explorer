@@ -13,13 +13,13 @@ class QGLPainter;
 class QGLSceneNode;
 class GLView;
 class QTextStream;
-//class Config;
-class MeshObject;
 class Directory;
 
 class Room {
 public:
     Room(const QString &name, GLView *view, void *config);
+
+    void setDir(Directory *dir_) { dir = dir_; }
 
     void paintFront(QGLPainter *painter, int animObj, qreal animProg);
     void paintBack(QGLPainter *painter, int stage);
@@ -47,21 +47,28 @@ private:
     void loadWall(QTextStream &value);
     void loadContainer(const QString &name, const QVector3D &basePos);
 
-    struct AnimInfo { QGLSceneNode *mesh; QVector3D center, axis; qreal maxAngle; };
+    struct AnimInfo {
+        QGLSceneNode *mesh; QVector3D center, axis; qreal maxAngle;
+        void draw(QGLPainter *painter, qreal animProg = 0.0) const;
+    };
+
     struct MeshInfo {
         QGLSceneNode *mesh; QMatrix4x4 transform; int id; AnimInfo *anim;
         void draw(QGLPainter *painter, qreal animProg = 0.0) const;
     };
+
     QVector<MeshInfo> solid;
 
-    QVector<MeshObject*> entry;
-    QVector<MeshObject*> backEntry;
-    MeshObject *floor;
-    MeshObject *ceil;
+    QVector<QVector3D> slotPos;
+    QVector<int> frontPage, backPage;
+
+    QGLSceneNode *floor, *ceil;
 
     QGLSceneNode *dirSolidModel;
     QGLSceneNode *dirAnimModel;
-    QHash<QString, QGLSceneNode*> fileModel;
+    AnimInfo dirAnim;
+    //QHash<QString, QGLSceneNode*> fileModel;
+    QVector<QGLSceneNode*> fileModel_;
 
     int slotNum = 0;
     int entryNum;
@@ -72,8 +79,7 @@ private:
     QVector3D outPos, doorPos;
     qreal outAngle, doorAngle;
 
-    //QGLView *view;
-    //Config *config;
+    Directory *dir;
 };
 
 #endif
