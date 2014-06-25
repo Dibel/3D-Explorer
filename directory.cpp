@@ -145,7 +145,12 @@ QString Directory::playPrev(const QString &typeName)
 
 QString Directory::getPlayingFile(const QString &type)
 {
-    return absoluteFilePath(playingFiles.at(::typeList.indexOf(type)));
+    int index = playingFiles.at(::typeList.indexOf(type));
+    if (index >= 0) {
+        return absoluteFilePath(index);
+    } else {
+        return NULL;
+    }
 }
 
 void Directory::update()
