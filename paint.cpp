@@ -1,6 +1,7 @@
 #include "view.h"
 #include "imageobject.h"
 #include "imageviewer.h"
+#include "outlinepainter.h"
 #include "directory.h"
 #include "common.h"
 #include "room.h"
@@ -12,6 +13,10 @@ static QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 
 
 void View::paintGL(QGLPainter *painter) {
+    //qDebug() << "painting" << (painter->isPicking() ? "picking" : "normal");
+    if (hoveringObject != -1 && !painter->isPicking())
+        paintingOutline = hoveringObject;
+
     Q_ASSERT(picture != NULL);
     Q_ASSERT(hudObject != NULL);
     
@@ -98,8 +103,16 @@ void View::paintGL(QGLPainter *painter) {
         curRoom->paintPickedEntry(painter, deltaPos);
     }
 
-    if (hoveringObject != -1)
-        outline->draw(painter);
+
+    if (hoveringObject != -1 && !painter->isPicking()) {
+        if (hoveringObject < dir->count()) {
+            QVector3D pos = mvp * (curRoom->getEntryMat(hoveringObject) * QVector3D(0, 0, 0));
+            paintHud(pos.x(), pos.y(), dir->entry(hoveringObject));
+        }
+
+        paintOutline(painter, hoveringObject);
+        outline->draw(painter, fbo->texture());
+    }
     glClear(GL_DEPTH_BUFFER_BIT);
     if (!(enteringDir != -1 || leavingDoor != -1)) hudObject->draw(painter);
 }
@@ -129,58 +142,57 @@ void View::paintHud(qreal x, qreal y, QString text) {
     //        painter.drawText(rect, Qt::AlignHCenter | Qt::TextWrapAnywhere,
     //                curRoom->entry[i]->objectName());
     //    }
-    
+
     hudObject->setImage(image);
 }
 
 class Surface : public QGLAbstractSurface {
-public:
-    Surface(GLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
-        QGLAbstractSurface(504), m_view(view), m_fbo(fbo),
-        m_viewportGL(QPoint(0, 0), areaSize) { }
+    public:
+        Surface(GLView *view, QOpenGLFramebufferObject *fbo, const QSize &areaSize) :
+            QGLAbstractSurface(504), m_view(view), m_fbo(fbo),
+            m_viewportGL(QPoint(0, 0), areaSize) { }
 
-    QPaintDevice *device() const;
-    bool activate(QGLAbstractSurface *) { if (m_fbo) m_fbo->bind(); return true; }
-    void deactivate(QGLAbstractSurface *) { if (m_fbo) m_fbo->release(); }
-    QRect viewportGL() const { return m_viewportGL; }
-private:
-    GLView *m_view;
-    QOpenGLFramebufferObject *m_fbo;
-    QRect m_viewportGL;
+        QPaintDevice *device() const;
+        bool activate(QGLAbstractSurface *) { if (m_fbo) m_fbo->bind(); return true; }
+        void deactivate(QGLAbstractSurface *) { if (m_fbo) m_fbo->release(); }
+        QRect viewportGL() const { return m_viewportGL; }
+    private:
+        GLView *m_view;
+        QOpenGLFramebufferObject *m_fbo;
+        QRect m_viewportGL;
 };
 
-void View::paintOutline(int obj) {
-    if (obj >= 0 && obj < dir->count()) {
-        QVector3D pos = mvp * (curRoom->getEntryMat(obj) * QVector3D(0, 0, 0));
-        //QVector3D pos = mvp * curRoom->getEntryPos(obj);
-        paintHud(pos.x(), pos.y(), dir->entry(obj));
-    }
-
+void View::paintOutline(QGLPainter *painter, int obj) {
     if (!fbo)
         fbo = new QOpenGLFramebufferObject(size(), QOpenGLFramebufferObject::CombinedDepthStencil);
     if (!surface)
         surface = new Surface(this, fbo, size());
-    QGLPainter painter(this);
-    painter.pushSurface(surface);
-    painter.setPicking(true);
-    painter.clearPickObjects();
+    //QGLPainter painter(this);
+    painter->pushSurface(surface);
+    painter->setPicking(true);
+    painter->clearPickObjects();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    painter.setEye(QGL::NoEye);
-    painter.setCamera(camera());
+    painter->setEye(QGL::NoEye);
+    painter->setCamera(camera());
 
     paintingOutline = hoveringObject;
     PickObject::paintOutline(hoveringObject);
 
-    paintGL(&painter);
+    curRoom->paintFront(painter);
+    picture->draw(painter, hoveringObject >= Image && pickedObject == -1);
+
+    //paintGL(painter);
+
+    fbo->toImage().save("debug.png");
 
     PickObject::paintOutline(-1);
     paintingOutline = -1;
 
-    painter.setPicking(false);
-    painter.popSurface();
+    painter->setPicking(false);
+    painter->popSurface();
 
     /* FIXME: use texture id */
-    outline->setImage(fbo->toImage());
+    //outline->setImage(fbo->toImage());
 }
 
 void View::setupLight()

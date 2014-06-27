@@ -149,7 +149,7 @@ QString Directory::getPlayingFile(const QString &type)
     if (index >= 0) {
         return absoluteFilePath(index);
     } else {
-        return NULL;
+        return QString();
     }
 }
 

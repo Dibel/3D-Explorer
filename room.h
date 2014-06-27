@@ -13,7 +13,7 @@ class Room {
 public:
     Room(const QString &name);
 
-    void paintFront(QGLPainter *painter, int animObj, qreal animProg) const;
+    void paintFront(QGLPainter *painter, int animObj = -1, qreal animProg = 0.0) const;
     void paintBack(QGLPainter *painter, AnimStage stage) const;
 
     void loadFront(Directory *dir);

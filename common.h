@@ -2,6 +2,7 @@
 #define COMMON_H
 
 #include <QtCore/QSet>
+#include <QtGui/QColor>
 #include <QtGui/QVector3D>
 #include <QtGui/QQuaternion>
 
@@ -46,6 +47,7 @@ extern GLView *view;
 static const int id[4] = { -1, -1, TrashBin, Door };
 
 extern int paintingOutline;
+extern QColor hoveringPickColor;
 
 inline QVector3D rotateCcw(QVector3D vec, qreal angle) {
     return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);

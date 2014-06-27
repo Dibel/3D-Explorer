@@ -1366,38 +1366,7 @@ int GLView::objectIdForPoint(const QPoint &point)
 
     // What is the size of the drawing area after correcting for stereo?
     // Also adjust the mouse position to always be in the left half.
-    QSize areaSize = size();
-    switch (d->stereoType) {
-    case GLView::LeftRight:
-    case GLView::RightLeft:
-        areaSize = QSize(areaSize.width() / 2, areaSize.height());
-        if (pt.x() >= areaSize.width())
-            pt.setX(pt.x() - areaSize.width());
-        break;
-    case GLView::TopBottom:
-    case GLView::BottomTop:
-        areaSize = QSize(areaSize.width(), areaSize.height() / 2);
-        if (pt.y() >= areaSize.height())
-            pt.setY(pt.y() - areaSize.height());
-        break;
-    case GLView::StretchedLeftRight:
-    case GLView::StretchedRightLeft: {
-        int halfwid = areaSize.width() / 2;
-        if (pt.x() >= halfwid)
-            pt.setX((pt.x() - halfwid) * 2);
-        else
-            pt.setX(pt.x() * 2);
-        break; }
-    case GLView::StretchedTopBottom:
-    case GLView::StretchedBottomTop: {
-        int halfht = areaSize.height() / 2;
-        if (pt.y() >= halfht)
-            pt.setY((pt.y() - halfht) * 2);
-        else
-            pt.setY(pt.y() * 2);
-        break; }
-    default: break;
-    }
+    const QSize areaSize = size();
 
     // Check the area boundaries in case a mouse move has
     // moved the pointer outside the window.

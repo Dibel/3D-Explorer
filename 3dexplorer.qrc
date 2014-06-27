@@ -4,8 +4,9 @@
         <file>shader/box.vsh</file>
         <file>shader/phong.fsh</file>
         <file>shader/phong.vsh</file>
-        <file>shader/outline.fsh</file>
-        <file>shader/outline.vsh</file>
+        <file>shader/ortho.vsh</file>
+        <file>shader/hblur.fsh</file>
+        <file>shader/vblur.fsh</file>
         <file>data/default.png</file>
     </qresource>
 </RCC>

@@ -58,8 +58,8 @@ void ImageViewer::draw(QGLPainter *painter, bool drawBtn)
     painter->modelViewMatrix() *= trans;
 
     int prevPickId = painter->objectPickId();
-    if (paintingOutline == -1 || paintingOutline == Image)
-        painter->setObjectPickId(Image);
+    //if (paintingOutline == -1 || paintingOutline == Image)
+    painter->setObjectPickId(Image);
 
     body->draw(painter);
 

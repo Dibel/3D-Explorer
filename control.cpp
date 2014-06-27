@@ -158,7 +158,7 @@ void View::hoverEnter(int obj) {
     if (obj == -1) return;
     hoveringObject = obj;
     //if (obj->pickType() != MeshObject::Normal) return;
-    paintOutline(obj);
+    //paintOutline(obj);
     update();
 }
 

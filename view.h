@@ -11,6 +11,7 @@ class PickObject;
 class ImageViewer;
 class Room;
 class Surface;
+class OutlinePainter;
 
 enum AnimStage : int;
 
@@ -82,14 +83,14 @@ private:
     void hoverLeave();
 
     void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
-    void paintOutline(int obj);
+    void paintOutline(QGLPainter *painter, int obj);
 
     int hoveringObject;
 
     /* show file name and path info on HUD */
     ImageObject *hudObject;
     /* outline hovering object */
-    ImageObject *outline;
+    OutlinePainter *outline;
 
     /* buffer for painting outline */
     QOpenGLFramebufferObject *fbo;

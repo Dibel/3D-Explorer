@@ -8,6 +8,7 @@ RESOURCES += \
 
 HEADERS += \
     view.h \
+    outlinepainter.h \
     imageobject.h \
     imageviewer.h \
     directory.h \
@@ -21,6 +22,7 @@ HEADERS += \
 SOURCES += \
     main.cpp \
     view.cpp \
+    outlinepainter.cpp \
     imageobject.cpp \
     imageviewer.cpp \
     directory.cpp \

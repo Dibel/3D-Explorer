@@ -5,6 +5,9 @@
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
 
+#include <QtGui/QOpenGLFramebufferObject>
+#include <Qt3D/QGLFramebufferObjectSurface>
+
 Room::Room(const QString &name)
 {
     setFloorAndCeil();
@@ -51,8 +54,10 @@ Room::Room(const QString &name)
 
 void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) const
 {
-    for (const MeshInfo &obj : solid)
+    for (const MeshInfo &obj : solid) {
+        painter->setColor(QColor(Qt::white));
         obj.draw(painter, animObj != -1 && obj.id == animObj ? animProg : 0.0);
+    }
 
     floor->draw(painter);
     // walkaround for material issue
@@ -318,10 +323,23 @@ void Room::paintMesh(QGLPainter *painter,
     painter->modelViewMatrix() *= trans;
 
     int prevObjectId = painter->objectPickId();
-    if (paintingOutline == -1 || id == paintingOutline)
+    //if (paintingOutline == -1 || id == paintingOutline)
         painter->setObjectPickId(id);
 
-    mesh->draw(painter);
+    if (painter->isPicking() && paintingOutline != -1 && paintingOutline == id)
+        hoveringPickColor = painter->pickColor();
+
+    //if (!painter->isPicking() && paintingOutline != -1 && id == paintingOutline) {
+    //    static QOpenGLFramebufferObject *fbo = new QOpenGLFramebufferObject(800, 600, QOpenGLFramebufferObject::CombinedDepthStencil);
+    //    static QGLFramebufferObjectSurface *surface = new QGLFramebufferObjectSurface(fbo);
+    //    painter->pushSurface(surface);
+    //    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //    mesh->draw(painter);
+    //    fbo->toImage().save("fbo.png");
+    //    painter->popSurface();
+    //    qDebug() << "fbo saved";
+    //} else
+        mesh->draw(painter);
 
     if (anim)
         anim->draw(painter, animProg);

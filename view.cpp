@@ -2,6 +2,7 @@
 #include "common.h"
 #include "directory.h"
 #include "imageobject.h"
+#include "outlinepainter.h"
 #include "imageviewer.h"
 #include "room.h"
 
@@ -58,7 +59,7 @@ void View::setupObjects()
     hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
 
     /* outline */
-    outline = new ImageObject(2, 2, this, ImageObject::Outline);
+    outline = new OutlinePainter;
 }
 
 void View::loadDir(bool back) {
@@ -82,6 +83,7 @@ void View::debugFunc() {
 }
 
 void View::initializeGL(QGLPainter *painter) {
+    qDebug() << "initializeGL:" << painter;
     lightId = painter->addLight(light);
 }
 

@@ -9,6 +9,7 @@
 #include <QtCore/QDebug>
 
 int paintingOutline = -1;
+QColor hoveringPickColor;
 
 GLView *view;
 
