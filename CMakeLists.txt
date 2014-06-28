@@ -4,17 +4,15 @@ set(PROJECTNAME 3dexplorer)
 
 set(SOURCE
     main.cpp
-    pickobject.cpp
-    imageobject.cpp
-    outlinepainter.cpp
-    imageviewer.cpp
-    room.cpp
+    config.cpp
+    directory.cpp
     view.cpp
     paint.cpp
     control.cpp
-    directory.cpp
     animation.cpp
-    config.cpp
+    room.cpp
+    imageviewer.cpp
+    outlinepainter.cpp
     lib/glview.cpp
     lib/qgldrawbuffersurface.cpp
     lib/qglmaskedsurface.cpp
@@ -22,13 +20,11 @@ set(SOURCE
 
 set(HEADER
     common.h
-    pickobject.h
-    imageobject.h
-    outlinepainter.h
-    imageviewer.h
-    room.h
-    view.h
     directory.h
+    view.h
+    room.h
+    imageviewer.h
+    outlinepainter.h
     lib/glview.h
     lib/qgldrawbuffersurface_p.h
     lib/qglmaskedsurface_p.h

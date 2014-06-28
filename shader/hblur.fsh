@@ -31,5 +31,5 @@ void main()
     b = b || isTarget(tc.s + 0.009, tc.t); if (b) y += 0.1081081082;
     b = b || isTarget(tc.s + 0.012, tc.t); if (b) y += 0.0324324324;
 
-    gl_FragColor = vec4(1.0, 1.0, 1.0, x > y ? x : y);
+    gl_FragColor = vec4(0.0, 1.0, 1.0, x > y ? x : y);
 }

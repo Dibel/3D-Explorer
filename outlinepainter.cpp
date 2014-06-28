@@ -35,7 +35,7 @@ void OutlinePainter::draw(QGLPainter *painter, int tex)
         surface = new QGLFramebufferObjectSurface(fbo);
     }
 
-    if (painter->isPicking() && paintingOutline == -1) return;
+    if (painter->isPicking() && hoveringId == -1) return;
 
     /* Pass 1: detect target and horizontal blur, from picking buffer to fbo */
 

@@ -1,9 +1,17 @@
 #include "view.h"
 #include "common.h"
-#include "imageobject.h"
-#include "imageviewer.h"
 #include "room.h"
 #include <QtCore/QVariantAnimation>
+
+inline QVector3D rotateCcw(QVector3D vec, qreal angle)
+{
+    return QQuaternion::fromAxisAndAngle(0, 1, 0, angle).rotatedVector(vec);
+}
+
+inline QVector3D rotateCcw(qreal x, qreal y, qreal z, qreal angle)
+{
+    return rotateCcw(QVector3D(x, y, z), angle);
+}
 
 void View::setupAnimation()
 {
@@ -34,47 +42,43 @@ void View::startAnimation(AnimStage stage)
     startEye = camera()->eye();
     startUp = camera()->upVector();
 
-    QVector3D pos;
-    if (stage == Entering1 || stage == Entering2)
-        pos = curRoom->getEntryMat(enteringDir) * QVector3D(0, 0, 0);
-    //qDebug() << pos << getEntryPos(enteringDir);
-
     switch (stage) {
-        case Entering1:
-            endCenter = pos;
-            endEye = pos + QVector3D(0, roomHeight * boxScale * 2, 0);
-            //endCenter = curRoom->getEntryPos(enteringDir);
-            //endEye = curRoom->getEntryPos(enteringDir) + QVector3D(0, roomHeight * boxScale * 2, 0);
-            deltaUp = QVector3D(0, -1, -1);
-            break;
+    case Entering1:
+        endCenter = curRoom->getEntryPos(enteringDir);
+        endEye = endCenter + QVector3D(0, roomHeight * boxScale * 2, 0);
+        deltaUp = QVector3D(0, -1, -1);
+        break;
 
-        case Entering2:
-            endCenter = defaultCenter * boxScale + pos;
-            endEye = defaultEye * boxScale + pos;
-            //endCenter = defaultCenter * boxScale + curRoom->getEntryPos(enteringDir);
-            //endEye = defaultEye * boxScale + curRoom->getEntryPos(enteringDir);
-            deltaUp = QVector3D(0, 1, 1);
-            break;
+    case Entering2:
+        endCenter = defaultCenter * boxScale + curRoom->getEntryPos(enteringDir);
+        endEye = defaultEye * boxScale + curRoom->getEntryPos(enteringDir);
+        deltaUp = QVector3D(0, 1, 1);
+        break;
 
-        case Leaving1:
-            endCenter = curRoom->getDoorPos() + defaultEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle());
-            endEye = curRoom->getDoorPos() + defaultEye;
-            deltaUp = QVector3D(0, 0, 0);
-            break;
+    case Leaving1:
+        endEye = curRoom->getDoorPos() + defaultEye;
+        endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle());
+        deltaUp = QVector3D(0, 0, 0);
+        break;
 
-        case Leaving2:
-            endEye = (defaultEye - rotateCcw(curRoom->getOutPos(), curRoom->getDoorAngle() - curRoom->getOutAngle())) / boxScale;
-            endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle()) / boxScale;
-            deltaUp = QVector3D(0, 0, 0);
-            break;
+    case Leaving2:
+        endEye = (defaultEye - rotateCcw(curRoom->getOutPos(), curRoom->getDoorAngle() - curRoom->getOutAngle())) / boxScale;
+        endCenter = endEye + rotateCcw(0, 0, -roomLength / 2, curRoom->getDoorAngle()) / boxScale;
+        deltaUp = QVector3D(0, 0, 0);
+        break;
 
-        default:
-            qDebug() << "startAnimation: Unknown stage!";
+    case TurningLeft:
+    case TurningRight:
+        animation->setDuration(500);
+        break;
+
+    default:
+        break;
     }
 
+    animStage = stage;
     deltaCenter = endCenter - startCenter;
     deltaEye = endEye - startEye;
-    animStage = stage;
     animation->start();
 }
 
@@ -84,51 +88,48 @@ void View::finishAnimation()
     static QVector3D endEye;
 
     switch (animStage) {
-        case Entering1:
-            startAnimation(Entering2);
-            break;
+    case Entering1:
+        startAnimation(Entering2);
+        break;
 
-        case Leaving1:
-            loadDir(true);
-            startAnimation(Leaving2);
-            break;
+    case Entering2:
+        camera()->setCenter(defaultCenter);
+        camera()->setEye(defaultEye);
+        curRoom->switchBackAndFront();
+        animStage = NoAnim;
+        enteringDir = -1;
+        updateHudContent();
+        update();
+        break;
 
-        case Entering2:
-            camera()->setCenter(defaultCenter);
-            camera()->setEye(defaultEye);
+    case Leaving1:
+        curRoom->loadBack(dir);
+        startAnimation(Leaving2);
+        break;
 
-            curRoom->switchBackAndFront();
-            picture->setImage(backPicture->getImage());
-        
-            animStage = NoAnim;
-            enteringDir = -1;
-            break;
+    case Leaving2:
+        camera()->setEye(defaultEye);
+        camera()->setCenter(rotateCcw(defaultCenter, curRoom->getOutAngle()));
+        animStage = Leaving3;
+        leavingDoor = -1;
+        curRoom->switchBackAndFront();
+        updateHudContent();
+        animation->start();
+        break;
 
-        case Leaving2:
-            camera()->setEye(defaultEye);
-            camera()->setCenter(rotateCcw(defaultCenter, curRoom->getOutAngle()));
-            leavingDoor = -1;
+    case Leaving3:
+        animStage = NoAnim;
+        camera()->setCenter(defaultCenter);
+        camera()->setEye(defaultEye);
+        break;
 
-            curRoom->switchBackAndFront();
-            picture->setImage(backPicture->getImage());
+    case TurningLeft:
+    case TurningRight:
+        animStage = NoAnim;
+        animation->setDuration(1500);
+        break;
 
-            animStage = Leaving3;
-            animation->start();
-            break;
-
-        case Leaving3:
-            animStage = NoAnim;
-            camera()->setCenter(defaultCenter);
-            camera()->setEye(defaultEye);
-            break;
-
-        case TurningLeft:
-        case TurningRight:
-            animStage = NoAnim;
-            animation->setDuration(1500);
-            break;
-
-        default:
-            qDebug() << "finishAnimation: Unkown stage!";
+    default:
+        break;
     }
 }

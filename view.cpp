@@ -1,28 +1,20 @@
 #include "view.h"
 #include "common.h"
 #include "directory.h"
-#include "imageobject.h"
 #include "outlinepainter.h"
 #include "imageviewer.h"
 #include "room.h"
+#include <Qt3D/QGLBuilder>
 
-View::View(int width, int height) :
-    pickedObject(-1), hoveringObject(-1),
-    fbo(NULL), surface(NULL),
-    isRoaming(false),
-    enteringDir(-1), leavingDoor(-1),
-    isShowingFileName(false)
+View::View(int width, int height)
 {
     resize(width, height);
-}
 
-void View::load()
-{
+    windowWidth = width;
+    windowHeight = height;
+
     curRoom = rooms["room1"];
-    dir = new Directory;
-
-    dir->setPageSize(curRoom->countSlot());
-    //curRoom->setDir(dir);
+    dir = new Directory(curRoom->countSlot());
 
     defaultCenter = QVector3D(0, eyeHeight, -roomLength / 2);
     defaultEye = QVector3D(0, eyeHeight, 0);
@@ -35,59 +27,30 @@ void View::load()
 
     setupLight();
     setupAnimation();
-    setupObjects();
 
-    loadDir();
-}
-
-View::~View() {
-    /* other members should be deleted by QObject system */
-    //delete animation;
-    //delete dir;
-}
-
-void View::setupObjects()
-{
-    /* picture */
-    picture = new ImageViewer(30, 20);
-    picture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
-
-    backPicture = new ImageViewer(30, 20);
-    backPicture->setPosition(QVector3D(-50, 50, 1 - roomLength / 2));
-
-    /* HUD */
-    hudObject = new ImageObject(2, 2, this, ImageObject::Hud);
+    // HUD
+    QGLBuilder builder;
+    builder.newSection(QGL::Faceted);
+    builder.addPane(QSizeF(2, 2));
+    hud = builder.finalizedSceneNode();
+    hud->setMaterial(new QGLMaterial);
+    hud->setEffect(QGL::FlatReplaceTexture2D);
 
     /* outline */
     outline = new OutlinePainter;
-}
 
-void View::loadDir(bool back) {
-    if (back) {
-        backPicture->setImage(dir->getPlayingFile("image"));
-        curRoom->loadBack(dir);
-    } else {
-        picture->setImage(dir->getPlayingFile("image"));
-        curRoom->loadFront(dir);
-    }
-
-    //curRoom->loadDir(dir, back);
-
-    paintHud();
+    curRoom->loadFront(dir);
+    updateHudContent();
     update();
 }
 
-void View::debugFunc() {
-    qDebug() << "done";
-    update();
-}
-
-void View::initializeGL(QGLPainter *painter) {
-    qDebug() << "initializeGL:" << painter;
+void View::initializeGL(QGLPainter *painter)
+{
     lightId = painter->addLight(light);
 }
 
-void View::resizeEvent(QResizeEvent *) {
-    paintHud();
+void View::resizeEvent(QResizeEvent *)
+{
+    updateHudContent();
     update();
 }

@@ -1,5 +1,6 @@
 #include "imageviewer.h"
 #include "common.h"
+#include "directory.h"
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLPainter>
 
@@ -7,6 +8,7 @@ const QString ImageViewer::defaultImage = ":/data/default.png";
 
 ImageViewer::ImageViewer(int w, int h)
 {
+    // the body
     QGLBuilder builder;
     builder.newSection(QGL::Faceted);
     builder.addPane(QSizeF(w, h));
@@ -14,6 +16,7 @@ ImageViewer::ImageViewer(int w, int h)
     body->setMaterial(new QGLMaterial());
     body->setEffect(QGL::FlatReplaceTexture2D);
 
+    // prev button
     QVector3DArray vertices;
     vertices.append(-w * 0.4, 0, 0.01);
     vertices.append(-w * 0.3, -h * 0.1, 0.01);
@@ -26,6 +29,7 @@ ImageViewer::ImageViewer(int w, int h)
     prevBtn = prevBuilder.finalizedSceneNode();
     prevBtn->setEffect(QGL::FlatColor);
 
+    // next button
     vertices.clear();
     vertices.append(w * 0.4, 0, 0);
     vertices.append(w * 0.3, h * 0.1, 0.01);
@@ -39,38 +43,42 @@ ImageViewer::ImageViewer(int w, int h)
     nextBtn->setEffect(QGL::FlatColor);
 }
 
-void ImageViewer::setImage(const QImage &newImage)
+void ImageViewer::setFile(const QString &fileName)
 {
-    image = newImage;
     QGLTexture2D *tex = body->material()->texture();
     if (tex) {
         tex->release();
         tex->deleteLater();
     }
     tex = new QGLTexture2D;
-    tex->setImage(image);
+    tex->setImage(QImage(fileName.isEmpty() ? defaultImage : fileName));
     body->material()->setTexture(tex);
 }
 
-void ImageViewer::draw(QGLPainter *painter, bool drawBtn)
+void ImageViewer::draw(QGLPainter *painter)
 {
     painter->modelViewMatrix().push();
     painter->modelViewMatrix() *= trans;
 
     int prevPickId = painter->objectPickId();
-    //if (paintingOutline == -1 || paintingOutline == Image)
     painter->setObjectPickId(Image);
 
     body->draw(painter);
 
-    /* FIXME: update outline algorithm to distinguish buttons */
-    if (drawBtn) {
+    if (painter->isPicking() || hoveringId >= Image) {
         QColor color = painter->color();
         painter->setColor(QColor(Qt::white));
+
         painter->setObjectPickId(ImagePrevBtn);
+        if (hoveringId == ImagePrevBtn)
+            hoveringPickColor = painter->pickColor();
         prevBtn->draw(painter);
+
         painter->setObjectPickId(ImageNextBtn);
+        if (hoveringId == ImageNextBtn)
+            hoveringPickColor = painter->pickColor();
         nextBtn->draw(painter);
+
         painter->setColor(color);
     }
 

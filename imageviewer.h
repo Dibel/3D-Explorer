@@ -7,30 +7,35 @@
 class QGLPainter;
 class QGLSceneNode;
 
+/**
+ * \brief Image previewer class
+ *
+ * Load image from file and represent it as a pane in 3D space.
+ *
+ * When the ImageViewer is hovered, display two buttons
+ * for user to view other images.
+ */
+
 class ImageViewer {
 public:
+    /// Create a ImageViewer of specific size.
     ImageViewer(int width, int height);
 
-    inline QImage getImage() { return image; }
+    /// Update and draw the image.
+    void draw(QGLPainter *painter);
 
-    void setImage(const QImage &image);
+    /// Load an image from file and display it.
+    void setFile(const QString &fileName);
 
-    inline void setImage(const QString &fileName)
-    {
-        setImage(QImage(fileName.isEmpty() ? defaultImage : fileName));
-    }
-
+    /// TODO: manage position in Room
     void setPosition(const QVector3D &pos)
     {
         trans.translate(pos);
     }
 
-    void draw(QGLPainter *painter, bool drawButtons = false);
-
 private:
     QMatrix4x4 trans;
     QGLSceneNode *body, *prevBtn, *nextBtn;
-    QImage image;
 
     static const QString defaultImage;
 };

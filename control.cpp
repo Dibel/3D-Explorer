@@ -1,13 +1,10 @@
 #include "view.h"
-#include "imageobject.h"
-#include "imageviewer.h"
-#include "directory.h"
 #include "common.h"
+#include "directory.h"
 #include "room.h"
+#include <QtGui/QDesktopServices>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QKeyEvent>
-#include <QtCore/QVariantAnimation>
-#include <QtGui/QDesktopServices>
 
 inline QVector3D extendTo3D(const QPoint &pos, qreal depth)
 {
@@ -20,23 +17,29 @@ inline void openFile(const QString &path)
         qDebug() << "Open File Failed";
 }
 
+inline QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
+
 void View::invokeObject(int id)
 {
-    if (pickedObject != -1) {
+    if (pickedEntry != -1) {
         switch (id) {
         case TrashBin:
-            if (dir->remove(pickedObject))
-                loadDir();
+            if (dir->remove(pickedEntry)) {
+                curRoom->loadFront(dir);
+                update();
+            }
+            hoverLeave();
             break;
 
         case Image:
-            picture->setImage(dir->playFile(pickedObject, "image"));
+            curRoom->setImage(dir->playFile(pickedEntry, "image"));
             break;
         }
+
     } else {
         switch (id) {
         case Door:
-            hoveringObject = -1;
+            hoveringId = -1;
             leavingDoor = id;
             dir->cdUp();
             curRoom->clearBack();
@@ -45,12 +48,14 @@ void View::invokeObject(int id)
 
         case LeftArrow:
             dir->prevPage();
-            loadDir();
+            curRoom->loadFront(dir);
+            update();
             break;
 
         case RightArrow:
             dir->nextPage();
-            loadDir();
+            curRoom->loadFront(dir);
+            update();
             break;
 
         case Image:
@@ -58,15 +63,12 @@ void View::invokeObject(int id)
             break;
 
         case ImagePrevBtn:
-            picture->setImage(dir->playPrev("image"));
+            curRoom->setImage(dir->playPrev("image"));
             break;
 
         case ImageNextBtn:
-            picture->setImage(dir->playNext("image"));
+            curRoom->setImage(dir->playNext("image"));
             break;
-
-        default:
-            qDebug() << "Nothing happended";
         }
     }
 }
@@ -76,26 +78,26 @@ void View::openEntry(int index)
     if (index < dir->countDir()) {
         hoverLeave();
         dir->cd(index);
-        loadDir(true);
+        curRoom->loadBack(dir);
         enteringDir = index;
         startAnimation(Entering1);
     } else
         openFile(dir->absoluteFilePath(index));
 }
 
-void View::mousePressEvent(QMouseEvent *event) {
+void View::mousePressEvent(QMouseEvent *event)
+{
     if (animStage != NoAnim || event->button() != Qt::LeftButton) return;
     int obj = objectIdForPoint(event->pos());
 
     if (obj >= 0 && obj < dir->count()) {
-        pickedObject = obj;
+        pickedEntry = obj;
         curRoom->pickEntry(obj);
-        pickedPos = curRoom->getEntryMat(pickedObject) * QVector3D(0, 0, 0);
-        //pickedPos = curRoom->getEntryPos(pickedObject);
-        pickedDepth = (mvp * pickedPos).z();
-        pickedModelPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedPos;
+        QMatrix4x4 mvp = calcMvp(camera(), size());
+        pickedDepth = (mvp * curRoom->getEntryPos(pickedEntry)).z();
+        pickedPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth);
+        deltaPos = QVector3D(0, 0, 0);
         isNear = true;
-        update();
 
     } else if (obj == -1) {
         roamStartCenter = camera()->center();
@@ -104,7 +106,8 @@ void View::mousePressEvent(QMouseEvent *event) {
     }
 }
 
-void View::mouseReleaseEvent(QMouseEvent *event) {
+void View::mouseReleaseEvent(QMouseEvent *event)
+{
     if (animStage != NoAnim || event->button() != Qt::LeftButton) return;
 
     if (isRoaming) {
@@ -112,43 +115,44 @@ void View::mouseReleaseEvent(QMouseEvent *event) {
         return;
     }
 
-    if (isNear)
-        openEntry(pickedObject);
+    if (pickedEntry != -1 && isNear)
+        openEntry(pickedEntry);
+
     else {
         int id = objectIdForPoint(event->pos());
         if (id > dir->count())
             invokeObject(id);
     }
 
+    pickedEntry = -1;
     curRoom->pickEntry(-1);
-    pickedObject = -1;
-    deltaPos = QVector3D(0, 0, 0);
-    isNear = false;
     update();
 }
 
-void View::mouseMoveEvent(QMouseEvent *event) {
+void View::mouseMoveEvent(QMouseEvent *event)
+{
     if (animStage != NoAnim) return;
 
     if (isRoaming) {
         /* FIXME: moving mouse outside window may cause strange behaviour */
         /* The bug is caused by center() - eye() == (0, y, 0), which is parallel to up vector */
-        QVector3D moveVector = (mvp.inverted() * QVector4D(event->pos() - roamStartPos)).toVector3D();
+        QVector3D moveVector = (calcMvp(camera(), size()).inverted() * QVector4D(event->pos() - roamStartPos)).toVector3D();
         QQuaternion rotation = QQuaternion::fromAxisAndAngle(QVector3D::crossProduct(roamStartCenter, -moveVector), moveVector.length() * 40);
         camera()->setCenter(rotation.rotatedVector(roamStartCenter - QVector3D(0, eyeHeight, 0)) + QVector3D(0, eyeHeight, 0));
         return;
     }
 
     int obj = objectIdForPoint(event->pos());
-    if (obj != hoveringObject) {
+    if (obj != hoveringId) {
         hoverLeave();
-        if (obj >= 0)
-            hoverEnter(obj);
+        hoverEnter(obj);
     }
 
-    if (pickedObject != -1) {
+    if (pickedEntry != -1) {
         /* move picked object */
-        deltaPos = mvp.inverted() * extendTo3D(event->pos(), pickedDepth) - pickedModelPos - pickedPos;
+        deltaPos = calcMvp(camera(), size()).inverted()
+                 * extendTo3D(event->pos(), pickedDepth)
+                 - pickedPos;
         update();
         return;
     }
@@ -156,72 +160,95 @@ void View::mouseMoveEvent(QMouseEvent *event) {
 
 void View::hoverEnter(int obj) {
     if (obj == -1) return;
-    hoveringObject = obj;
-    //if (obj->pickType() != MeshObject::Normal) return;
-    //paintOutline(obj);
+    hoveringId = obj;
     update();
 }
 
 void View::hoverLeave() {
-    hoveringObject = -1;
-    paintHud();
+    if (hoveringId == -1) return;
+    hoveringId = -1;
+    updateHudContent();
     update();
 }
 
 void View::keyPressEvent(QKeyEvent *event) {
     if (animStage != NoAnim) return;
-    if (event->key() == Qt::Key_Left) {
-        hoverLeave();
-        startCenter = camera()->center();
-        animStage = TurningLeft;
-        animation->setDuration(500);
-        animation->start();
-    } else if (event->key() == Qt::Key_Right) {
-        hoverLeave();
-        startCenter = camera()->center();
-        animStage = TurningRight;
-        animation->setDuration(500);
-        animation->start();
-    } if (event->key() == Qt::Key_Tab) {
+    switch (event->key()) {
+    case Qt::Key_Tab:
         setOption(GLView::ShowPicking, !(options() & GLView::ShowPicking));
         update();
-    } else if (event->key() == Qt::Key_R) {
+        break;
+
+    case Qt::Key_Left:
         hoverLeave();
-        camera()->setCenter(defaultCenter);
-        camera()->setEye(defaultEye);
-        camera()->setNearPlane(roomLength / 2 * 0.015);
-        camera()->setFarPlane(roomLength / 2 * 50);
-        camera()->setUpVector(QVector3D(0, 1, 0));
-        paintHud();
+        startAnimation(TurningLeft);
+        break;
+
+    case Qt::Key_Up:
+        hoverLeave();
+        dir->prevPage();
+
+        curRoom->loadFront(dir);
         update();
-    } else if (event->key() == Qt::Key_Space) {
-        isShowingFileName = !isShowingFileName;
-        paintHud();
+        break;
+
+    case Qt::Key_Right:
+        hoverLeave();
+        startAnimation(TurningRight);
+        break;
+
+    case Qt::Key_Down:
+        hoverLeave();
+        dir->nextPage();
+
+        curRoom->loadFront(dir);
         update();
-    } else if (event->key() == Qt::Key_D) {
+        break;
+
+    case Qt::Key_D:
         hoverLeave();
         camera()->setCenter(QVector3D(0, eyeHeight, roomLength / 2));
         camera()->setEye(defaultEye);
         camera()->setNearPlane(roomLength / 2 * 0.015);
         camera()->setFarPlane(roomLength / 2 * 50);
         camera()->setUpVector(QVector3D(0, 1, 0));
-        paintHud();
         update();
-        //debugFunc();
-    } else if (event->key() == Qt::Key_U) {
+        break;
+
+    case Qt::Key_R:
+        hoverLeave();
+        camera()->setCenter(defaultCenter);
+        camera()->setEye(defaultEye);
+        camera()->setNearPlane(roomLength / 2 * 0.015);
+        camera()->setFarPlane(roomLength / 2 * 50);
+        camera()->setUpVector(QVector3D(0, 1, 0));
+        update();
+        break;
+
+    case Qt::Key_U:
         hoverLeave();
         dir->cdUp();
-        loadDir();
-    } else if(event->key() == Qt::Key_Up) {
-        hoverLeave();
-        dir->prevPage();
-        loadDir();
-    } else if (event->key() == Qt::Key_Down) {
-        hoverLeave();
-        dir->nextPage();
-        loadDir();
+        curRoom->loadFront(dir);
+        update();
+        break;
+
     }
-    //GLView::keyPressEvent(event);
 }
 
 void View::wheelEvent(QWheelEvent *) { }
+
+inline QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size)
+{
+    qreal w = size.width();
+    qreal h = size.height();
+    QMatrix4x4 cameraMvp =
+        camera->projectionMatrix(w / h) * camera->modelViewMatrix();
+    /* transform from (-1~1,-1~1) to (0~800,0~600) */
+    QMatrix4x4 screenMvp = QMatrix4x4(
+            w / 2, 0, 0, w / 2,
+            0, -h / 2, 0, h / 2,
+            0, 0, 1, 0,
+            0, 0, 0, 1) *
+        cameraMvp;
+    return screenMvp;
+}

@@ -2,19 +2,14 @@
 #include "common.h"
 #include <QtWidgets/QMessageBox>
 
-#include <QtCore/QDebug>
-
-Directory::Directory() : QDir(), playingFiles(::typeList.size())
+Directory::Directory(int size) : QDir(), playingFiles(typeNameList.size())
 {
 #ifdef Q_OS_WIN
     isThisPC = false;
 #endif
     setFilter(QDir::AllEntries | QDir::NoDotAndDotDot);
     setSorting(QDir::IgnoreCase);
-}
 
-void Directory::setPageSize(int size)
-{
     pageSize = size;
     update();
 }
@@ -106,7 +101,7 @@ QString Directory::playFile(int index, const QString &assumedType)
     index += offset;
     if (typeList.at(index) < 2)
         return QString();
-    if (::typeList[typeList.at(index) - 2] != assumedType)
+    if (typeNameList[typeList.at(index) - 2] != assumedType)
         return QString();
 
     playingFiles[typeList.at(index) - 2] = index;
@@ -115,7 +110,7 @@ QString Directory::playFile(int index, const QString &assumedType)
 
 QString Directory::playNext(const QString &typeName)
 {
-    int type = ::typeList.indexOf(typeName);
+    int type = typeNameList.indexOf(typeName);
     Q_ASSERT(type != -1);
 
     int index = typeList.indexOf(type + 2, playingFiles.at(type) + 1);
@@ -130,7 +125,7 @@ QString Directory::playNext(const QString &typeName)
 
 QString Directory::playPrev(const QString &typeName)
 {
-    int type = ::typeList.indexOf(typeName);
+    int type = typeNameList.indexOf(typeName);
     Q_ASSERT(type != -1);
 
     int index = typeList.lastIndexOf(type + 2, playingFiles.at(type) - 1);
@@ -145,7 +140,7 @@ QString Directory::playPrev(const QString &typeName)
 
 QString Directory::getPlayingFile(const QString &type)
 {
-    int index = playingFiles.at(::typeList.indexOf(type));
+    int index = playingFiles.at(typeNameList.indexOf(type));
     if (index >= 0) {
         return absoluteFilePath(index);
     } else {

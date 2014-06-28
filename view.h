@@ -1,124 +1,140 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-//#include <Qt3D/QGLView>
 #include "lib/glview.h"
 
-//class Config;
 class Directory;
-class ImageObject;
-class PickObject;
-class ImageViewer;
+class Hud;
 class Room;
 class Surface;
 class OutlinePainter;
-
-enum AnimStage : int;
-
+class QGLFramebufferObjectSurface;
 class QGLShaderProgramEffect;
 class QVariantAnimation;
 
+enum AnimStage : int;
+
+/**
+ * \brief The window that show items and reply mouse actions
+ *
+ * This class represents the main window and maintain most of its properties,
+ * including target items, animation stage, lighting parameters, perspective
+ * roaming, etc.
+ *
+ * The class was originally derived from QGLView of Qt3D library, but APIs of 
+ * the base class was found not effective enough. So we decided to copy the
+ * source code of QGLView and modify it based on our usage. The modified class
+ * is named GLView.
+ *
+ * Definition of member functions are splitted into 4 files due to the
+ * complexity of this class.
+ */
 
 class View : public GLView {
     Q_OBJECT
 public:
-    View(int width = 800, int height = 600);
-    ~View();
-
-    void load();
+    /// Create a window of given size.
+    View(int width, int height);
 
 protected:
+    /// Virtual function required by QGLView.
+    /// Called once for each buffer.
     void initializeGL(QGLPainter *painter);
+
+    /// Virtual function required by QGLView.
+    /// Paint the room and HUD interface.
     void paintGL(QGLPainter *painter);
 
+    /// Handler for mouse press events.
+    /// Pick up the item if pressed on a file entry,
+    /// start roaming if pressed on blank place,
+    /// do nothing otherwise (practical actions will take place on release).
     void mousePressEvent(QMouseEvent *event);
+
+    /// Handler for mouse release events.
+    /// Make response based on the release position and current state
+    /// (is any item picked up yet and is it roaming now).
     void mouseReleaseEvent(QMouseEvent *event);
+
+    /// Handler for mouse move events.
+    /// Move the item if an item is picked up,
+    /// rotate the camera if is roaming now.
     void mouseMoveEvent(QMouseEvent *event);
 
+    /// Handler for keyboard shortcuts.
+    /// The shortcuts are mainly for debug purpose,
+    /// any important actions can be done by mouse.
     void keyPressEvent(QKeyEvent *event);
+
+    /// Resize the window.
     void resizeEvent(QResizeEvent *);
+
+    /// Do nothing for wheel events.
     void wheelEvent(QWheelEvent *);
 
 private:
-    void loadDir(bool back = false);
-
-    //Config *config;
-    Directory *dir;
-    Room *curRoom;
-
-    ImageViewer *picture;
-    ImageViewer *backPicture;
-
-    QVector3D defaultCenter;
-    QVector3D defaultEye;
-
-    // constructor helper
+    // constructor helpers
     void setupAnimation();
     void setupLight();
-    void setupObjects();
 
+    // paintGL helpers
+    void updateCamera();
+    void paintCurrentRoom(QGLPainter *painter);
+    void paintNextRoom(QGLPainter *painter);
+    void paintHud(QGLPainter *painter);
 
-    // object control
+    void updateHudContent(qreal x = 0, qreal y = 0, QString text = QString());
+    void paintOutline(QGLPainter *painter);
 
-    /* handle clicked object */
+    // left-click actions
     void invokeObject(int id);
-    /* open file or directory */
     void openEntry(int index);
 
-    int pickedObject;
-    QVector3D deltaPos;
-    /* original position of picked object */
-    QVector3D pickedPos;
-    /* clicked position in picked object's local coordinate */
-    QVector3D pickedModelPos;
-    /* picked object's depth in projected coordinate */
-    qreal pickedDepth;
-    /* whether the movement is by accident */
-    bool isNear = false;
-
-
-    // hover object
-
+    // hovering control
     void hoverEnter(int obj);
     void hoverLeave();
 
-    void paintHud(qreal x = 0, qreal y = 0, QString text = QString());
-    void paintOutline(QGLPainter *painter, int obj);
-
-    int hoveringObject;
-
-    /* show file name and path info on HUD */
-    ImageObject *hudObject;
-    /* outline hovering object */
-    OutlinePainter *outline;
-
-    /* buffer for painting outline */
-    QOpenGLFramebufferObject *fbo;
-    Surface *surface;
-
-
-    // roaming
-
-    void startRoaming(QPoint pos);
-
-    bool isRoaming;
-    /* starting position of roaming */
-    QPoint roamStartPos;
-    /* camera center when roaming start */
-    QVector3D roamStartCenter;
-
-
     // animation
-
     void startAnimation(AnimStage stage);
     void finishAnimation();
 
+    // roaming
+    void startRoaming(QPoint pos);
+
+    // main members
+    Directory *dir;
+    Room *curRoom;
+
+    // pseudo-const variables
+    QVector3D defaultCenter;
+    QVector3D defaultEye;
+
+    // picked file entry
+    int pickedEntry = -1;
+    QVector3D deltaPos;
+    QVector3D pickedPos;
+    qreal pickedDepth;
+    bool isNear = false;
+
+    // text, outline, etc
+    QGLSceneNode *hud;
+    OutlinePainter *outline;
+
+    QOpenGLFramebufferObject *fbo = NULL;
+    QGLFramebufferObjectSurface *surface = NULL;
+
+    // roaming
+    bool isRoaming = false;
+    QPoint roamStartPos;
+    QVector3D roamStartCenter;
+
+    // animation
     QVariantAnimation *animation;
     AnimStage animStage;
     qreal animProg;
 
-    int enteringDir;
-    int leavingDoor;
+    int enteringDir = -1;
+    int leavingDoor = -1;
 
     QVector3D startCenter;
     QVector3D startEye;
@@ -128,21 +144,12 @@ private:
     QVector3D deltaEye;
     QVector3D deltaUp;
 
-
     // light
-
     QGLLightParameters *light;
     int lightId;
 
     QGLShaderProgramEffect *phongEffect;
     QGLShaderProgramEffect *boxEffect;
-
-
-    // misc
-
-    void debugFunc();
-    QMatrix4x4 mvp;
-    bool isShowingFileName;
 };
 
 #endif

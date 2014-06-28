@@ -1376,6 +1376,7 @@ int GLView::objectIdForPoint(const QPoint &point)
 
     // Do we need to refresh the pick buffer contents?
     QGLPainter painter(this);
+    //pickBuffer(&painter);
     if (d->pickBufferForceUpdate) {
         // Initialize the painter, which will make the window context current.
         painter.setPicking(true);

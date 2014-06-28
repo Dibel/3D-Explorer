@@ -95,7 +95,7 @@ public:
     QObject *objectForPoint(const QPoint &point);
 
     int objectIdForPoint(const QPoint &point);
-
+    
     QGLCamera *camera() const;
     void setCamera(QGLCamera *camera);
 

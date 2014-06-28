@@ -1,17 +1,10 @@
 #include "common.h"
 #include "room.h"
-#include "view.h"
-#include <QtWidgets/QApplication>
-#include <QtCore/QFile>
-#include <Qt3D/QGLTexture2D>
 #include <Qt3D/QGLAbstractScene>
+#include <QtGui/QImage>
+#include <QtCore/QFile>
 
 #include <QtCore/QDebug>
-
-int paintingOutline = -1;
-QColor hoveringPickColor;
-
-GLView *view;
 
 int roomWidth, roomLength, roomHeight, eyeHeight;
 qreal boxScale;
@@ -19,24 +12,13 @@ qreal boxScale;
 QHash<QString, QGLMaterial*> palette;
 QHash<QString, QGLSceneNode*> models;
 QHash<QString, Room*> rooms;
+
 QList<QStringList> typeFilters;
-QHash<QString, QString> fileType;
-QStringList typeList;
+QStringList typeNameList;
 QHash<QString, int> extToIndex;
 
 void loadConfig(const QString &fileName);
 void loadProperty(const QString &property, QTextStream &value);
-
-inline void setAllMaterial(QGLSceneNode *node, QGLMaterial *mat)
-{
-    int index = node->palette()->addMaterial(mat);
-    node->setMaterialIndex(index);
-    node->setEffect(QGL::LitModulateTexture2D);
-    for (QGLSceneNode *child : node->allChildren()) {
-        child->setMaterialIndex(index);
-        child->setEffect(QGL::LitModulateTexture2D);
-    }
-}
 
 void loadConfig(const QString &fileName)
 {
@@ -86,16 +68,12 @@ void loadProperty(const QString &property, QTextStream &value) {
 
     } else if (property == "room") {
         QString name; value >> name;
-        rooms.insert(name, new Room(name));
+        rooms.insert(name, new Room(name + ".conf"));
 
     } else if (property == "model") {
-        QString name, mat;
-        value >> name >> mat;
-        qDebug() << name << mat;
+        QString name;
+        value >> name;
         QGLAbstractScene *model = QGLAbstractScene::loadScene(dataDir + name + ".obj");
-        model->setParent(view);
-        if (mat != "-")
-            setAllMaterial(model->mainNode(), palette[mat]);
         models.insert(name, model->mainNode());
 
     } else if (property == "filetype") {
@@ -105,13 +83,12 @@ void loadProperty(const QString &property, QTextStream &value) {
         value >> type >> ext;
         while (!ext.isEmpty()) {
             filter.append("*." + ext);
-            fileType[ext] = type;
-            extToIndex[ext] = typeList.size() + 2;
+            extToIndex[ext] = typeNameList.size() + 2;
             value >> ext;
         }
 
         typeFilters.append(filter);
-        typeList.append(type);
+        typeNameList.append(type);
 
     } else
         qDebug() << "Unknown property" << property;

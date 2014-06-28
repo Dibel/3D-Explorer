@@ -38,6 +38,6 @@ void main()
         b = texture2D(qt_Texture0, vec2(tc.s, tc.t + 0.009)).a; if (a < b) a = b; y += a * 0.1081081082;
         b = texture2D(qt_Texture0, vec2(tc.s, tc.t + 0.012)).a; if (a < b) a = b; y += a * 0.0324324324;
 
-        gl_FragColor = vec4(1.0, 1.0, 1.0, x > y ? x : y);
+        gl_FragColor = vec4(0.0, 1.0, 1.0, x > y ? x : y);
     }
 }
