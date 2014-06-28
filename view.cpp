@@ -6,7 +6,7 @@
 #include "room.h"
 #include <Qt3D/QGLBuilder>
 
-View::View(int width, int height)
+View::View(int width, int height, const QSurfaceFormat &format) : GLView(format)
 {
     resize(width, height);
 

@@ -34,7 +34,7 @@ class View : public GLView {
     Q_OBJECT
 public:
     /// Create a window of given size.
-    View(int width, int height);
+    View(int width, int height, const QSurfaceFormat &format);
 
 protected:
     /// Virtual function required by QGLView.

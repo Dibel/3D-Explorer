@@ -39,11 +39,12 @@ void View::invokeObject(int id)
     } else {
         switch (id) {
         case Door:
-            hoveringId = -1;
-            leavingDoor = id;
-            dir->cdUp();
-            curRoom->clearBack();
-            startAnimation(Leaving1);
+            if (dir->cdUp()) {
+                hoveringId = -1;
+                leavingDoor = id;
+                curRoom->clearBack();
+                startAnimation(Leaving1);
+            }
             break;
 
         case LeftArrow:
@@ -151,8 +152,8 @@ void View::mouseMoveEvent(QMouseEvent *event)
     if (pickedEntry != -1) {
         /* move picked object */
         deltaPos = calcMvp(camera(), size()).inverted()
-                 * extendTo3D(event->pos(), pickedDepth)
-                 - pickedPos;
+            * extendTo3D(event->pos(), pickedDepth)
+            - pickedPos;
         update();
         return;
     }
@@ -226,12 +227,12 @@ void View::keyPressEvent(QKeyEvent *event) {
         break;
 
     case Qt::Key_U:
-        hoverLeave();
-        dir->cdUp();
-        curRoom->loadFront(dir);
-        update();
+        if (dir->cdUp()) {
+            hoverLeave();
+            curRoom->loadFront(dir);
+            update();
+        }
         break;
-
     }
 }
 

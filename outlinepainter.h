@@ -29,6 +29,8 @@ class QOpenGLFramebufferObject;
  * sets the color, blur it horizontally and save the result into a FBO.
  * The second pass blur the FBO vertically, removes central area, and
  * paint it to screen. See the shaders for details.
+ *
+ * TODO: Currently the outline is not multisampled.
  */
 
 class OutlinePainter {

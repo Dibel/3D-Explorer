@@ -161,7 +161,7 @@ void View::paintOutline(QGLPainter *painter)
 
     painter->setPicking(false);
     painter->popSurface();
-    
+
     outline->draw(painter, fbo->texture());
 }
 
