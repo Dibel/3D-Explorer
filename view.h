@@ -3,6 +3,8 @@
 
 #include "lib/glview.h"
 
+#include <QMediaPlayer>
+
 class Directory;
 class Hud;
 class Room;
@@ -108,6 +110,8 @@ private:
     // pseudo-const variables
     QVector3D defaultCenter;
     QVector3D defaultEye;
+
+    QMediaPlayer *mediaPlayer;
 
     // picked file entry
     int pickedEntry = -1;

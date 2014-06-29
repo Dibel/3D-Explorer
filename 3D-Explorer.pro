@@ -1,4 +1,4 @@
-QT       += core gui 3d
+QT       += core gui 3d multimedia
 
 TARGET = 3D-Explorer
 TEMPLATE = app

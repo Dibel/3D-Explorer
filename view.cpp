@@ -28,6 +28,10 @@ View::View(int width, int height, const QSurfaceFormat &format) : GLView(format)
     setupLight();
     setupAnimation();
 
+    mediaPlayer = new QMediaPlayer;
+    connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
+    connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
+
     // HUD
     QGLBuilder builder;
     builder.newSection(QGL::Faceted);

@@ -34,6 +34,6 @@ extern QStringList typeNameList;
 extern QHash<QString, int> extToIndex;
 
 enum AnimStage : int { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
-enum { MaxBox = 100, TrashBin, Door, LeftArrow, RightArrow, Image, ImagePrevBtn, ImageNextBtn };
+enum { MaxBox = 100, TrashBin, Door, LeftArrow, RightArrow, MusicPlayer, Image, ImagePrevBtn, ImageNextBtn };
 
 #endif

@@ -6,6 +6,9 @@
 #include <QtGui/QOpenGLFramebufferObject>
 #include <QtGui/QOpenGLShaderProgram>
 
+#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLContext>
+
 OutlinePainter::OutlinePainter()
 {
     QGLBuilder builder;
@@ -73,19 +76,24 @@ void OutlinePainter::draw(QGLPainter *painter, int tex)
     glEnable(GL_BLEND);
 
     // bind texture 0 (h-blurred fbo)
-    glActiveTexture(GL_TEXTURE0);
+    QOpenGLFunctions glFunc(QOpenGLContext::currentContext());
+    glFunc.glActiveTexture(GL_TEXTURE0);
+    //glActiveTexture(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, fbo->texture());
     // bind texture 1 (picking buffer)
-    glActiveTexture(GL_TEXTURE1);
+    glFunc.glActiveTexture(GL_TEXTURE1);
+    //glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, tex);
 
     node->draw(painter);
 
     // clean up
-    glActiveTexture(GL_TEXTURE0);
+    glFunc.glActiveTexture(GL_TEXTURE1);
+    //glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE1);
+    glFunc.glActiveTexture(GL_TEXTURE1);
+    //glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
 

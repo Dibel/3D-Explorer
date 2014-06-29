@@ -6,6 +6,8 @@
 #include <QtGui/QMouseEvent>
 #include <QtGui/QKeyEvent>
 
+#include <QtMultimedia/QMediaPlaylist>
+
 inline QVector3D extendTo3D(const QPoint &pos, qreal depth)
 {
     return QVector3D(pos.x(), pos.y(), depth);
@@ -69,6 +71,27 @@ void View::invokeObject(int id)
 
         case ImageNextBtn:
             curRoom->setImage(dir->playNext("image"));
+            break;
+
+        case MusicPlayer:
+            qDebug() << "test";
+            if (mediaPlayer->state() == QMediaPlayer::PlayingState)
+                mediaPlayer->pause();
+            else if (mediaPlayer->state() == QMediaPlayer::PausedState)
+                mediaPlayer->play();
+            else {
+                QString url = dir->getPlayingFile("music");
+                qDebug() << url;
+                if (url != NULL) {
+                    QMediaPlaylist *list = new QMediaPlaylist;
+                    list->addMedia(QUrl::fromLocalFile(url));
+                    mediaPlayer->setPlaylist(list);
+                    qDebug() << mediaPlayer->mediaStatus();
+                    mediaPlayer->setVolume(30);
+                    mediaPlayer->play();
+                    qDebug() << mediaPlayer->error();
+                }
+            }
             break;
         }
     }
