@@ -8,6 +8,8 @@
 #include <Qt3D/QGLSceneNode>
 #include <QtGui/QOpenGLShaderProgram>
 
+//#include <QtMultimedia/QMediaPlayer>
+
 inline QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 
 inline QVector3D rotateCcw(QVector3D vec, qreal angle)

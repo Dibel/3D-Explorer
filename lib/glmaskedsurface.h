@@ -39,8 +39,8 @@
 **
 ****************************************************************************/
 
-#ifndef QGLMASKEDSURFACE_H
-#define QGLMASKEDSURFACE_H
+#ifndef GLMASKEDSURFACE_H
+#define GLMASKEDSURFACE_H
 
 //
 //  W A R N I N G
@@ -59,9 +59,9 @@
 
 QT_BEGIN_NAMESPACE
 
-class QGLMaskedSurfacePrivate;
+class GLMaskedSurfacePrivate;
 
-class QGLMaskedSurface : public QGLAbstractSurface
+class GLMaskedSurface : public QGLAbstractSurface
 {
 public:
     enum BufferMaskBit
@@ -73,16 +73,16 @@ public:
     };
     Q_DECLARE_FLAGS(BufferMask, BufferMaskBit)
 
-    QGLMaskedSurface();
-    QGLMaskedSurface
-        (QGLAbstractSurface *surface, QGLMaskedSurface::BufferMask mask);
-    ~QGLMaskedSurface();
+    GLMaskedSurface();
+    GLMaskedSurface
+        (QGLAbstractSurface *surface, GLMaskedSurface::BufferMask mask);
+    ~GLMaskedSurface();
 
     QGLAbstractSurface *surface() const;
     void setSurface(QGLAbstractSurface *surface);
 
-    QGLMaskedSurface::BufferMask mask() const;
-    void setMask(QGLMaskedSurface::BufferMask mask);
+    GLMaskedSurface::BufferMask mask() const;
+    void setMask(GLMaskedSurface::BufferMask mask);
 
     bool activate(QGLAbstractSurface *prevSurface = 0);
     void deactivate(QGLAbstractSurface *nextSurface = 0);
@@ -90,13 +90,13 @@ public:
     bool isValid() const;
 
 private:
-    QScopedPointer<QGLMaskedSurfacePrivate> d_ptr;
+    QScopedPointer<GLMaskedSurfacePrivate> d_ptr;
 
-    Q_DECLARE_PRIVATE(QGLMaskedSurface)
-    Q_DISABLE_COPY(QGLMaskedSurface)
+    Q_DECLARE_PRIVATE(GLMaskedSurface)
+    Q_DISABLE_COPY(GLMaskedSurface)
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(QGLMaskedSurface::BufferMask)
+Q_DECLARE_OPERATORS_FOR_FLAGS(GLMaskedSurface::BufferMask)
 
 QT_END_NAMESPACE
 

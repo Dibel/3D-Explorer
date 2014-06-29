@@ -39,15 +39,15 @@
 **
 ****************************************************************************/
 
-#include "qglmaskedsurface_p.h"
+#include "glmaskedsurface.h"
 
 #include <QOpenGLBuffer>
 
 QT_BEGIN_NAMESPACE
 
 /*!
-    \class QGLMaskedSurface
-    \brief The QGLMaskedSurface class represents a masked copy of another OpenGL drawing surface.
+    \class GLMaskedSurface
+    \brief The GLMaskedSurface class represents a masked copy of another OpenGL drawing surface.
     \since 4.8
     \ingroup qt3d
     \ingroup qt3d::painting
@@ -60,8 +60,8 @@ QT_BEGIN_NAMESPACE
 */
 
 /*!
-    \enum QGLMaskedSurface::BufferMaskBit
-    This enum defines the channels to mask with QGLMaskedSurface.
+    \enum GLMaskedSurface::BufferMaskBit
+    This enum defines the channels to mask with GLMaskedSurface.
 
     \value RedMask Allow the red channel to be written to the color buffer.
     \value GreenMask Allow the green channel to be written to the color buffer.
@@ -69,19 +69,19 @@ QT_BEGIN_NAMESPACE
     \value AlphaMask Allow the alpha channel to be written to the color buffer.
 */
 
-class QGLMaskedSurfacePrivate
+class GLMaskedSurfacePrivate
 {
 public:
-    QGLMaskedSurfacePrivate
+    GLMaskedSurfacePrivate
         (QGLAbstractSurface *surf = 0,
-         QGLMaskedSurface::BufferMask msk = QGLMaskedSurface::RedMask |
-                                            QGLMaskedSurface::GreenMask |
-                                            QGLMaskedSurface::BlueMask |
-                                            QGLMaskedSurface::AlphaMask)
+         GLMaskedSurface::BufferMask msk = GLMaskedSurface::RedMask |
+                                            GLMaskedSurface::GreenMask |
+                                            GLMaskedSurface::BlueMask |
+                                            GLMaskedSurface::AlphaMask)
             : surface(surf), mask(msk) {}
 
     QGLAbstractSurface *surface;
-    QGLMaskedSurface::BufferMask mask;
+    GLMaskedSurface::BufferMask mask;
 };
 
 #define MaskedSurfaceType       501
@@ -91,9 +91,9 @@ public:
     set to null and mask() initially set to allow all channels to be
     written to the color buffer.
 */
-QGLMaskedSurface::QGLMaskedSurface()
+GLMaskedSurface::GLMaskedSurface()
     : QGLAbstractSurface(MaskedSurfaceType)
-    , d_ptr(new QGLMaskedSurfacePrivate)
+    , d_ptr(new GLMaskedSurfacePrivate)
 {
 }
 
@@ -101,17 +101,17 @@ QGLMaskedSurface::QGLMaskedSurface()
     Constructs a masked OpenGL drawing surface that applies \a mask
     to \a surface when activate() is called.
 */
-QGLMaskedSurface::QGLMaskedSurface
-        (QGLAbstractSurface *surface, QGLMaskedSurface::BufferMask mask)
+GLMaskedSurface::GLMaskedSurface
+        (QGLAbstractSurface *surface, GLMaskedSurface::BufferMask mask)
     : QGLAbstractSurface(MaskedSurfaceType)
-    , d_ptr(new QGLMaskedSurfacePrivate(surface, mask))
+    , d_ptr(new GLMaskedSurfacePrivate(surface, mask))
 {
 }
 
 /*!
     Destroys this masked OpenGL drawing surface.
 */
-QGLMaskedSurface::~QGLMaskedSurface()
+GLMaskedSurface::~GLMaskedSurface()
 {
 }
 
@@ -121,9 +121,9 @@ QGLMaskedSurface::~QGLMaskedSurface()
 
     \sa setSurface(), mask()
 */
-QGLAbstractSurface *QGLMaskedSurface::surface() const
+QGLAbstractSurface *GLMaskedSurface::surface() const
 {
-    Q_D(const QGLMaskedSurface);
+    Q_D(const GLMaskedSurface);
     return d->surface;
 }
 
@@ -133,9 +133,9 @@ QGLAbstractSurface *QGLMaskedSurface::surface() const
 
     \sa surface(), setMask()
 */
-void QGLMaskedSurface::setSurface(QGLAbstractSurface *surface)
+void GLMaskedSurface::setSurface(QGLAbstractSurface *surface)
 {
-    Q_D(QGLMaskedSurface);
+    Q_D(GLMaskedSurface);
     d->surface = surface;
 }
 
@@ -145,9 +145,9 @@ void QGLMaskedSurface::setSurface(QGLAbstractSurface *surface)
 
     \sa setMask(), surface()
 */
-QGLMaskedSurface::BufferMask QGLMaskedSurface::mask() const
+GLMaskedSurface::BufferMask GLMaskedSurface::mask() const
 {
-    Q_D(const QGLMaskedSurface);
+    Q_D(const GLMaskedSurface);
     return d->mask;
 }
 
@@ -157,18 +157,18 @@ QGLMaskedSurface::BufferMask QGLMaskedSurface::mask() const
 
     \sa mask(), setSurface()
 */
-void QGLMaskedSurface::setMask(QGLMaskedSurface::BufferMask mask)
+void GLMaskedSurface::setMask(GLMaskedSurface::BufferMask mask)
 {
-    Q_D(QGLMaskedSurface);
+    Q_D(GLMaskedSurface);
     d->mask = mask;
 }
 
 /*!
     \reimp
 */
-bool QGLMaskedSurface::activate(QGLAbstractSurface *prevSurface)
+bool GLMaskedSurface::activate(QGLAbstractSurface *prevSurface)
 {
-    Q_D(const QGLMaskedSurface);
+    Q_D(const GLMaskedSurface);
     if (!d->surface || !d->surface->activate(prevSurface))
         return false;
     glColorMask((d->mask & RedMask) != 0, (d->mask & GreenMask) != 0,
@@ -179,16 +179,16 @@ bool QGLMaskedSurface::activate(QGLAbstractSurface *prevSurface)
 /*!
     \reimp
 */
-void QGLMaskedSurface::deactivate(QGLAbstractSurface *nextSurface)
+void GLMaskedSurface::deactivate(QGLAbstractSurface *nextSurface)
 {
-    Q_D(QGLMaskedSurface);
+    Q_D(GLMaskedSurface);
     if (d->surface)
         d->surface->deactivate(nextSurface);
     if (nextSurface && nextSurface->surfaceType() == MaskedSurfaceType) {
         // If we are about to switch to another masked surface for
         // the same underlying surface, then don't bother calling
         // glColorMask() for this one.
-        QGLMaskedSurface *next = static_cast<QGLMaskedSurface *>(nextSurface);
+        GLMaskedSurface *next = static_cast<GLMaskedSurface *>(nextSurface);
         if (d->surface == next->surface())
             return;
     }
@@ -198,13 +198,13 @@ void QGLMaskedSurface::deactivate(QGLAbstractSurface *nextSurface)
 /*!
     \reimp
 */
-QRect QGLMaskedSurface::viewportGL() const
+QRect GLMaskedSurface::viewportGL() const
 {
-    Q_D(const QGLMaskedSurface);
+    Q_D(const GLMaskedSurface);
     return d->surface ? d->surface->viewportGL() : QRect();
 }
 
-bool QGLMaskedSurface::isValid() const
+bool GLMaskedSurface::isValid() const
 {
     return QGLAbstractSurface::isValid();
 }

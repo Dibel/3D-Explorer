@@ -14,8 +14,8 @@ set(SOURCE
     imageviewer.cpp
     outlinepainter.cpp
     lib/glview.cpp
-    lib/qgldrawbuffersurface.cpp
-    lib/qglmaskedsurface.cpp
+    lib/gldrawbuffersurface.cpp
+    lib/glmaskedsurface.cpp
 )
 
 set(HEADER
@@ -26,8 +26,8 @@ set(HEADER
     imageviewer.h
     outlinepainter.h
     lib/glview.h
-    lib/qgldrawbuffersurface_p.h
-    lib/qglmaskedsurface_p.h
+    lib/gldrawbuffersurface.h
+    lib/glmaskedsurface.h
 )
 
 set(RESOURCE
@@ -37,6 +37,7 @@ set(RESOURCE
 project(${PROJECTNAME})
 
 find_package(Qt53D REQUIRED)
+find_package(Qt5Multimedia REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wunused-parameter")
 
@@ -52,6 +53,6 @@ add_executable(${PROJECTNAME}
     ${RESOURCE_RCC}
 )
 
-qt5_use_modules(${PROJECTNAME} 3D)
+qt5_use_modules(${PROJECTNAME} 3D Multimedia)
 
 target_link_libraries(${PROJECTNAME} GL)

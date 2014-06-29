@@ -16,8 +16,8 @@ HEADERS += \
     room.h \
     common.h \
     lib/glview.h \
-    lib/qgldrawbuffersurface_p.h \
-    lib/qglmaskedsurface_p.h
+    lib/gldrawbuffersurface_p.h \
+    lib/glmaskedsurface_p.h
 
 SOURCES += \
     main.cpp \
@@ -32,8 +32,8 @@ SOURCES += \
     room.cpp \
     animation.cpp \
     lib/glview.cpp \
-    lib/qgldrawbuffersurface.cpp \
-    lib/qglmaskedsurface.cpp \
+    lib/gldrawbuffersurface.cpp \
+    lib/glmaskedsurface.cpp \
     config.cpp
 
 QMAKE_CXXFLAGS += -std=gnu++0x

@@ -39,8 +39,8 @@
 **
 ****************************************************************************/
 
-#ifndef QGLDRAWBUFFERSURFACE_P_H
-#define QGLDRAWBUFFERSURFACE_P_H
+#ifndef GLDRAWBUFFERSURFACE_H
+#define GLDRAWBUFFERSURFACE_H
 
 //
 //  W A R N I N G
@@ -59,13 +59,13 @@
 
 QT_BEGIN_NAMESPACE
 
-class QGLDrawBufferSurface : public QGLAbstractSurface
+class GLDrawBufferSurface : public QGLAbstractSurface
 {
 public:
-    QGLDrawBufferSurface(QGLAbstractSurface *surface, GLenum buffer)
+    GLDrawBufferSurface(QGLAbstractSurface *surface, GLenum buffer)
         : QGLAbstractSurface(500)
         , m_surface(surface), m_buffer(buffer) {}
-    ~QGLDrawBufferSurface() {}
+    ~GLDrawBufferSurface() {}
 
     bool activate(QGLAbstractSurface *prevSurface);
     void deactivate(QGLAbstractSurface *nextSurface);
@@ -76,7 +76,7 @@ private:
     QGLAbstractSurface *m_surface;
     GLenum m_buffer;
 
-    Q_DISABLE_COPY(QGLDrawBufferSurface)
+    Q_DISABLE_COPY(GLDrawBufferSurface)
 };
 
 QT_END_NAMESPACE

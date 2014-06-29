@@ -39,11 +39,11 @@
 **
 ****************************************************************************/
 
-#include "qgldrawbuffersurface_p.h"
+#include "gldrawbuffersurface.h"
 
 QT_BEGIN_NAMESPACE
 
-bool QGLDrawBufferSurface::activate(QGLAbstractSurface *prevSurface)
+bool GLDrawBufferSurface::activate(QGLAbstractSurface *prevSurface)
 {
     if (!m_surface->activate(prevSurface))
         return false;
@@ -53,17 +53,17 @@ bool QGLDrawBufferSurface::activate(QGLAbstractSurface *prevSurface)
     return true;
 }
 
-void QGLDrawBufferSurface::deactivate(QGLAbstractSurface *nextSurface)
+void GLDrawBufferSurface::deactivate(QGLAbstractSurface *nextSurface)
 {
     m_surface->deactivate(nextSurface);
 }
 
-QRect QGLDrawBufferSurface::viewportGL() const
+QRect GLDrawBufferSurface::viewportGL() const
 {
     return m_surface->viewportGL();
 }
 
-bool QGLDrawBufferSurface::isValid() const
+bool GLDrawBufferSurface::isValid() const
 {
     return QGLAbstractSurface::isValid();
 }

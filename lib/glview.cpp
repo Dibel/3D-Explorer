@@ -41,9 +41,9 @@
 
 #include "glview.h"
 #include "qglsubsurface.h"
-#include "qglmaskedsurface_p.h"
+#include "glmaskedsurface.h"
 #include "qglwindowsurface.h"
-#include "qgldrawbuffersurface_p.h"
+#include "gldrawbuffersurface.h"
 #include "qray3d.h"
 #include "qgltexture2d.h"
 
@@ -437,17 +437,17 @@ QGLAbstractSurface *GLViewPrivate::leftEyeSurface(const QSize &size)
         if (!leftSurface)
         {
             if (format.swapBehavior() == QSurfaceFormat::DoubleBuffer)
-                leftSurface = new QGLDrawBufferSurface(&mainSurface, GL_BACK_LEFT);
+                leftSurface = new GLDrawBufferSurface(&mainSurface, GL_BACK_LEFT);
             else
-                leftSurface = new QGLDrawBufferSurface(&mainSurface, GL_FRONT_LEFT);
+                leftSurface = new GLDrawBufferSurface(&mainSurface, GL_FRONT_LEFT);
         }
         return leftSurface;
 #endif
     case GLView::RedCyanAnaglyph:
         if (!leftSurface) {
-            leftSurface = new QGLMaskedSurface
+            leftSurface = new GLMaskedSurface
                 (&mainSurface,
-                 QGLMaskedSurface::RedMask | QGLMaskedSurface::AlphaMask);
+                 GLMaskedSurface::RedMask | GLMaskedSurface::AlphaMask);
         }
         return leftSurface;
     case GLView::LeftRight:
@@ -499,7 +499,7 @@ QGLAbstractSurface *GLViewPrivate::rightEyeSurface(const QSize &size)
     case GLView::Hardware:
 #if defined(GL_BACK_LEFT) && defined(GL_BACK_RIGHT)
         if (!rightSurface) {
-            rightSurface = new QGLDrawBufferSurface
+            rightSurface = new GLDrawBufferSurface
                 (&mainSurface,
                  format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? GL_BACK_RIGHT : GL_FRONT_RIGHT);
         }
@@ -507,9 +507,9 @@ QGLAbstractSurface *GLViewPrivate::rightEyeSurface(const QSize &size)
 #endif
     case GLView::RedCyanAnaglyph:
         if (!rightSurface) {
-            rightSurface = new QGLMaskedSurface
+            rightSurface = new GLMaskedSurface
                 (&mainSurface,
-                 QGLMaskedSurface::GreenMask | QGLMaskedSurface::BlueMask);
+                 GLMaskedSurface::GreenMask | GLMaskedSurface::BlueMask);
         }
         return rightSurface;
     case GLView::LeftRight:
@@ -1376,7 +1376,6 @@ int GLView::objectIdForPoint(const QPoint &point)
 
     // Do we need to refresh the pick buffer contents?
     QGLPainter painter(this);
-    //pickBuffer(&painter);
     if (d->pickBufferForceUpdate) {
         // Initialize the painter, which will make the window context current.
         painter.setPicking(true);
@@ -1385,15 +1384,12 @@ int GLView::objectIdForPoint(const QPoint &point)
         // Create a framebuffer object as big as the window to act
         // as the pick buffer if we are single buffered.  If we are
         // double-buffered, then use the window back buffer.
-        bool useBackBuffer = d->format.swapBehavior() == QSurfaceFormat::DoubleBuffer;
-        if (!useBackBuffer) {
-            QSize fbosize = QGL::nextPowerOfTwo(areaSize);
-            if (!d->fbo) {
-                d->fbo = new QOpenGLFramebufferObject(fbosize, QOpenGLFramebufferObject::CombinedDepthStencil);
-            } else if (d->fbo->size() != fbosize) {
-                delete d->fbo;
-                d->fbo = new QOpenGLFramebufferObject(fbosize, QOpenGLFramebufferObject::CombinedDepthStencil);
-            }
+        QSize fbosize = QGL::nextPowerOfTwo(areaSize);
+        if (!d->fbo) {
+            d->fbo = new QOpenGLFramebufferObject(fbosize, QOpenGLFramebufferObject::CombinedDepthStencil);
+        } else if (d->fbo->size() != fbosize) {
+            delete d->fbo;
+            d->fbo = new QOpenGLFramebufferObject(fbosize, QOpenGLFramebufferObject::CombinedDepthStencil);
         }
 
         // Render the pick version of the scene.
@@ -1408,7 +1404,7 @@ int GLView::objectIdForPoint(const QPoint &point)
 
         // The pick buffer contents are now valid, unless we are using
         // the back buffer - we cannot rely upon it being valid next time.
-        d->pickBufferForceUpdate = useBackBuffer;
+        d->pickBufferForceUpdate = false;
         d->pickBufferMaybeInvalid = false;
     }
 

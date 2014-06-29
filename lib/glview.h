@@ -135,7 +135,7 @@ protected:
     QPointF viewDelta(int deltax, int deltay) const;
     QPointF viewDelta(const QPoint &delta) const
         { return viewDelta(delta.x(), delta.y()); }
-
+        
 private Q_SLOTS:
     void cameraChanged();
 
