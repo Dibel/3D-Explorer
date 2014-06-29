@@ -204,13 +204,12 @@ void Room::loadModel(QTextStream &value)
     else if (type == "Image") {
         id = Image;
 
-        // TODO: 
+        // TODO: make the previewer API general
         frontImage = new ImageViewer(30, 20);
         frontImage->setPosition(QVector3D(x, y, z + 1));
 
         backImage = new ImageViewer(30, 20);
         backImage->setPosition(QVector3D(x, y, z + 1));
-
 
     } else if (type == "Door") {
         id = Door;
@@ -244,15 +243,9 @@ void Room::loadEntryModel(QTextStream &value)
 
     value >> fileType >> modelName;
     if (fileType == "DIR") {
-        /* FIXME: scale it in .obj file! */
-        QMatrix4x4 trans;
-        trans.scale(1.3);
-
         entryModel[0] = models[modelName];
-        models[modelName]->setLocalTransform(trans);
         value >> modelName;
         dirAnim.mesh = models[modelName];
-        models[modelName]->setLocalTransform(trans);
         qreal x, y, z;
         value >> x >> y >> z;
         dirAnim.center = QVector3D(x, y, z);

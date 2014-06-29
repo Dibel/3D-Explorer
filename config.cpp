@@ -71,9 +71,9 @@ void loadProperty(const QString &property, QTextStream &value) {
         rooms.insert(name, new Room(name + ".conf"));
 
     } else if (property == "model") {
-        QString name;
-        value >> name;
-        QGLAbstractScene *model = QGLAbstractScene::loadScene(dataDir + name + ".obj");
+        QString name, fileName;
+        value >> name >> fileName;
+        QGLAbstractScene *model = QGLAbstractScene::loadScene(dataDir + fileName);
         models.insert(name, model->mainNode());
 
     } else if (property == "filetype") {
