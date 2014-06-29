@@ -2,6 +2,8 @@
 #include "common.h"
 #include <QtWidgets/QMessageBox>
 
+#include <QtCore/QDebug>
+
 Directory::Directory(int size) : QDir(), playingFiles(typeNameList.size())
 {
 #ifdef Q_OS_WIN
@@ -105,7 +107,7 @@ QString Directory::playFile(int index, const QString &assumedType)
         return QString();
 
     playingFiles[typeList.at(index) - 2] = index;
-    return absoluteFilePath(index);
+    return absoluteFilePath(entryList.at(index));
 }
 
 QString Directory::playNext(const QString &typeName)
@@ -120,7 +122,7 @@ QString Directory::playNext(const QString &typeName)
         return QString();
 
     playingFiles[type] = index;
-    return absoluteFilePath(index);
+    return absoluteFilePath(entryList.at(index));
 }
 
 QString Directory::playPrev(const QString &typeName)
@@ -135,17 +137,13 @@ QString Directory::playPrev(const QString &typeName)
         return QString();
 
     playingFiles[type] = index;
-    return absoluteFilePath(index);
+    return absoluteFilePath(entryList.at(index));
 }
 
 QString Directory::getPlayingFile(const QString &type)
 {
     int index = playingFiles.at(typeNameList.indexOf(type));
-    if (index >= 0) {
-        return absoluteFilePath(index);
-    } else {
-        return QString();
-    }
+    return index >= 0 ? absoluteFilePath(entryList.at(index)) : QString();
 }
 
 void Directory::update()
