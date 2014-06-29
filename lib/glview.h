@@ -51,7 +51,7 @@ QT_BEGIN_NAMESPACE
 
 class GLViewPrivate;
 
-class Q_QT3D_EXPORT GLView : public QWindow
+class GLView : public QWindow
 {
     Q_OBJECT
 public:

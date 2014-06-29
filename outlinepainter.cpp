@@ -25,17 +25,16 @@ OutlinePainter::OutlinePainter()
     vblur = new QGLShaderProgramEffect();
     vblur->setVertexShaderFromFile(":/shader/ortho.vsh");
     vblur->setFragmentShaderFromFile(":/shader/vblur.fsh");
-
-    /* Can't initialize fbo and surface now */
-    fbo = NULL;
-    surface = NULL;
 }
 
 void OutlinePainter::draw(QGLPainter *painter, int tex)
 {
     if (!fbo) {
+        Q_ASSERT(!surface && !glFunc);
+
         fbo = new QOpenGLFramebufferObject(800, 600, QOpenGLFramebufferObject::CombinedDepthStencil);
         surface = new QGLFramebufferObjectSurface(fbo);
+        glFunc = new QOpenGLFunctions(QOpenGLContext::currentContext());
     }
 
     if (painter->isPicking() && hoveringId == -1) return;
@@ -76,24 +75,19 @@ void OutlinePainter::draw(QGLPainter *painter, int tex)
     glEnable(GL_BLEND);
 
     // bind texture 0 (h-blurred fbo)
-    QOpenGLFunctions glFunc(QOpenGLContext::currentContext());
-    glFunc.glActiveTexture(GL_TEXTURE0);
-    //glActiveTexture(GL_TEXTURE0);
+    glFunc->glActiveTexture(GL_TEXTURE0);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, fbo->texture());
     // bind texture 1 (picking buffer)
-    glFunc.glActiveTexture(GL_TEXTURE1);
-    //glActiveTexture(GL_TEXTURE1);
+    glFunc->glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, tex);
 
     node->draw(painter);
 
     // clean up
-    glFunc.glActiveTexture(GL_TEXTURE1);
-    //glActiveTexture(GL_TEXTURE0);
+    glFunc->glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
-    glFunc.glActiveTexture(GL_TEXTURE1);
-    //glActiveTexture(GL_TEXTURE1);
+    glFunc->glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
 

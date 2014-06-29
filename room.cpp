@@ -201,6 +201,8 @@ void Room::loadModel(QTextStream &value)
         id = -1;
     else if (type == "TrashBin")
         id = TrashBin;
+    else if (type == "MusicPlayer")
+        id = MusicPlayer;
     else if (type == "Image") {
         id = Image;
 
@@ -215,8 +217,7 @@ void Room::loadModel(QTextStream &value)
         id = Door;
         doorPos = QVector3D(x, y, z);
         doorAngle = angle;
-    } else if (type == "MusicPlayer")
-        id = MusicPlayer;
+    }
 
     QMatrix4x4 trans;
     trans.translate(x, y, z);
@@ -274,7 +275,6 @@ void Room::loadWall(QTextStream &value) {
     QGLSceneNode *mesh;
 
     qreal w = side & 1 ? roomLength : roomWidth;
-    //qDebug() << side << w;
     if (l == -1) {
         QGLBuilder roomBuilder;
         roomBuilder.newSection(QGL::Faceted);

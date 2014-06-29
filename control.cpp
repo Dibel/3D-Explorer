@@ -5,8 +5,7 @@
 #include <QtGui/QDesktopServices>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QKeyEvent>
-
-#include <QtMultimedia/QMediaPlaylist>
+#include <QtMultimedia/QMediaPlayer>
 
 inline QVector3D extendTo3D(const QPoint &pos, qreal depth)
 {
@@ -31,6 +30,13 @@ void View::invokeObject(int id)
                 update();
             }
             hoverLeave();
+            break;
+
+        case MusicPlayer:
+            if (!dir->playFile(pickedEntry, "music").isEmpty()) {
+                mediaPlayer->setMedia(QUrl::fromLocalFile(dir->absoluteFilePath(pickedEntry)));
+                mediaPlayer->play();
+            }
             break;
 
         case Image:
@@ -74,24 +80,10 @@ void View::invokeObject(int id)
             break;
 
         case MusicPlayer:
-            qDebug() << "test";
             if (mediaPlayer->state() == QMediaPlayer::PlayingState)
                 mediaPlayer->pause();
             else if (mediaPlayer->state() == QMediaPlayer::PausedState)
                 mediaPlayer->play();
-            else {
-                QString url = dir->getPlayingFile("music");
-                qDebug() << url;
-                if (url != NULL) {
-                    QMediaPlaylist *list = new QMediaPlaylist;
-                    list->addMedia(QUrl::fromLocalFile(url));
-                    mediaPlayer->setPlaylist(list);
-                    qDebug() << mediaPlayer->mediaStatus();
-                    mediaPlayer->setVolume(30);
-                    mediaPlayer->play();
-                    qDebug() << mediaPlayer->error();
-                }
-            }
             break;
         }
     }

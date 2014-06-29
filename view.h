@@ -3,8 +3,6 @@
 
 #include "lib/glview.h"
 
-#include <QMediaPlayer>
-
 class Directory;
 class Hud;
 class Room;
@@ -12,6 +10,7 @@ class Surface;
 class OutlinePainter;
 class QGLFramebufferObjectSurface;
 class QGLShaderProgramEffect;
+class QMediaPlayer;
 class QVariantAnimation;
 
 enum AnimStage : int;
@@ -106,12 +105,12 @@ private:
     // main members
     Directory *dir;
     Room *curRoom;
+    
+    QMediaPlayer *mediaPlayer;
 
     // pseudo-const variables
     QVector3D defaultCenter;
     QVector3D defaultEye;
-
-    QMediaPlayer *mediaPlayer;
 
     // picked file entry
     int pickedEntry = -1;

@@ -5,6 +5,7 @@
 #include "imageviewer.h"
 #include "room.h"
 #include <Qt3D/QGLBuilder>
+#include <QtMultimedia/QMediaPlayer>
 
 View::View(int width, int height, const QSurfaceFormat &format) : GLView(format)
 {
@@ -28,9 +29,9 @@ View::View(int width, int height, const QSurfaceFormat &format) : GLView(format)
     setupLight();
     setupAnimation();
 
+    // music player
     mediaPlayer = new QMediaPlayer;
-    connect(mediaPlayer, SIGNAL(positionChanged(qint64)), this, SLOT(positionChanged(qint64)));
-    connect(mediaPlayer, SIGNAL(durationChanged(qint64)), this, SLOT(durationChanged(qint64)));
+    mediaPlayer->setVolume(30);
 
     // HUD
     QGLBuilder builder;

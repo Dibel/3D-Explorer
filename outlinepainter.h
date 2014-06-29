@@ -6,6 +6,7 @@ class QGLSceneNode;
 class QGLShaderProgramEffect;
 class QGLFramebufferObjectSurface;
 class QOpenGLFramebufferObject;
+class QOpenGLFunctions;
 
 /**
  * \brief The painter of outline (glow) effect
@@ -43,8 +44,9 @@ public:
 private:
     QGLSceneNode *node;
     QGLShaderProgramEffect *hblur, *vblur;
-    QOpenGLFramebufferObject *fbo;
-    QGLFramebufferObjectSurface *surface;
+    QOpenGLFramebufferObject *fbo = nullptr;
+    QGLFramebufferObjectSurface *surface = nullptr;
+    QOpenGLFunctions *glFunc = nullptr;
 };
 
 #endif
