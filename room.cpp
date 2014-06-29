@@ -150,6 +150,13 @@ void Room::paintPickedEntry(QGLPainter *painter, const QVector3D &delta) const
             frontPage[pickedEntry] == 0 ? &dirAnim : NULL);
 }
 
+QVector3D Room::getSolidPos(int id) const
+{
+    for (int i = 0; i < solid.size(); ++i)
+        if (solid.at(i).id == id)
+            return solid.at(i).transform * QVector3D(0, 0, 0);
+}
+
 void Room::loadProperty(const QString &property, QTextStream &value)
 {
     static QMatrix4x4 slotBase;

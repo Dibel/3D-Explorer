@@ -77,11 +77,14 @@ public:
     /// Return the direction of door in this room.
     inline qreal getDoorAngle() const { return doorAngle; }
 
-    /// Return the transformation matrix of entry @p idx.
+    /// Return the model-view matrix of entry @p idx.
     inline QMatrix4x4 getEntryMat(int idx) const { return slot.at(idx); }
 
     /// Return the position of entry @p idx.
     inline QVector3D getEntryPos(int idx) const { return slot.at(idx) * QVector3D(); }
+
+    /// Return the position of solid model with @p id.
+    QVector3D getSolidPos(int id) const;
 
     /// Preview the image in this room.
     void setImage(const QString &fileName);

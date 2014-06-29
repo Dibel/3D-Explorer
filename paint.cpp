@@ -8,8 +8,6 @@
 #include <Qt3D/QGLSceneNode>
 #include <QtGui/QOpenGLShaderProgram>
 
-//#include <QtMultimedia/QMediaPlayer>
-
 inline QMatrix4x4 calcMvp(const QGLCamera *camera, const QSize &size);
 
 inline QVector3D rotateCcw(QVector3D vec, qreal angle)
@@ -167,9 +165,24 @@ void View::paintOutline(QGLPainter *painter)
     outline->draw(painter, fbo->texture());
 }
 
+static const char *ItemName[] = {
+    "ERROR!!!",
+    "Trash Bin",
+    "Door",
+    "Previous Page",
+    "Next Page",
+    "Music Player",
+    "Image Viewer",
+    "Image Viewer",
+    "Image Viewer"
+};
+
 void View::paintHud(QGLPainter *painter)
 {
-    if (hoveringId != -1 && hoveringId < dir->count()) {
+    if (hoveringId > MaxEntryCnt) {
+        QVector3D pos = calcMvp(camera(), size()) * curRoom->getSolidPos(hoveringId);
+        updateHudContent(pos.x(), pos.y(), ItemName[hoveringId - MaxEntryCnt]);
+    } else if (hoveringId != -1 && hoveringId < dir->count()) {
         QVector3D pos = calcMvp(camera(), size()) * curRoom->getEntryPos(hoveringId);
         updateHudContent(pos.x(), pos.y(), dir->entry(hoveringId));
     }
