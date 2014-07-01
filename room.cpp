@@ -2,9 +2,12 @@
 #include "common.h"
 #include "directory.h"
 #include "imageviewer.h"
+#include "pdfviewer.h"
+#include <Qt3D/QGLCamera>
 #include <Qt3D/QGLPainter>
 #include <Qt3D/QGLAbstractScene>
 #include <Qt3D/QGLBuilder>
+#include <QtCore/QtMath>
 
 inline QVector3D rotateCcw(qreal x, qreal y, qreal z, qreal angle)
 {
@@ -81,6 +84,7 @@ void Room::paintFront(QGLPainter *painter, int animObj, qreal animProg) const
                     i == animObj ? animProg : 0.0);
 
     frontImage->draw(painter);
+    pdfViewer->draw(painter);
 }
 
 void Room::paintBack(QGLPainter *painter, AnimStage stage) const
@@ -155,6 +159,9 @@ QVector3D Room::getSolidPos(int id) const
     for (int i = 0; i < solid.size(); ++i)
         if (solid.at(i).id == id)
             return solid.at(i).transform * QVector3D(0, 0, 0);
+    Q_ASSERT(false);
+    // make compiler happy
+    return QVector3D();
 }
 
 void Room::loadProperty(const QString &property, QTextStream &value)
@@ -210,7 +217,29 @@ void Room::loadModel(QTextStream &value)
         id = TrashBin;
     else if (type == "MusicPlayer")
         id = MusicPlayer;
-    else if (type == "Image") {
+    else if (type == "Desk") {
+        qDebug() << "Desk loaded!";
+        id = Desk;
+        qreal x, y, z;
+        value >> x >> y >> z;
+        deskEye = QVector3D(x, y, z);
+        value >> x >> y >> z;
+        deskCenter = QVector3D(x, y, z);
+        value >> x >> y >> z;
+        deskUp = QVector3D(x, y, z);
+
+        pdfViewer = new PdfViewer(10, 15);
+
+        QMatrix4x4 trans;
+        trans.translate(deskCenter);
+        qDebug() << qRadiansToDegrees(qAtan(x / z));
+        trans.rotate(qRadiansToDegrees(qAtan(x / z)), 0, 1, 0);
+        trans.rotate(90, -1, 0, 0);
+        pdfViewer->setTransMat(trans);
+
+        pdfViewer->setFile("1.pdf");
+
+    } else if (type == "Image") {
         id = Image;
 
         // TODO: make the previewer API general
@@ -224,6 +253,10 @@ void Room::loadModel(QTextStream &value)
         id = Door;
         doorPos = QVector3D(x, y, z);
         doorAngle = angle;
+
+    } else {
+        qDebug() << "Unkown solid model type" << type;
+        id = -1;
     }
 
     QMatrix4x4 trans;
@@ -380,4 +413,11 @@ void Room::paintMesh(QGLPainter *painter,
 
     painter->modelViewMatrix().pop();
     painter->setObjectPickId(prevObjectId);
+}
+
+void Room::lookAtDesk(QGLCamera *camera) const
+{
+    camera->setEye(deskEye);
+    camera->setCenter(deskCenter);
+    camera->setUpVector(deskUp);
 }

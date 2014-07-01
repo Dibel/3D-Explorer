@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <QtCore/QDebug>
+
 #include <QtCore/QHash>
 #include <QtGui/QColor>
 
@@ -34,6 +36,6 @@ extern QStringList typeNameList;
 extern QHash<QString, int> extToIndex;
 
 enum AnimStage : int { NoAnim = 0, Entering1, Entering2, Leaving1, Leaving2, Leaving3, TurningLeft, TurningRight };
-enum { MaxEntryCnt = 100, TrashBin, Door, LeftArrow, RightArrow, MusicPlayer, Image, ImagePrevBtn, ImageNextBtn };
+enum { MaxEntryCnt = 100, TrashBin, Door, LeftArrow, RightArrow, Desk, MusicPlayer, Image, ImagePrevBtn, ImageNextBtn };
 
 #endif

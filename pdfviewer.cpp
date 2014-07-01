@@ -1,11 +1,12 @@
-#include "imageviewer.h"
+#include "pdfviewer.h"
 #include "common.h"
+#include "poppler-qt5.h"
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLPainter>
 
-const QString ImageViewer::defaultImage = ":/data/default.png";
+#include <QtCore/QDebug>
 
-ImageViewer::ImageViewer(int w, int h)
+PdfViewer::PdfViewer(int w, int h)
 {
     // the body
     QGLBuilder builder;
@@ -42,45 +43,39 @@ ImageViewer::ImageViewer(int w, int h)
     nextBtn->setEffect(QGL::FlatColor);
 }
 
-void ImageViewer::setFile(const QString &fileName)
+void PdfViewer::setFile(const QString &fileName)
 {
+    Poppler::Document *file = Poppler::Document::load(fileName);
+    if (!file || file->isLocked()) {
+        qDebug() << "Failed to open" << fileName;
+        delete file;
+        return;
+    }
+
+    Poppler::Page *page = file->page(0);
+    if (!page) {
+        qDebug() << "Failed to load page";
+        return;
+    }
+
     QGLTexture2D *tex = body->material()->texture();
     if (tex) {
         tex->release();
         tex->deleteLater();
     }
     tex = new QGLTexture2D;
-    tex->setImage(QImage(fileName.isEmpty() ? defaultImage : fileName));
+    tex->setImage(page->renderToImage());
     body->material()->setTexture(tex);
 }
 
-void ImageViewer::draw(QGLPainter *painter)
+void PdfViewer::draw(QGLPainter *painter)
 {
+    if (painter->isPicking()) return;
+
     painter->modelViewMatrix().push();
     painter->modelViewMatrix() *= trans;
 
-    int prevPickId = painter->objectPickId();
-    painter->setObjectPickId(Image);
-
     body->draw(painter);
 
-    if (painter->isPicking() || hoveringId >= Image) {
-        QColor color = painter->color();
-        painter->setColor(QColor(Qt::white));
-
-        painter->setObjectPickId(ImagePrevBtn);
-        if (hoveringId == ImagePrevBtn)
-            hoveringPickColor = painter->pickColor();
-        prevBtn->draw(painter);
-
-        painter->setObjectPickId(ImageNextBtn);
-        if (hoveringId == ImageNextBtn)
-            hoveringPickColor = painter->pickColor();
-        nextBtn->draw(painter);
-
-        painter->setColor(color);
-    }
-
-    painter->setObjectPickId(prevPickId);
     painter->modelViewMatrix().pop();
 }
