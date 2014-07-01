@@ -12,7 +12,6 @@ set(SOURCE
     animation.cpp
     room.cpp
     imageviewer.cpp
-    pdfviewer.cpp
     outlinepainter.cpp
     lib/glview.cpp
     lib/gldrawbuffersurface.cpp
@@ -25,7 +24,6 @@ set(HEADER
     view.h
     room.h
     imageviewer.h
-    pdfviewer.h
     outlinepainter.h
     lib/glview.h
     lib/gldrawbuffersurface.h
@@ -38,11 +36,8 @@ set(RESOURCE
 
 project(${PROJECTNAME})
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake/)
-
 find_package(Qt53D REQUIRED)
 find_package(Qt5Multimedia REQUIRED)
-find_package(Poppler REQUIRED)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wunused-parameter")
 
@@ -60,6 +55,4 @@ add_executable(${PROJECTNAME}
 
 qt5_use_modules(${PROJECTNAME} 3D Multimedia)
 
-include_directories(${POPPLER_INCLUDE_DIR})
-
-target_link_libraries(${PROJECTNAME} ${POPPLER_LIBRARY} GL)
+target_link_libraries(${PROJECTNAME} GL)

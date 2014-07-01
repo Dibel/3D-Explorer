@@ -67,18 +67,6 @@ void View::invokeObject(int id)
             update();
             break;
 
-        case Desk:
-            curRoom->lookAtDesk(camera());
-            //update();
-            break;
-
-        case MusicPlayer:
-            if (mediaPlayer->state() == QMediaPlayer::PlayingState)
-                mediaPlayer->pause();
-            else if (mediaPlayer->state() == QMediaPlayer::PausedState)
-                mediaPlayer->play();
-            break;
-
         case Image:
             openFile(dir->getPlayingFile("image"));
             break;
@@ -89,6 +77,13 @@ void View::invokeObject(int id)
 
         case ImageNextBtn:
             curRoom->setImage(dir->playNext("image"));
+            break;
+
+        case MusicPlayer:
+            if (mediaPlayer->state() == QMediaPlayer::PlayingState)
+                mediaPlayer->pause();
+            else if (mediaPlayer->state() == QMediaPlayer::PausedState)
+                mediaPlayer->play();
             break;
         }
     }

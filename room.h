@@ -3,13 +3,11 @@
 
 #include <QtGui/QMatrix4x4>
 
-class QGLCamera;
 class QGLPainter;
 class QGLSceneNode;
 class QTextStream;
 class Directory;
 class ImageViewer;
-class PdfViewer;
 enum AnimStage : int;
 
 /**
@@ -91,8 +89,6 @@ public:
     /// Preview the image in this room.
     void setImage(const QString &fileName);
 
-    void lookAtDesk(QGLCamera *camera) const;
-
 private:
     void loadProperty(const QString &property, QTextStream &value);
 
@@ -108,8 +104,6 @@ private:
     // one-time initialized properties
     QVector3D outPos, doorPos;
     qreal outAngle, doorAngle;
-
-    QVector3D deskEye, deskCenter, deskUp;
 
     // variable states
     QVector<int> frontPage, backPage;
@@ -134,7 +128,6 @@ private:
     AnimInfo dirAnim;
 
     ImageViewer *frontImage, *backImage;
-    PdfViewer *pdfViewer;
 
     static void paintMesh(QGLPainter *painter,
             QGLSceneNode *mesh, const QMatrix4x4 &trans, int id,

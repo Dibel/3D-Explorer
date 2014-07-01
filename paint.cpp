@@ -171,7 +171,6 @@ static const char *ItemName[] = {
     "Door",
     "Previous Page",
     "Next Page",
-    "Desk",
     "Music Player",
     "Image Viewer",
     "Image Viewer",

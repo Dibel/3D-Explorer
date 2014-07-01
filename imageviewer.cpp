@@ -1,5 +1,6 @@
 #include "imageviewer.h"
 #include "common.h"
+#include "directory.h"
 #include <Qt3D/QGLBuilder>
 #include <Qt3D/QGLPainter>
 
